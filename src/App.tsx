@@ -1,35 +1,108 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Button } from "./components";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+      <div className="max-w-2xl w-full space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            FinVibe Components
+          </h1>
+          <p className="text-lg text-gray-600">
+            Figma 디자인 시스템 기반 컴포넌트 라이브러리
+          </p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            Button 컴포넌트
+          </h2>
+
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                기본 변형
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                <Button variant="primary">취소</Button>
+                <Button variant="secondary">취소</Button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                크기 변형 (s, m, l)
+              </h3>
+              <div className="flex flex-wrap gap-4 items-center">
+                <Button size="small">Small (s)</Button>
+                <Button size="medium">Medium (m)</Button>
+                <Button size="large">Large (l)</Button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                크기와 변형 조합
+              </h3>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <Button variant="primary" size="small">
+                    Small
+                  </Button>
+                  <Button variant="primary" size="medium">
+                    Medium
+                  </Button>
+                  <Button variant="primary" size="large">
+                    Large
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-4 items-center">
+                  <Button variant="secondary" size="small">
+                    Small
+                  </Button>
+                  <Button variant="secondary" size="medium">
+                    Medium
+                  </Button>
+                  <Button variant="secondary" size="large">
+                    Large
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                상태 변형
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                <Button loading>로딩중</Button>
+                <Button disabled>비활성화</Button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                전체 너비
+              </h3>
+              <Button fullWidth>전체 너비 버튼</Button>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                아이콘 포함
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                <Button leftIcon={<span>✓</span>}>확인</Button>
+                <Button variant="secondary" rightIcon={<span>×</span>}>
+                  취소
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;

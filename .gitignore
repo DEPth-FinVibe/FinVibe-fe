@@ -1,5 +1,6 @@
 # Dependencies
 node_modules
+.pnpm-store
 
 # Build output
 /dist
@@ -20,3 +21,5 @@ pnpm-debug.log*
 # Local environment variables
 .env
 .env.*.local
+*storybook.log
+storybook-static
