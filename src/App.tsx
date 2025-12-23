@@ -121,6 +121,7 @@ function App() {
               </h3>
               <div className="flex flex-wrap gap-4">
                 <TextField
+                  size="small"
                   label="아이디"
                   placeholder="영어, 숫자 4-20자"
                   leftIcon={<UserIcon className="w-6 h-6" aria-hidden />}
@@ -132,12 +133,14 @@ function App() {
                 />
 
                 <TextField
+                  size="small"
                   label="이름"
                   placeholder="홍길동"
                   leftIcon={<UserIcon className="w-6 h-6" aria-hidden />}
                 />
 
                 <TextField
+                  size="small"
                   label="비밀번호"
                   type={visible ? "text" : "password"}
                   rightIcon={<EyeIcon />}          
@@ -145,6 +148,16 @@ function App() {
                   rightIconAriaLabel="비밀번호 표시/숨김"
                   placeholder="8자 이상 입력"
                   leftIcon={<LockIcon className="w-6 h-6" aria-hidden />}
+                />
+                <TextField
+                  size="medium"
+                  label="학교"
+                  placeholder="예: 서울대학교" 
+                />
+                <TextField
+                  size="large"
+                  label="이메일 또는 휴대전화"
+                  placeholder="이메일 또는 휴대전화" 
                 />
               </div>
             </div>
