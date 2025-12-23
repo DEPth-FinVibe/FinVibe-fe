@@ -1,5 +1,5 @@
 import type { StorybookConfig } from "@storybook/react-vite";
-import { mergeConfig } from "vite";
+import svgr from "vite-plugin-svgr";
 
 const config: StorybookConfig = {
   stories: [
@@ -16,11 +16,14 @@ const config: StorybookConfig = {
     options: {},
   },
   async viteFinal(config) {
-    return mergeConfig(config, {
+    return {
+      ...config,
       css: {
+        ...(config.css ?? {}),
         postcss: "./postcss.config.js",
       },
-    });
+    };
   },
 };
+
 export default config;

@@ -1,6 +1,13 @@
-import { Button } from "./components";
+import { Button, TextField } from "./components";
+import UserIcon from "./assets/user.svg?react";
+import LockIcon from "./assets/lock.svg?react";
+import EyeIcon from "./assets/eye.svg?react";
+import { useState } from "react";
+
 
 function App() {
+  const [visible, setVisible] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
       <div className="max-w-2xl w-full space-y-8">
@@ -97,9 +104,52 @@ function App() {
                   취소
                 </Button>
               </div>
+              
             </div>
           </div>
         </div>
+
+
+        <div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            TextField 컴포넌트
+          </h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                정보입력
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                <TextField
+                  label="아이디"
+                  placeholder="영어, 숫자 4-20자"
+                  leftIcon={<UserIcon className="w-6 h-6" aria-hidden />}
+                  rightAddon={
+                    <Button variant="secondary" size="small">
+                      중복확인
+                    </Button>
+                  }
+                />
+
+                <TextField
+                  label="이름"
+                  placeholder="홍길동"
+                  leftIcon={<UserIcon className="w-6 h-6" aria-hidden />}
+                />
+
+                <TextField
+                  label="비밀번호"
+                  type={visible ? "text" : "password"}
+                  rightIcon={<EyeIcon />}          
+                  onRightIconClick={() => setVisible(v => !v)}
+                  rightIconAriaLabel="비밀번호 표시/숨김"
+                  placeholder="8자 이상 입력"
+                  leftIcon={<LockIcon className="w-6 h-6" aria-hidden />}
+                />
+              </div>
+            </div>
+          </div>
+        </div>   
       </div>
     </div>
   );
