@@ -1,9 +1,8 @@
-import { Button, TextField } from "./components";
-import UserIcon from "./assets/user.svg?react";
-import LockIcon from "./assets/lock.svg?react";
-import EyeIcon from "./assets/eye.svg?react";
+import { Button, TextField } from "@/components";
+import UserIcon from "@/assets/user.svg?react";
+import LockIcon from "@/assets/lock.svg?react";
+import EyeIcon from "@/assets/eye.svg?react";
 import { useState } from "react";
-
 
 function App() {
   const [visible, setVisible] = useState(false);
@@ -104,11 +103,9 @@ function App() {
                   취소
                 </Button>
               </div>
-              
             </div>
           </div>
         </div>
-
 
         <div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">
@@ -143,8 +140,8 @@ function App() {
                   size="small"
                   label="비밀번호"
                   type={visible ? "text" : "password"}
-                  rightIcon={<EyeIcon />}          
-                  onRightIconClick={() => setVisible(v => !v)}
+                  rightIcon={<EyeIcon />}
+                  onRightIconClick={() => setVisible((v) => !v)}
                   rightIconAriaLabel="비밀번호 표시/숨김"
                   placeholder="8자 이상 입력"
                   leftIcon={<LockIcon className="w-6 h-6" aria-hidden />}
@@ -152,17 +149,17 @@ function App() {
                 <TextField
                   size="medium"
                   label="학교"
-                  placeholder="예: 서울대학교" 
+                  placeholder="예: 서울대학교"
                 />
                 <TextField
                   size="large"
                   label="이메일 또는 휴대전화"
-                  placeholder="이메일 또는 휴대전화" 
+                  placeholder="이메일 또는 휴대전화"
                 />
               </div>
             </div>
           </div>
-        </div>   
+        </div>
       </div>
     </div>
   );
