@@ -12,7 +12,13 @@ const meta = {
   argTypes: {
     activeMenu: {
       control: "select",
-      options: ["홈", "투자 시뮬레이터", "AI 투자 학습", "뉴스 & 토론", "챌린지"],
+      options: [
+        "홈",
+        "투자 시뮬레이터",
+        "AI 투자 학습",
+        "뉴스 & 토론",
+        "챌린지",
+      ],
     },
   },
   args: {

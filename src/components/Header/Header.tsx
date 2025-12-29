@@ -1,32 +1,28 @@
 import React from "react";
 import { cn } from "@/utils/cn";
-import LogoIcon from "@/assets/logo-icon.svg?react";
-import SearchIcon from "@/assets/search.svg?react";
-import BellIcon from "@/assets/bell.svg?react";
-import UserIcon from "@/assets/user.svg?react";
+import LogoIcon from "@/assets/svgs/LogoIcon";
+import SearchIcon from "@/assets/svgs/SearchIcon";
+import BellIcon from "@/assets/svgs/BellIcon";
+import UserIcon from "@/assets/svgs/UserIcon";
 
 export interface HeaderProps {
-  /** 현재 활성화된 메뉴 이름 */
   activeMenu?: string;
-  /** 네비게이션 메뉴 목록 */
   menus?: string[];
-  /** 메뉴 클릭 핸들러 */
   onMenuClick?: (menu: string) => void;
-  /** 검색 핸들러 */
   onSearch?: (value: string) => void;
-  /** 알림 클릭 핸들러 */
   onNotificationClick?: () => void;
-  /** 프로필 클릭 핸들러 */
   onProfileClick?: () => void;
-  /** 추가 클래스 */
   className?: string;
 }
 
-const DEFAULT_MENUS = ["홈", "투자 시뮬레이터", "AI 투자 학습", "뉴스 & 토론", "챌린지"];
+const DEFAULT_MENUS = [
+  "홈",
+  "투자 시뮬레이터",
+  "AI 투자 학습",
+  "뉴스 & 토론",
+  "챌린지",
+];
 
-/**
- * 이미지 디자인 기반 데스크탑 전용 Header (GNB) 컴포넌트
- */
 export const Header: React.FC<HeaderProps> = ({
   activeMenu = "홈",
   menus = DEFAULT_MENUS,
@@ -44,8 +40,8 @@ export const Header: React.FC<HeaderProps> = ({
       )}
     >
       {/* 로고 섹션 */}
-      <div className="flex items-center gap-2 cursor-pointer shrink-0">
-        <LogoIcon className="w-8 h-8" />
+      <div className="flex items-center justify-center gap-2 cursor-pointer shrink-0">
+        <LogoIcon />
         <span className="font-noto text-Headline_S_Bold text-black tracking-tight">
           FinVibe
         </span>
