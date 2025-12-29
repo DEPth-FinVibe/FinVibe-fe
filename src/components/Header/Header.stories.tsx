@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "@storybook/test";
 import { Header } from "./Header";
-import BackIcon from "@/assets/back.svg?react";
-import CloseIcon from "@/assets/close.svg?react";
 
 const meta = {
   title: "Components/Header",
@@ -12,43 +10,30 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
-    title: { control: "text" },
-    onLeftClick: { action: "left clicked" },
-    onRightClick: { action: "right clicked" },
+    activeMenu: {
+      control: "select",
+      options: ["홈", "투자 시뮬레이터", "AI 투자 학습", "뉴스 & 토론", "챌린지"],
+    },
   },
   args: {
-    onLeftClick: fn(),
-    onRightClick: fn(),
+    onMenuClick: fn(),
+    onSearch: fn(),
+    onNotificationClick: fn(),
+    onProfileClick: fn(),
   },
 } satisfies Meta<typeof Header>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
+export const DesktopGNB: Story = {
   args: {
-    title: "회원가입",
-    leftIcon: <BackIcon />,
+    activeMenu: "홈",
   },
 };
 
-export const WithBothIcons: Story = {
+export const NavigatorActive: Story = {
   args: {
-    title: "정보 입력",
-    leftIcon: <BackIcon />,
-    rightIcon: <CloseIcon />,
-  },
-};
-
-export const TitleOnly: Story = {
-  args: {
-    title: "설정",
-  },
-};
-
-export const IconOnly: Story = {
-  args: {
-    leftIcon: <BackIcon />,
-    rightIcon: <CloseIcon />,
+    activeMenu: "투자 시뮬레이터",
   },
 };
