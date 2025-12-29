@@ -1,7 +1,9 @@
-import { Button, TextField } from "@/components";
+import { Button, TextField, Header } from "@/components";
 import UserIcon from "@/assets/user.svg?react";
 import LockIcon from "@/assets/lock.svg?react";
 import EyeIcon from "@/assets/eye.svg?react";
+import BackIcon from "@/assets/back.svg?react";
+import CloseIcon from "@/assets/close.svg?react";
 import { useState } from "react";
 
 function App() {
@@ -17,6 +19,41 @@ function App() {
           <p className="text-lg text-gray-600">
             Figma 디자인 시스템 기반 컴포넌트 라이브러리
           </p>
+        </div>
+
+        {/* Header 컴포넌트 섹션 */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden space-y-6">
+          <div className="p-8 pb-0">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              Header 컴포넌트
+            </h2>
+          </div>
+          <div className="border-y border-gray-100 bg-gray-50 p-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3 px-4">
+                기본 헤더 (뒤로가기 + 타이틀)
+              </h3>
+              <Header title="회원가입" leftIcon={<BackIcon />} />
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3 px-4">
+                전체 구성 (뒤로가기 + 타이틀 + 닫기)
+              </h3>
+              <Header
+                title="정보 입력"
+                leftIcon={<BackIcon />}
+                rightIcon={<CloseIcon />}
+              />
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3 px-4">
+                타이틀만 있는 경우
+              </h3>
+              <Header title="홈" />
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
