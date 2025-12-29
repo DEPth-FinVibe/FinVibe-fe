@@ -5,4 +5,4 @@ export {
   type ButtonSize,
 } from "./Button";
 
-
+export { TextField, type TextFieldProps } from "./TextField";
