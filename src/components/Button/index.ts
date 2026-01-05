@@ -5,5 +5,3 @@ export {
   type ButtonSize,
 } from "./Button";
 export { default } from "./Button";
-
-
