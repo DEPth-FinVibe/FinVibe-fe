@@ -2,17 +2,29 @@ import { cn } from "@/utils/cn";
 
 export type Props = {
   className?: string;
+  onClick?: () => void;
+  ariaLabel?: string;
 };
 
-const BellIcon: React.FC<Props> = ({ className }) => {
+const BellIcon: React.FC<Props> = ({ className, onClick, ariaLabel }) => {
   return (
-    <div className={cn("", className)}>
+    <button
+      type="button"
+      className={cn(
+        "flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg active:scale-95 hover:bg-gray-200 transition-colors",
+        "cursor-pointer",
+        className
+      )}
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="14"
         height="15"
         viewBox="0 0 14 15"
         fill="none"
+        className="cursor-pointer"
       >
         <path
           fill-rule="evenodd"
@@ -21,7 +33,7 @@ const BellIcon: React.FC<Props> = ({ className }) => {
           fill="#696969"
         />
       </svg>
-    </div>
+    </button>
   );
 };
 

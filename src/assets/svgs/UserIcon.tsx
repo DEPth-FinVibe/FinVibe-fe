@@ -2,11 +2,18 @@ import { cn } from "@/utils/cn";
 
 export type Props = {
   className?: string;
+  onClick?: () => void;
+  ariaLabel?: string;
 };
 
-const UserIcon: React.FC<Props> = ({ className }) => {
+const UserIcon: React.FC<Props> = ({ className, onClick, ariaLabel }) => {
   return (
-    <div className={cn("", className)}>
+    <button
+      type="button"
+      className={cn("active:scale-95  transition-colors", className)}
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
@@ -25,7 +32,7 @@ const UserIcon: React.FC<Props> = ({ className }) => {
         />
         <circle cx="10" cy="10" r="9.25" stroke="#696969" stroke-width="1.5" />
       </svg>
-    </div>
+    </button>
   );
 };
 

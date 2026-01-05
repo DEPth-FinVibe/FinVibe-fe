@@ -9,38 +9,47 @@ export type Props = {
 
 const LogoIcon: React.FC<Props> = ({ className }) => {
   return (
-    <div
-      className={cn(
-        "bg-teal-400 p-2 border-none rounded-lg flex items-center justify-center",
-        className
-      )}
+    <svg
+      viewBox="0 0 50 50"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn("size-[50px]", className)}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 35 28"
-        fill="none"
-        className="w-9 h-7"
-      >
-        <path
-          d="M4.45264 6.70996H14.4526"
-          stroke="white"
-          stroke-width="3"
-          stroke-linecap="round"
-        />
-        <path
-          d="M4.45264 24.71L4.45264 6.70996"
-          stroke="white"
-          stroke-width="3"
-          stroke-linecap="round"
-        />
-        <path
-          d="M1.45239 15.2099L16.4524 15.2099L22.771 24.5916L33.2709 11.0918"
-          stroke="white"
-          stroke-width="3"
-          stroke-linecap="round"
-        />
-      </svg>
-    </div>
+      <path
+        d="M0 8C0 3.58172 3.58172 0 8 0H42C46.4183 0 50 3.58172 50 8V42C50 46.4183 46.4183 50 42 50H8C3.58172 50 0 46.4183 0 42V8Z"
+        fill="#42D6BA"
+      />
+      <path
+        d="M12.1816 15.6184H22.1816"
+        stroke="white"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
+      <path
+        d="M12.1816 33.6184L12.1816 15.6184"
+        stroke="white"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
+      <path
+        d="M9.1814 24.1183L24.1814 24.1183L30.5 33.5L40.9999 20.0002"
+        stroke="white"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
+      <path
+        d="M36 19L42 19.0001"
+        stroke="white"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <path
+        d="M42 25L42.0001 19"
+        stroke="white"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+    </svg>
   );
 };
 

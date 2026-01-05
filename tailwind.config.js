@@ -15,7 +15,8 @@ export default {
         foreground: "hsl(var(--foreground))",
         // Figma 디자인 색상
         gray: {
-          200: "#DDDDDE",
+          1: "#DDDDDE",
+          2: "#BDBDBD",
         },
         black: {
           DEFAULT: "#1D1E20",
@@ -24,6 +25,7 @@ export default {
           DEFAULT: "#3AB8A8",
           light: "#35B0A2",
         },
+        "main-1": "#42D6BA",
       },
       fontFamily: {
         noto: ["Noto Sans KR", "sans-serif"],
@@ -66,5 +68,3 @@ export default {
   },
   plugins: [],
 };
-
-
