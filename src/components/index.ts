@@ -8,3 +8,9 @@ export {
 export { TextField, type TextFieldProps } from "./TextField";
 
 export { Header, type HeaderProps } from "./Header";
+export {
+  default as SwitchBar,
+  type TabType as SwitchBarTabType,
+} from "./SwitchBar";
+export { default as NewsCard } from "./NewsCard";
+export { default as Chip, type ChipProps, type ChipVariant } from "./Chip";

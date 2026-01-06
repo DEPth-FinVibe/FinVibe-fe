@@ -17,6 +17,8 @@ export default {
         gray: {
           1: "#DDDDDE",
           2: "#BDBDBD",
+          300: "#C7C7C9",
+          400: "#A5A6A9",
         },
         black: {
           DEFAULT: "#1D1E20",
@@ -26,6 +28,14 @@ export default {
           light: "#35B0A2",
         },
         "main-1": "#42D6BA",
+        etc: {
+          "light-green": "#D6F3E1",
+          green: "#00A63E",
+        },
+        sub: {
+          blue: "#1F3B70",
+          gray: "#909193",
+        },
       },
       fontFamily: {
         noto: ["Noto Sans KR", "sans-serif"],
