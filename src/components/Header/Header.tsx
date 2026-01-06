@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
           fullWidth={false}
           className="w-[240px]"
           containerClassName="group"
-          inputClassName="h-10 pl-12 placeholder:text-gray-500 text-Body_M_Regular transition-all"
+          inputClassName="h-10 pl-12 placeholder:text-gray-500 text-Body_M_Regular "
           leftIcon={
             <SearchIcon className="size-5 text-gray-400  transition-colors" />
           }
