@@ -30,6 +30,7 @@ export default {
         "main-1": "#42D6BA",
         etc: {
           "light-green": "#D6F3E1",
+          "light-blue": "#DFE2FF",
           green: "#00A63E",
         },
         sub: {
