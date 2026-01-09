@@ -7,7 +7,12 @@ export type Props = {
   color?: string;
 };
 
-const CheckIcon: React.FC<Props> = ({ className, onClick, ariaLabel }) => {
+const CheckIcon: React.FC<Props> = ({ 
+  className, 
+  onClick, 
+  ariaLabel
+}) => {
+
   return (
     <div
       className={cn(
@@ -24,12 +29,12 @@ const CheckIcon: React.FC<Props> = ({ className, onClick, ariaLabel }) => {
         height="24"
         viewBox="0 0 24 24"
         fill="none"
-        className="w-6 h-6"
+        className={cn("w-4 h-4", className)}
       >
         <path
-          d="M9 12L11 14L15 10"
+          d="M6 12L10 16L18 8"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
