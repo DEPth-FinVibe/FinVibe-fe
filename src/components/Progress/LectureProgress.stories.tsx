@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { LectureProgress } from "@/components/LectureProgress/LectureProgress";
+import { LectureProgress } from "@/components/Progress/LectureProgress";
 
 const meta = {
-  title: "Components/LectureProgress",
+  title: "Components/Progress/LectureProgress",
   component: LectureProgress,
   parameters: {
     layout: "centered",
