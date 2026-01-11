@@ -15,3 +15,4 @@ export {
 export { default as NewsCard } from "./NewsCard";
 export { default as Chip, type ChipProps, type ChipVariant } from "./Chip";
 export { ChallengeStatus, type ChallengeStatusProps, type ChallengeDifficulty } from "./ChallengeStatus";
+export { WeeklyEvent, type WeeklyEventProps } from "./WeeklyEvent";
