@@ -19,6 +19,7 @@ export default {
           2: "#BDBDBD",
           300: "#C7C7C9",
           400: "#A5A6A9",
+          500: "#696969"
         },
         black: {
           DEFAULT: "#1D1E20",
@@ -31,7 +32,13 @@ export default {
         etc: {
           "light-green": "#D6F3E1",
           "light-blue": "#DFE2FF",
+          "light-yellow": "#FFF6E3",
+          "light-red": "#FFC2C2",
+          red: "#FF0000",
           green: "#00A63E",
+        },
+        point: {
+          yellow: "#FFD166",
         },
         sub: {
           blue: "#1F3B70",
