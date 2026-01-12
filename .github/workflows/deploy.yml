@@ -1,0 +1,73 @@
+name: CI - Build & Deploy (Auto)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      # 1️⃣ Frontend Repo Checkout
+      - name: Checkout frontend repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Docker Hub 로그인
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      # 3️⃣ 이미지 태그 (commit sha 7자리)
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      # 4️⃣ Buildx 설정
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 5️⃣ Docker 이미지 빌드 & Push
+      - name: Build & Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: cmh1448/finvibe-fe:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=finvibe-fe
+          cache-to: type=gha,mode=max,scope=finvibe-fe
+          provenance: false
+
+      # 6️⃣ manifest repo checkout
+      - name: Checkout manifest repo
+        uses: actions/checkout@v4
+        with:
+          repository: DEPth-FinVibe/Finvibe_Backend_Manifest
+          token: ${{ secrets.MANIFEST_REPO_TOKEN }}
+          path: manifest
+
+      # 7️⃣ deployment.yaml 이미지 태그 갱신
+      - name: Update image tag in manifest
+        run: |
+          if [ -d "manifest/frontend" ]; then
+            cd manifest/frontend
+            sed -i "s|image: .*|image: cmh1448/finvibe-fe:${{ env.IMAGE_TAG }}|" deployment.yaml
+          else
+            echo "Error: manifest/frontend directory not found"
+            exit 1
+          fi
+
+      # 8️⃣ manifest repo 커밋 & 푸시
+      - name: Commit & Push manifest
+        run: |
+          cd manifest
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add frontend/deployment.yaml
+          git commit -m "deploy(frontend): ${{ env.IMAGE_TAG }}"
+          git push
