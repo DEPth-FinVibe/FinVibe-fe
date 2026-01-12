@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
         <BellIcon onClick={onNotificationClick} ariaLabel="알림" />
 
         {/* 프로필 버튼 */}
-        <UserIcon onClick={onProfileClick} ariaLabel="프로필" />
+        <UserIcon onClick={onProfileClick} ariaLabel="프로필" className="text-gray-500" />
       </div>
     </header>
   );
