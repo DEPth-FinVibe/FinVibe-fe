@@ -17,3 +17,4 @@ export { default as Chip, type ChipProps, type ChipVariant } from "./Chip";
 export { ChallengeStatus, type ChallengeStatusProps, type ChallengeDifficulty } from "./ChallengeStatus";
 export { WeeklyEvent, type WeeklyEventProps } from "./WeeklyEvent";
 export { Discussion, type DiscussionProps } from "./Discussion";
+export { Stock, type StockProps } from "./Stock";
