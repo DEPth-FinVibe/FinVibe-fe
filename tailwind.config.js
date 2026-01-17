@@ -35,6 +35,7 @@ export default {
           "light-yellow": "#FFF6E3",
           "light-red": "#FFC2C2",
           red: "#FF0000",
+          blue: "#001AFF",
           green: "#00A63E",
         },
         point: {
