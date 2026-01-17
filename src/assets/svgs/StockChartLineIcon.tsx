@@ -9,18 +9,18 @@ export type Props = {
   direction?: "up" | "down";
 };
 
-const LineChartIcon: React.FC<Props> = ({
+const StockChartLineIcon: React.FC<Props> = ({
   className,
   onClick,
   ariaLabel,
   color = "#FF0000",
   direction = "up",
 }) => {
-  // 상승 차트
-  // 하락 차트
-  const path = direction === "up" 
-    ? "M0.500062 23.4989L68.2474 1.43383"  // 왼쪽 아래에서 오른쪽 위로
-    : "M0.500062 0.501108L68.2474 22.5662"; // 왼쪽 위에서 오른쪽 아래로
+  const diagonalLength = Math.sqrt(58 * 58 + 33 * 33) + 2; 
+  
+  const lineTransform = direction === "up" 
+    ? "matrix(0.869164 -0.494524 -0.494524 -0.869164 0.3745 33.625)"  // 상승 (상향선)
+    : "matrix(-0.869164 -0.494524 -0.494524 0.869164 58.6255 33.625)"; // 하락 (하향선) - y축 반전
 
   return (
     <div
@@ -34,15 +34,21 @@ const LineChartIcon: React.FC<Props> = ({
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="69"
-        height="24"
-        viewBox="0 0 69 24"
+        width="59"
+        height="35"
+        viewBox="0 0 59 35"
         fill="none"
         className="w-full h-full"
+        style={{ overflow: "visible" }}
       >
-        <path
-          d={path}
+        <line
+          x1="0"
+          y1="-1"
+          x2={diagonalLength}
+          y2="-1"
+          transform={lineTransform}
           stroke={color}
+          strokeWidth="2"
           strokeLinecap="round"
         />
       </svg>
@@ -50,5 +56,5 @@ const LineChartIcon: React.FC<Props> = ({
   );
 };
 
-export default LineChartIcon;
+export default StockChartLineIcon;
 

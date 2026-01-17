@@ -18,3 +18,4 @@ export { ChallengeStatus, type ChallengeStatusProps, type ChallengeDifficulty } 
 export { WeeklyEvent, type WeeklyEventProps } from "./WeeklyEvent";
 export { Discussion, type DiscussionProps } from "./Discussion";
 export { TradingVolumeRank, type TradingVolumeRankProps } from "./TradingVolumeRank";
+export { StockChartHeader, type StockChartHeaderProps } from "./StockChartHeader";

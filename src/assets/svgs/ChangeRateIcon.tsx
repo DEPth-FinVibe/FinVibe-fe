@@ -17,15 +17,16 @@ const ChangeRateIcon: React.FC<Props> = ({
   color = "#2563EB",
   direction = "up",
 }) => {
-  // 이미지와 같은 "꺾이는 상승선 + 우상향 화살표(ㄱ자 헤드)" 스타일
-  const up = {
-    trend: "M2.25 18L9 11.25l3 3L21.75 4.5",
-    head: "M21.75 4.5v5.25m0-5.25h-5.25",
+  // 하락 차트
+  const down = {
+    line: "M17.4167 9.08398L10.3333 2.00065L6.16667 6.16732L0.75 0.750651",
+    arrow: "M12.4167 9.08398H17.4167V4.08398",
   };
 
-  const down = {
-    trend: "M2.25 6L9 12.75l3-3L21.75 19.5",
-    head: "M21.75 19.5v-5.25m0 5.25h-5.25",
+  // 상승 차트
+  const up = {
+    line: "M17.4167 0.75L10.3333 7.83333L6.16667 3.66667L0.75 9.08333",
+    arrow: "M12.4167 0.75H17.4167V5.75",
   };
 
   const icon = direction === "up" ? up : down;
@@ -42,25 +43,25 @@ const ChangeRateIcon: React.FC<Props> = ({
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
+        width="19"
+        height="10"
+        viewBox="0 0 19 10"
         fill="none"
         className="w-full h-full"
         role="img"
         aria-label={ariaLabel}
       >
         <path
-          d={icon.trend}
+          d={icon.line}
           stroke={color}
-          strokeWidth="2"
+          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
-          d={icon.head}
+          d={icon.arrow}
           stroke={color}
-          strokeWidth="2"
+          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
