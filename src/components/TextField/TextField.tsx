@@ -1,5 +1,7 @@
 import React from "react";
 import { cn } from "@/utils/cn";
+import SuccessIcon from "@/assets/svgs/SuccessIcon";
+import ErrorIcon from "@/assets/svgs/ErrorIcon";
 
 type TextFieldSize = "small" | "medium" | "large";
 
@@ -9,6 +11,8 @@ export interface TextFieldProps
   label?: string;
   /** 텍스트필드 크기 (small / medium / large) */
   size?: TextFieldSize;
+  /** 성공 메시지(있으면 성공 스타일 + 메시지 표시) */
+  successMessage?: string;
   /** 에러 메시지(있으면 에러 스타일 + 메시지 표시) */
   errorMessage?: string;
   /** 에러 스타일만 주고 메시지는 안 띄우고 싶을 때 */
@@ -65,6 +69,7 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
     {
       label,
       size = "small",
+      successMessage,
       errorMessage,
       hasError,
       helperText,
@@ -85,16 +90,19 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
     ref
   ) => {
     const error = Boolean(errorMessage) || Boolean(hasError);
+    const success = Boolean(successMessage);
 
     const inputId = React.useId();
     const resolvedId = id ?? inputId;
 
     const helperId = helperText ? `${resolvedId}-help` : undefined;
     const errorId = errorMessage ? `${resolvedId}-error` : undefined;
+    const successId = successMessage ? `${resolvedId}-success` : undefined;
 
     const describedBy =
-      [ariaDescribedBy, error ? errorId : helperId].filter(Boolean).join(" ") ||
-      undefined;
+      [ariaDescribedBy, error ? errorId : success ? successId : helperId]
+        .filter(Boolean)
+        .join(" ") || undefined;
 
     const s = sizeStyles[size];
 
@@ -134,6 +142,7 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
                 "focus:outline-none",
                 "disabled:opacity-60 disabled:cursor-not-allowed",
                 error && "border-red-400 focus:ring-red-200",
+                success && "border-green-400 focus:ring-green-200",
                 leftIcon ? "pl-10" : "pl-6",
                 rightIcon ? "pr-10" : "pr-4",
                 inputClassName
@@ -162,9 +171,19 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
         </div>
 
         {errorMessage ? (
-          <p id={errorId} className={cn(s.helper, "text-red-500")}>
-            {errorMessage}
-          </p>
+          <div
+            className={cn(s.helper, "flex items-center gap-1.5 text-etc-red")}
+          >
+            <ErrorIcon className="size-4" />
+            <p id={errorId}>{errorMessage}</p>
+          </div>
+        ) : successMessage ? (
+          <div
+            className={cn(s.helper, "flex items-center gap-1.5 text-etc-green")}
+          >
+            <SuccessIcon className="size-4" />
+            <p id={successId}>{successMessage}</p>
+          </div>
         ) : helperText ? (
           <p id={helperId} className={cn(s.helper, "text-gray-500")}>
             {helperText}
