@@ -49,7 +49,7 @@ export const TradingVolumeRank = ({
   return (
     <div
       className={cn(
-        "flex gap-[10px] items-start w-full py-[10px] border-b border-gray-300 border-solid",
+        "flex  items-start w-full py-[10px] border-b border-gray-300 border-solid",
         onClick && "cursor-pointer",
         className
       )}
@@ -104,7 +104,7 @@ export const TradingVolumeRank = ({
       </div>
 
       {/* 차트 */}
-      <div className="h-[47px] shrink-0 w-[68px] py-[10px]">
+      <div className="h-[47px] shrink-0 w-[78px] py-[10px]">
         {chart || (
           <LineChartIcon
             color={iconColor}

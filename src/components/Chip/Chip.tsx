@@ -4,7 +4,7 @@ import CloseIcon from "@/assets/svgs/CloseIcon";
 
 export type ChipVariant = "default" | "neutral" | "primary" | "secondary";
 
-export interface ChipProps {
+export interface ChipProps extends React.HTMLAttributes<HTMLDivElement> {
   label: string;
   variant?: ChipVariant;
   className?: string;
@@ -16,6 +16,8 @@ const Chip: React.FC<ChipProps> = ({
   variant = "default",
   className,
   onClose,
+  onClick,
+  ...props
 }) => {
   const variantStyles: Record<ChipVariant, string> = {
     default:
@@ -30,11 +32,14 @@ const Chip: React.FC<ChipProps> = ({
 
   return (
     <div
+      onClick={onClick}
       className={cn(
-        "inline-flex items-center justify-center gap-2.5 border",
+        "inline-flex items-center justify-center gap-2.5 border transition-all",
+        onClick && "cursor-pointer active:scale-95",
         variantStyles[variant],
         className
       )}
+      {...props}
     >
       <span className="text-sm">{label}</span>
       {onClose && (
