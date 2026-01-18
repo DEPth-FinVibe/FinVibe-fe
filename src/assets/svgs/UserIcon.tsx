@@ -28,9 +28,15 @@ const UserIcon: React.FC<Props> = ({ className, onClick, ariaLabel }) => {
         <path
           d="M10 3.75C11.7949 3.75 13.25 5.20507 13.25 7C13.25 8.79493 11.7949 10.25 10 10.25C8.20508 10.25 6.75 8.79492 6.75 7C6.75 5.20508 8.20508 3.75001 10 3.75Z"
           stroke="currentColor"
-          stroke-width="1.5"
+          strokeWidth="1.5"
         />
-        <circle cx="10" cy="10" r="9.25" stroke="currentColor" stroke-width="1.5" />
+        <circle
+          cx="10"
+          cy="10"
+          r="9.25"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
       </svg>
     </button>
   );
