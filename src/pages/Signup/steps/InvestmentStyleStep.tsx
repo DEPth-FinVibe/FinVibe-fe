@@ -1,6 +1,6 @@
 import React from "react";
-import { Button } from "@/components";
-import StyleCard, { StyleType } from "../components/StyleCard";
+import StyleCard from "../components/StyleCard";
+import type { StyleType } from "../components/StyleCard";
 
 interface InvestmentStyleStepProps {
   selectedStyle: StyleType | null;

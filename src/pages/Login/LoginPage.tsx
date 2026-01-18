@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import LogoIcon from "@/assets/svgs/LogoIcon";
 import NaverIcon from "@/assets/svgs/NaverIcon";
 import GoogleIcon from "@/assets/svgs/GoogleIcon";
-import EmailIcon from "@/assets/svgs/EmailIcon";
 import { TextField, Button } from "@/components";
 import UserIcon from "@/assets/svgs/UserIcon";
 import LockIcon from "@/assets/svgs/LockIcon";

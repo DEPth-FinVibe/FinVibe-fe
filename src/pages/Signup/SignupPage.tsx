@@ -7,7 +7,8 @@ import EyeIcon from "@/assets/svgs/EyeIcon";
 import CalendarIcon from "@/assets/svgs/CalendarIcon";
 import BackIcon from "@/assets/svgs/BackIcon";
 import EmailIcon from "@/assets/svgs/EmailIcon";
-import { authApi, SignupRequest } from "@/api/auth";
+import { authApi } from "@/api/auth";
+import type { SignupRequest } from "@/api/auth";
 import { useAuthStore } from "@/store/useAuthStore";
 import { cn } from "@/utils/cn";
 
@@ -17,7 +18,7 @@ import StockStep from "./steps/StockStep";
 import InvestmentStyleStep from "./steps/InvestmentStyleStep";
 import CompletionStep from "./steps/CompletionStep";
 import PasswordStrength from "./components/PasswordStrength";
-import { StyleType } from "./components/StyleCard";
+import type { StyleType } from "./components/StyleCard";
 
 type SignupStep = "info" | "onboarding_school" | "onboarding_stock" | "onboarding_style" | "complete";
 

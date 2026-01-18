@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "@/components";
 import LogoIcon from "@/assets/svgs/LogoIcon";
 
 interface CompletionStepProps {

@@ -1,5 +1,6 @@
 import axios, { AxiosError } from "axios";
-import { useAuthStore, Tokens } from "@/store/useAuthStore";
+import { useAuthStore } from "@/store/useAuthStore";
+import type { Tokens } from "@/store/useAuthStore";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user");
 

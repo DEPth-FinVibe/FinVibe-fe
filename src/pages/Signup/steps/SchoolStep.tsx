@@ -1,6 +1,5 @@
 import React from "react";
-import { TextField, Button } from "@/components";
-import UserIcon from "@/assets/svgs/UserIcon";
+import { cn } from "@/utils/cn";
 
 interface SchoolStepProps {
   value: string;
