@@ -22,4 +22,9 @@ export { StockChartHeader, type StockChartHeaderProps } from "./StockChartHeader
 export { StockListItem, type StockListItemProps } from "./StockListItem";
 export { RelatedNews, type RelatedNewsProps } from "./RelatedNews";
 export { LectureProgress, type LectureProgressProps } from "./Progress";
+export { CourseItem } from "./Progress/CourseItem";
+export type { CourseItemProps, CourseLevel } from "./Progress/CourseItem";
 export { ProtectedRoute } from "./ProtectedRoute";
+export { AILearningInsight, type AILearningInsightProps } from "./AILearningInsight";
+export { LearningStats, type LearningStatsProps } from "./LearningStats";
+export { BadgeCard, type BadgeCardProps, type BadgeType } from "./BadgeCard";

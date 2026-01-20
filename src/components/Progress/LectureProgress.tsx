@@ -16,7 +16,7 @@ export const LectureProgress = ({
   return (
     <section
       className={cn(
-        "flex flex-col w-full min-w-[432px] items-start gap-5 p-4 relative bg-white rounded-lg",
+        "flex flex-col w-full items-start gap-5 p-4 relative bg-white rounded-lg",
         className
       )}
       role="region"
@@ -45,7 +45,7 @@ export const LectureProgress = ({
         aria-label="강의 진행률"
       >
         <div
-          className="absolute top-0 left-0 h-full bg-teal rounded-full transition-all duration-300"
+          className="absolute top-0 left-0 h-full bg-main-1 rounded-full transition-all duration-300"
           style={{ width: `${progressPercentage}%` }}
         />
       </div>

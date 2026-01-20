@@ -35,7 +35,7 @@ export const CourseItem = ({
 }: CourseItemProps) => {
   const isCompleted = progress >= 100;
 
-  // 레벨별 스타일 정의 (NewsCard 패턴 참고)
+  // 레벨별 스타일 정의 (Figma 디자인 기반)
   const levelStyles: Record<CourseLevel, { bg: string; border: string; text: string }> = {
     초급: {
       bg: "bg-etc-light-green",
@@ -43,12 +43,12 @@ export const CourseItem = ({
       text: "text-etc-green",
     },
     중급: {
-      bg: "bg-etc-light-blue",
-      border: "border-sub-blue",
-      text: "text-sub-blue",
+      bg: "bg-etc-light-yellow",
+      border: "border-amber-500",
+      text: "text-amber-500",
     },
     고급: {
-      bg: "bg-red-100",
+      bg: "bg-etc-light-red",
       border: "border-red-500",
       text: "text-red-500",
     },
