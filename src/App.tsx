@@ -1,25 +1,26 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "@/pages/Login/LoginPage";
-import SignupPage from "@/pages/Signup/SignupPage";
-import HomePage from "@/pages/Home/HomePage";
-import OAuthCallbackPage from "@/pages/OAuthCallback/OAuthCallbackPage";
-import { useAuthStore } from "@/store/useAuthStore";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "@/components/ProtectedRoute/ProtectedRoute";
+import { ROUTE_CONFIGS } from "@/config/routes.config";
 
-// 앱 라우팅 설정
 function App() {
-  const { tokens } = useAuthStore();
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route 
-          path="/" 
-          element={tokens ? <HomePage /> : <Navigate to="/login" replace />} 
-        />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/signup/oauth" element={<SignupPage />} />
-        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+        {ROUTE_CONFIGS.map(({ path, component: Component, isProtected }) => (
+          <Route
+            key={path}
+            path={path}
+            element={
+              isProtected ? (
+                <ProtectedRoute>
+                  <Component />
+                </ProtectedRoute>
+              ) : (
+                <Component />
+              )
+            }
+          />
+        ))}
       </Routes>
     </BrowserRouter>
   );

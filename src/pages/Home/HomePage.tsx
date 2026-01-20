@@ -36,7 +36,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white font-noto">
-      <Header activeMenu="홈" onProfileClick={handleLogout} />
+      <Header activeMenu="HOME" onProfileClick={handleLogout} />
       
       {/* 1. 종합 지수 섹션 (Figma 646:3379 기반 6개 지수) */}
       <section className="border-b border-gray-200">

@@ -22,3 +22,4 @@ export { StockChartHeader, type StockChartHeaderProps } from "./StockChartHeader
 export { StockListItem, type StockListItemProps } from "./StockListItem";
 export { RelatedNews, type RelatedNewsProps } from "./RelatedNews";
 export { LectureProgress, type LectureProgressProps } from "./Progress";
+export { ProtectedRoute } from "./ProtectedRoute";

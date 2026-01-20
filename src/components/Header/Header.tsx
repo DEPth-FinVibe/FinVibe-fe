@@ -5,26 +5,24 @@ import LogoIcon from "@/assets/svgs/LogoIcon";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import BellIcon from "@/assets/svgs/BellIcon";
 import UserIcon from "@/assets/svgs/UserIcon";
+import { useNavigation } from "@/hooks/useNavigation";
+import { MENU_ORDER, getMenuLabel, type MenuKey } from "@/config/routes";
+
 export interface HeaderProps {
-  activeMenu?: string;
-  menus?: string[];
-  onMenuClick?: (menu: string) => void;
+  activeMenu?: MenuKey | string; // MenuKey 또는 라벨 (레거시 호환)
+  menus?: MenuKey[];
+  onMenuClick?: (menu: MenuKey | string) => void;
   onSearch?: (value: string) => void;
   onNotificationClick?: () => void;
   onProfileClick?: () => void;
   className?: string;
 }
 
-const DEFAULT_MENUS = [
-  "홈",
-  "투자 시뮬레이터",
-  "AI 투자 학습",
-  "뉴스 & 토론",
-  "챌린지",
-];
+// 기본 메뉴 순서
+const DEFAULT_MENUS: MenuKey[] = MENU_ORDER;
 
 export const Header: React.FC<HeaderProps> = ({
-  activeMenu = "홈",
+  activeMenu,
   menus = DEFAULT_MENUS,
   onMenuClick,
   onSearch,
@@ -32,6 +30,39 @@ export const Header: React.FC<HeaderProps> = ({
   onProfileClick,
   className,
 }) => {
+  const { handleMenuClick, getActiveMenuKey, getActiveMenu, goToHome } = useNavigation();
+
+  // activeMenu가 없으면 현재 경로에서 자동 감지
+  const currentActiveMenuKey = activeMenu 
+    ? (typeof activeMenu === "string" && activeMenu in MENU_ORDER ? activeMenu : getActiveMenuKey())
+    : getActiveMenuKey();
+  
+  // 활성 메뉴 확인용 (라벨 비교)
+  const isMenuActive = (menuKey: MenuKey): boolean => {
+    if (typeof activeMenu === "string") {
+      // activeMenu가 라벨인 경우
+      return getMenuLabel(menuKey) === activeMenu || menuKey === activeMenu;
+    }
+    return menuKey === currentActiveMenuKey;
+  };
+
+  const onMenuButtonClick = (e: React.MouseEvent, menuKey: MenuKey) => {
+    e.stopPropagation(); // 이벤트 전파 방지
+    
+    // 개발 환경에서만 로깅
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Header] Menu clicked: ${menuKey} (${getMenuLabel(menuKey)})`);
+    }
+    
+    // 커스텀 핸들러가 있으면 우선 사용
+    if (onMenuClick) {
+      onMenuClick(menuKey);
+      return;
+    }
+    // 기본 네비게이션 처리
+    handleMenuClick(menuKey);
+  };
+
   return (
     <header
       className={cn(
@@ -40,24 +71,29 @@ export const Header: React.FC<HeaderProps> = ({
       )}
     >
       {/* 로고 섹션 */}
-      <div className="flex items-center justify-center gap-2.5 cursor-pointer shrink-0">
-        <LogoIcon />
-        <span className="text-Headline_S_Bold text-black">FinVibe</span>
+      <div className="flex items-center gap-2.5 shrink-0">
+        <div 
+          className="flex items-center justify-center gap-2.5 cursor-pointer"
+          onClick={goToHome}
+        >
+          <LogoIcon />
+          <span className="text-Headline_S_Bold text-black">FinVibe</span>
+        </div>
         {/* 네비게이션 메뉴 섹션 */}
         <nav className="flex items-center gap-10 mx-10 overflow-x-auto no-scrollbar">
-          {menus.map((menu) => (
+          {menus.map((menuKey) => (
             <button
-              key={menu}
+              key={menuKey}
               type="button"
-              onClick={() => onMenuClick?.(menu)}
+              onClick={(e) => onMenuButtonClick(e, menuKey)}
               className={cn(
                 "text-Subtitle_S_Medium whitespace-nowrap transition-colors py-2",
-                activeMenu === menu
+                isMenuActive(menuKey)
                   ? "text-black font-bold"
                   : "text-gray-2 hover:text-black"
               )}
             >
-              {menu}
+              {getMenuLabel(menuKey)}
             </button>
           ))}
         </nav>
