@@ -38,57 +38,65 @@ export const Discussion = ({
   return (
     <article
       className={cn(
-        "flex flex-col w-full items-start gap-5 px-10 py-7 relative border-b-2 border-gray-300 border-l-0 border-r-0 border-t-0 border-solid",
+        "flex flex-col w-full items-start gap-4 px-10 py-7 relative border-b border-gray-200 bg-white",
         className
       )}
       role="article"
       aria-label={`토론: ${author}`}
     >
-      {/* 프로필 아이콘, 작성자 정보, 내용 */}
-      <div className="flex flex-col gap-2 items-start relative self-stretch w-full">
-        <UserIcon className="w-6 h-[26px] text-black" ariaLabel="프로필" />
-        <h3 className="text-Subtitle_L_Medium text-black whitespace-pre-wrap">
-          {author}
-        </h3>
-        <p className="text-Body_L_Light text-black whitespace-pre-wrap">
-          {time}
-        </p>
-        <p className="text-Body_L_Light text-black whitespace-pre-wrap">
-          {content}
-        </p>
+      {/* 프로필 및 작성자 정보 */}
+      <div className="flex gap-4 items-start relative self-stretch w-full">
+        <div className="size-10 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
+          <UserIcon className="size-6 text-gray-400" ariaLabel="프로필" />
+        </div>
+        <div className="flex flex-col">
+          <h3 className="text-Subtitle_M_Medium text-black font-bold">
+            {author}
+          </h3>
+          <p className="text-Caption_L_Light text-gray-400">
+            {time}
+          </p>
+        </div>
       </div>
 
+      {/* 내용 */}
+      <p className="text-Body_M_Light text-black whitespace-pre-wrap self-stretch">
+        {content}
+      </p>
+
       {/* 하단 액션: 좋아요, 댓글, 신고하기 */}
-      <div className="flex gap-12 items-center relative self-stretch">
-        <button
-          type="button"
-          onClick={onLike}
-          className="flex gap-5 items-center cursor-pointer"
-          aria-label="좋아요"
-        >
-          <LikeIcon className="w-6 h-[26px]" />
-          <span className="text-Subtitle_S_Regular text-black">
-            {likeCount.toString().padStart(2, "0")}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={onComment}
-          className="flex gap-5 items-center cursor-pointer"
-          aria-label="댓글"
-        >
-          <CommentIcon className="w-6 h-[26px]" color="#000000" />
-          <span className="text-Subtitle_S_Regular text-black">
-            {commentCount.toString().padStart(2, "0")}
-          </span>
-        </button>
+      <div className="flex justify-between items-center relative self-stretch w-full mt-2">
+        <div className="flex gap-8 items-center">
+          <button
+            type="button"
+            onClick={onLike}
+            className="flex gap-2 items-center cursor-pointer hover:opacity-70 transition-opacity"
+            aria-label="좋아요"
+          >
+            <LikeIcon className="size-5" />
+            <span className="text-Body_M_Light text-black">
+              {likeCount.toString().padStart(2, "0")}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={onComment}
+            className="flex gap-2 items-center cursor-pointer hover:opacity-70 transition-opacity"
+            aria-label="댓글"
+          >
+            <CommentIcon className="size-5" color="#000000" />
+            <span className="text-Body_M_Light text-black">
+              {commentCount.toString().padStart(2, "0")}
+            </span>
+          </button>
+        </div>
         <button
           type="button"
           onClick={onReport}
-          className="cursor-pointer"
+          className="cursor-pointer hover:underline transition-all"
           aria-label="신고하기"
         >
-          <span className="text-Subtitle_S_Regular text-gray-300" >
+          <span className="text-Body_S_Light text-gray-400" >
             신고하기
           </span>
         </button>

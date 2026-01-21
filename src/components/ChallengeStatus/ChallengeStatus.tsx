@@ -27,6 +27,8 @@ export interface ChallengeStatusProps {
   isPinned?: boolean;
   /** 추가 스타일 */
   className?: string;
+  /** 실패 여부 */
+  isFailed?: boolean;
   /** 핀 클릭 핸들러 */
   onPinClick?: () => void;
   /** 목표 달성 버튼 클릭 핸들러 */
@@ -44,6 +46,7 @@ export const ChallengeStatus = ({
   rewardXp = 100,
   isPinned = false,
   className,
+  isFailed = false,
   onPinClick,
   onCompleteClick,
 }: ChallengeStatusProps) => {
@@ -163,16 +166,24 @@ export const ChallengeStatus = ({
           <AwardsIcon className="w-6 h-[26px] text-point-yellow" />
           <span className="text-Body_L_Regular text-black">보상: {rewardXp} XP</span>
         </div>
-        {isCompleted && (
+        {isCompleted ? (
           <button
             type="button"
             onClick={onCompleteClick}
-            className="bg-main-1 text-white text-Body_L_Regular px-4 py-2.5 rounded-lg flex items-center justify-center"
+            className="bg-main-1 text-white text-Body_L_Regular px-4 py-2.5 rounded-lg flex items-center justify-center shadow-sm"
             aria-label="목표 달성"
           >
             목표 달성!
           </button>
-        )}
+        ) : isFailed ? (
+          <button
+            type="button"
+            className="bg-etc-red text-white text-Body_L_Regular px-4 py-2.5 rounded-lg flex items-center justify-center shadow-sm"
+            aria-label="실패"
+          >
+            실패
+          </button>
+        ) : null}
       </div>
     </article>
   );

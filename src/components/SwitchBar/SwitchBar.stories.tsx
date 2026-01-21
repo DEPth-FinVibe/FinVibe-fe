@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import SwitchBar from "./SwitchBar";
-import type { TabType, SwitchBarProps } from "./SwitchBar";
+import SwitchBar, { NEWS_TABS, type NewsTabType } from "./SwitchBar";
 import { fn } from "@storybook/test";
 import { useState } from "react";
 
@@ -11,12 +10,6 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-  argTypes: {
-    activeTab: {
-      control: "radio",
-      options: ["news", "discussion"],
-    },
-  },
   args: {
     onChange: fn(),
   },
@@ -25,14 +18,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const SwitchBarWithState = (args: SwitchBarProps) => {
-  const [activeTab, setActiveTab] = useState<TabType>(args.activeTab || "news");
+const SwitchBarWithState = (args: any) => {
+  const [activeTab, setActiveTab] = useState<NewsTabType>(args.activeTab || "news");
   return (
     <SwitchBar
       {...args}
+      tabs={NEWS_TABS}
       activeTab={activeTab}
       onChange={(tab) => {
-        setActiveTab(tab);
+        setActiveTab(tab as NewsTabType);
         args.onChange?.(tab);
       }}
       className="w-[978px]"
