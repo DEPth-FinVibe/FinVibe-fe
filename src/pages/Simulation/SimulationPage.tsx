@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
 import { TextField } from "@/components/TextField";
 import { StockListItem } from "@/components/StockListItem";
 import Chip from "@/components/Chip/Chip";
@@ -198,14 +197,6 @@ const WatchlistCard = ({
   );
 };
 
-const MENU_ROUTES: Record<string, string> = {
-  "홈": "/",
-  "투자 시뮬레이터": "/simulation",
-  "AI 투자 학습": "/ai-learning",
-  "뉴스 & 토론": "/news",
-  "챌린지": "/challenge",
-};
-
 const SimulationPage = () => {
   const navigate = useNavigate();
   const [leftMarketFilter, setLeftMarketFilter] = useState<MarketFilter>("전체");
@@ -216,13 +207,6 @@ const SimulationPage = () => {
 
   const rightTabs: RightTab[] = ["관심 종목", "거래 종목", "예약/자동 주문", "포트폴리오"];
 
-  const handleMenuClick = (menu: string) => {
-    const route = MENU_ROUTES[menu];
-    if (route) {
-      navigate(route);
-    }
-  };
-
   const handleFavoriteToggle = (id: number) => {
     setStocks((prev) =>
       prev.map((stock) =>
@@ -232,9 +216,7 @@ const SimulationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white ">
-      <Header activeMenu="투자 시뮬레이터" onMenuClick={handleMenuClick} />
-
+    <div className="bg-white ">
       <main className="flex px-32 py-6 gap-20">
         {/* 왼쪽 패널 - 주식 검색 및 리스트 */}
         <section className="flex-1">

@@ -1,20 +1,11 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Header } from "@/components/Header";
 import { StockListItem } from "@/components/StockListItem";
-import StockChart, { generateMockCandleData, ChartPeriod } from "./components/StockChart";
+import StockChart, { generateMockCandleData, type ChartPeriod } from "./components/StockChart";
 import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
-
-const MENU_ROUTES: Record<string, string> = {
-  "홈": "/",
-  "투자 시뮬레이터": "/simulation",
-  "AI 투자 학습": "/ai-learning",
-  "뉴스 & 토론": "/news",
-  "챌린지": "/challenge",
-};
 
 // Mock 호가 데이터
 const MOCK_ASK_ORDERS = [
@@ -51,21 +42,12 @@ const StockDetailPage = () => {
 
   const chartData = useMemo(() => generateMockCandleData(chartPeriod), [chartPeriod]);
 
-  const handleMenuClick = (menu: string) => {
-    const route = MENU_ROUTES[menu];
-    if (route) {
-      navigate(route);
-    }
-  };
-
   const handleBack = () => {
     navigate("/simulation");
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <Header activeMenu="투자 시뮬레이터" onMenuClick={handleMenuClick} />
-
+    <div className="bg-white">
       <main className="flex px-32 py-6 gap-10">
         {/* 왼쪽 패널 - 차트 영역 */}
         <section className="flex-1 min-w-0 overflow-hidden">
