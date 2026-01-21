@@ -14,10 +14,18 @@ interface AuthState {
   clearAuth: () => void;
 }
 
+// TODO: 개발 완료 후 삭제 - 로그인 우회용 mock token
+const DEV_MOCK_TOKENS: Tokens = {
+  accessToken: "dev-mock-token",
+  accessExpiresAt: "2099-12-31T23:59:59Z",
+  refreshToken: "dev-mock-refresh",
+  refreshExpiresAt: "2099-12-31T23:59:59Z",
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      tokens: null,
+      tokens: DEV_MOCK_TOKENS, // TODO: 배포 시 null로 변경
       setTokens: (tokens) => set({ tokens }),
       clearAuth: () => set({ tokens: null }),
     }),
