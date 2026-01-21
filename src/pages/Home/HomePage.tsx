@@ -34,9 +34,23 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleMenuClick = (menu: string) => {
+    const routes: Record<string, string> = {
+      "홈": "/",
+      "투자 시뮬레이터": "/simulation",
+      "AI 투자 학습": "/ai-learning",
+      "뉴스 & 토론": "/news",
+      "챌린지": "/challenge",
+    };
+    const route = routes[menu];
+    if (route) {
+      navigate(route);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white font-noto">
-      <Header activeMenu="홈" onProfileClick={handleLogout} />
+      <Header activeMenu="홈" onMenuClick={handleMenuClick} onProfileClick={handleLogout} />
       
       {/* 1. 종합 지수 섹션 (Figma 646:3379 기반 6개 지수) */}
       <section className="border-b border-gray-200">
