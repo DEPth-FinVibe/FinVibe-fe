@@ -18,7 +18,7 @@ export const AILearningInsight: React.FC<AILearningInsightProps> = ({
   return (
     <div
       className={cn(
-        "bg-white rounded-lg p-5 flex flex-col gap-[30px]",
+        "bg-white rounded-lg p-5 flex flex-col gap-8",
         className
       )}
     >

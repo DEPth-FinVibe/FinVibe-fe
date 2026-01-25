@@ -65,14 +65,14 @@ const AILearningPage: React.FC = () => {
                 <Button
                   variant="primary"
                   onClick={() => setIsModalOpen(true)}
-                  className="!bg-main-1 !text-white !px-[10px] !py-[10px] rounded-lg text-Subtitle_S_Regular !w-[122px] !h-[34px] !min-h-0 border-main-1 !justify-center"
+                  className="!bg-main-1 !text-white !px-2.5 !py-2.5 rounded-lg text-Subtitle_S_Regular !w-[122px] !h-[34px] !min-h-0 border-main-1 !justify-center"
                 >
                   +AI 코스 생성
                 </Button>
               </div>
 
               {/* 코스 리스트 */}
-              <div className="flex flex-col gap-[10px]">
+              <div className="flex flex-col gap-2.5">
                 {courses.map((course) => (
                   <CourseItem
                     key={course.title}
@@ -90,14 +90,14 @@ const AILearningPage: React.FC = () => {
           </div>
 
           {/* 오른쪽 영역 */}
-          <div className="w-[440px] flex flex-col gap-[30px] shrink-0">
+          <div className="w-[440px] flex flex-col gap-7.5 shrink-0">
             {/* 학습 통계 */}
             <LearningStats />
 
             {/* 획득 배지 */}
             <div className="bg-white rounded-lg p-5 flex flex-col gap-5">
               <h2 className="text-Subtitle_L_Medium text-black">획득 배지</h2>
-              <div className="flex flex-wrap gap-[10px_14px] justify-center">
+              <div className="flex flex-wrap gap-x-2.5 gap-y-3.5 justify-center">
                 <BadgeCard type="first-lecture" />
                 <BadgeCard type="beginner-master" />
                 <BadgeCard type="practice-learning" />

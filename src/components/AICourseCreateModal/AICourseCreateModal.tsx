@@ -4,7 +4,7 @@ import { Button } from "@/components/Button";
 import BrainIcon from "@/assets/svgs/BrainIcon";
 import StarIcon from "@/assets/svgs/StarIcon";
 import CloseIcon from "@/assets/svgs/CloseIcon";
-import CheckIcon from "@/assets/svgs/CheckIcon";
+import WhiteCheckCircleIcon from "@/assets/svgs/WhiteCheckCircleIcon";
 
 export interface AICourseCreateModalProps {
   /** 모달 열림/닫힘 상태 */
@@ -114,18 +114,17 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
   if (showSuccessModal) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/43"
+        className="fixed inset-0 z-50 flex items-center justify-center"
+        style={{ backgroundColor: "rgba(0, 0, 0, 0.43)" }}
         onClick={handleSuccessModalClose}
       >
         <div
-          className="bg-white rounded-lg shadow-[0px_6px_15px_0px_rgba(0,0,0,0.25)] p-[60px] flex flex-col gap-[50px] items-center w-[556px] max-w-[90vw]"
+          className="bg-white rounded-lg shadow-[0px_6px_15px_0px_rgba(0,0,0,0.25)] p-16 flex flex-col gap-[50px] items-center w-[556px] max-w-[90vw]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* 초록색 원형 아이콘 */}
           <div className="w-[110px] h-[110px] rounded-full bg-main-1 flex items-center justify-center shrink-0">
-            <div className="w-[60px] h-[60px] rounded-full border-[2px] border-white border-solid flex items-center justify-center">
-              <CheckIcon className="w-8 h-8 text-white" ariaLabel="성공" />
-            </div>
+            <WhiteCheckCircleIcon className="w-[64px] h-[64px]" ariaLabel="성공" />
           </div>
 
           {/* 텍스트 내용 */}
@@ -146,10 +145,11 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/43"
-      onClick={onClose}
-    >
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center"
+        style={{ backgroundColor: "rgba(0, 0, 0, 0.43)" }}
+        onClick={onClose}
+      >
       <div
         className="bg-white rounded-lg shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)] py-[60px] px-[122px] w-[800px] max-w-[90vw] min-h-[462px] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -169,13 +169,13 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
             className="flex items-center justify-center w-[19px] h-[19px] text-gray-500 hover:text-gray-700 transition-colors"
             aria-label="닫기"
           >
-            <CloseIcon className="w-[14px] h-[14px]" />
+            <CloseIcon className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {/* 학습 코스 이름 입력 */}
-        <div className="flex flex-col gap-[12px] pt-[22px] mb-[2px]">
-          <label className="text-Body_M_Light text-black">
+        <div className="flex flex-col gap-3 pt-5 mb-[2px]">
+          <label className="text-Subtitle_S_Regular text-black">
             학습 코스 이름
           </label>
           <div className="bg-gray-100 border border-gray-300 rounded-lg pl-7 pr-[245px] py-4">
@@ -192,7 +192,7 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
         {/* 키워드 선택 */}
         <div className="flex flex-col gap-0 mb-[30px]">
           <div className="flex items-center justify-between py-[10px]">
-            <label className="text-Caption_L_Light text-black">
+            <label className="text-Body_S_Light text-black">
               키워드 선택 (관심 종목 기반 추천)
             </label>
             <span className="text-Caption_M_Light text-gray-300">
@@ -290,7 +290,7 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
                     <span className="text-Subtitle_S_Regular text-[#4C4C4C]">
                       ·
                     </span>
-                    <span className="text-Caption_L_Light text-[#4C4C4C]">
+                    <span className="text-Body_S_Regular text-[#4C4C4C]">
                       {content}
                     </span>
                   </div>
@@ -306,7 +306,7 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
             variant="secondary"
             size="medium"
             onClick={handleCancel}
-            className="!w-[265px] !h-auto !py-2 !min-h-0 !bg-white !border-gray-300 !text-black"
+            className="!flex-1 !h-auto !py-2 !min-h-0 !min-w-0 !px-4 !bg-white !border-gray-300 !text-black"
           >
             취소
           </Button>
@@ -315,7 +315,7 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
             size="medium"
             onClick={handleCreate}
             disabled={!courseName.trim() || selectedKeywords.size === 0}
-            className="!w-[265px] !h-auto !py-2 !min-h-0 !bg-main-1 !text-white !border-main-1"
+            className="!flex-1 !h-auto !py-2 !min-h-0 !min-w-0 !px-4 !bg-main-1 !text-white !border-main-1"
           >
             학습 코스 만들기
           </Button>

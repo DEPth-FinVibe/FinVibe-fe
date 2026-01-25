@@ -41,7 +41,7 @@ export const LearningStats: React.FC<LearningStatsProps> = ({
       </div>
 
       {/* 통계 항목들 */}
-      <div className="flex flex-col gap-[15px]">
+      <div className="flex flex-col gap-4">
         {/* 완료한 강의 */}
         <LectureProgress
           completedLectures={completedLectures}
