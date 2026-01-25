@@ -1,10 +1,10 @@
 import React from "react";
 import { cn } from "@/utils/cn";
-import StarIcon from "@/assets/svgs/StarIcon";
 import LikeIcon from "@/assets/svgs/LikeIcon";
 import CommentIcon from "@/assets/svgs/CommentIcon";
 import ShareIcon from "@/assets/svgs/ShareIcon";
 import Chip from "@/components/Chip";
+import AIAnalysisBox from "@/components/AIAnalysisBox";
 
 interface NewsCardProps {
   category: string;
@@ -43,7 +43,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
   return (
     <div
       className={cn(
-        "flex flex-col gap-5 p-[28px_40px] bg-white border border-gray-400 rounded-lg w-full max-w-[978px]",
+        "flex flex-col gap-5 p-[28px_40px] bg-white  rounded-lg w-full",
         className
       )}
     >
@@ -69,13 +69,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
       </div>
 
       {/* AI Analysis Box */}
-      <div className="flex gap-4 p-5 rounded-lg bg-gradient-to-r from-sub-blue to-sub-gray">
-        <StarIcon className="w-6 h-6 shrink-0" color="#FFFFFF" />
-        <div className="flex flex-col gap-2 text-white">
-          <span className="text-Subtitle_S_Regular">AI 분석</span>
-          <p className="text-Body_M_Light">{aiAnalysis}</p>
-        </div>
-      </div>
+      <AIAnalysisBox content={aiAnalysis} />
 
       {/* Footer Actions */}
       <div className="flex gap-12 items-center">

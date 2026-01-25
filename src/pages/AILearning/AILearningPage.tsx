@@ -1,25 +1,14 @@
 import React, { useState } from "react";
-import { Header, CourseItem, Button } from "@/components";
+import { CourseItem, Button } from "@/components";
 import { AILearningInsight } from "@/components/AILearningInsight";
 import { LearningStats } from "@/components/LearningStats";
 import { BadgeCard } from "@/components/BadgeCard";
 import { AICourseCreateModal } from "@/components/AICourseCreateModal";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useNavigate } from "react-router-dom";
 import type { CourseLevel } from "@/components/Progress/CourseItem";
 
 const AILearningPage: React.FC = () => {
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { clearAuth } = useAuthStore();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    if (window.confirm("로그아웃 하시겠습니까?")) {
-      clearAuth();
-      navigate("/login");
-    }
-  };
 
   const toggleCourse = (courseTitle: string) => {
     const newExpanded = new Set(expandedCourses);
@@ -59,9 +48,7 @@ const AILearningPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white font-noto">
-      <Header activeMenu="AI_LEARNING" onProfileClick={handleLogout} />
-      
+    <div className="bg-gray-100 min-h-screen">
       {/* 메인 컨텐츠 영역 */}
       <main className="bg-gray-100 min-h-[calc(100vh-80px)] py-7">
         <div className="max-w-full mx-auto flex gap-5 px-8 justify-center">
@@ -75,13 +62,13 @@ const AILearningPage: React.FC = () => {
               {/* 헤더 */}
               <div className="flex items-center justify-between">
                 <h2 className="text-Subtitle_L_Medium text-black">학습 코스</h2>
-              <Button
-                variant="primary"
-                onClick={() => setIsModalOpen(true)}
-                className="!bg-main-1 !text-white !px-[10px] !py-[10px] rounded-lg text-Subtitle_S_Regular !w-[122px] !h-[34px] !min-h-0 border-main-1 !justify-center"
-              >
-                +AI 코스 생성
-              </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => setIsModalOpen(true)}
+                  className="!bg-main-1 !text-white !px-[10px] !py-[10px] rounded-lg text-Subtitle_S_Regular !w-[122px] !h-[34px] !min-h-0 border-main-1 !justify-center"
+                >
+                  +AI 코스 생성
+                </Button>
               </div>
 
               {/* 코스 리스트 */}

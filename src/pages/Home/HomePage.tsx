@@ -1,13 +1,10 @@
 import React, { useState } from "react";
 import {
-  Header,
   StockChartHeader,
   TradingVolumeRank,
   RelatedNews,
   Chip
 } from "@/components";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import LineChartIcon from "@/assets/svgs/LineChartIcon";
 
@@ -24,19 +21,8 @@ const HomePage: React.FC = () => {
     description: "한화에어로스페이스 · LIG넥스원 · 현대로템"
   });
   
-  const { clearAuth } = useAuthStore();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    if (window.confirm("로그아웃 하시겠습니까?")) {
-      clearAuth();
-      navigate("/login");
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-white font-noto">
-      <Header activeMenu="HOME" onProfileClick={handleLogout} />
+    <div className="bg-white font-noto">
       
       {/* 1. 종합 지수 섹션 (Figma 646:3379 기반 6개 지수) */}
       <section className="border-b border-gray-200">

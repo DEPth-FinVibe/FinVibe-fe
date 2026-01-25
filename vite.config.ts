@@ -18,10 +18,21 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
     proxy: {
       "/api": {
         target: "https://finvibe.space",
         changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          charts: ["lightweight-charts"],
+          vendor: ["react", "react-dom", "react-router-dom"],
+        },
       },
     },
   },
