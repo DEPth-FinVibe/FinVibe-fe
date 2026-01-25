@@ -38,5 +38,6 @@ export const Interactive: Story = {
   render: (args) => <SwitchBarWithState {...args} />,
   args: {
     activeTab: "news",
+    tabs: NEWS_TABS,
   },
 };

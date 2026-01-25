@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { createChart, IChartApi, CandlestickSeries, CandlestickData, Time } from "lightweight-charts";
+import { createChart, CandlestickSeries } from "lightweight-charts";
+import type { IChartApi, CandlestickData, Time } from "lightweight-charts";
 
 interface StockChartProps {
   data: CandlestickData<Time>[];
