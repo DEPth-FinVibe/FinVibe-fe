@@ -7,6 +7,7 @@ import OAuthCallbackPage from "@/pages/OAuthCallback/OAuthCallbackPage";
 import NewsPage from "@/pages/News/NewsPage";
 import NewsDetailPage from "@/pages/News/NewsDetailPage";
 import ChallengePage from "@/pages/Challenge/ChallengePage";
+import AILearningPage from "@/pages/AILearning/AILearningPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import MainLayout from "@/components/Layout/MainLayout";
 
@@ -28,6 +29,7 @@ function App() {
           />
           <Route path="/simulation" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><SimulationPage /></Suspense>} />
           <Route path="/simulation/:stockCode" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><StockDetailPage /></Suspense>} />
+          <Route path="/ai-learning" element={<AILearningPage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/news/:newsId" element={<NewsDetailPage />} />
           <Route path="/challenge" element={<ChallengePage />} />

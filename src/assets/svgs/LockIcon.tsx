@@ -1,23 +1,52 @@
+import React from "react";
 import { cn } from "@/utils/cn";
 
 export type Props = {
   className?: string;
+  onClick?: () => void;
+  ariaLabel?: string;
+  color?: string;
 };
 
-const LockIcon: React.FC<Props> = ({ className }) => {
+const LockIcon: React.FC<Props> = ({
+  className,
+  onClick,
+  ariaLabel,
+  color = "currentColor",
+}) => {
   return (
-    <div className={cn("", className)}>
+    <div
+      className={cn(
+        "flex items-center justify-center",
+        onClick && "cursor-pointer",
+        className
+      )}
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="17"
-        height="11"
-        viewBox="0 0 17 11"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
         fill="none"
+        className="w-6 h-6"
+        role="img"
+        aria-label={ariaLabel}
       >
+        {/* 자물쇠 고리 */}
         <path
-          d="M14.1666 0.833252H2.49992C1.57944 0.833252 0.833252 1.57944 0.833252 2.49992V8.33325C0.833252 9.25373 1.57944 9.99992 2.49992 9.99992H14.1666C15.0871 9.99992 15.8333 9.25373 15.8333 8.33325V2.49992C15.8333 1.57944 15.0871 0.833252 14.1666 0.833252Z"
-          stroke="#696969"
-          strokeWidth="1.66667"
+          d="M7 11V8a5 5 0 0 1 10 0v3"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* 자물쇠 몸체 */}
+        <path
+          d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"
+          stroke={color}
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />

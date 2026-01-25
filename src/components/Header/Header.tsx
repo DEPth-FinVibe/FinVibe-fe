@@ -5,6 +5,7 @@ import LogoIcon from "@/assets/svgs/LogoIcon";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import BellIcon from "@/assets/svgs/BellIcon";
 import UserIcon from "@/assets/svgs/UserIcon";
+
 export interface HeaderProps {
   activeMenu?: string;
   menus?: string[];
