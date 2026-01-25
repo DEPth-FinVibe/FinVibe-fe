@@ -3,12 +3,14 @@ import { Header, CourseItem, Button } from "@/components";
 import { AILearningInsight } from "@/components/AILearningInsight";
 import { LearningStats } from "@/components/LearningStats";
 import { BadgeCard } from "@/components/BadgeCard";
+import { AICourseCreateModal } from "@/components/AICourseCreateModal";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useNavigate } from "react-router-dom";
 import type { CourseLevel } from "@/components/Progress/CourseItem";
 
 const AILearningPage: React.FC = () => {
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { clearAuth } = useAuthStore();
   const navigate = useNavigate();
 
@@ -73,12 +75,13 @@ const AILearningPage: React.FC = () => {
               {/* 헤더 */}
               <div className="flex items-center justify-between">
                 <h2 className="text-Subtitle_L_Medium text-black">학습 코스</h2>
-                <Button
-                  variant="primary"
-                  className="!bg-main-1 !text-white !px-[10px] !py-[10px] rounded-lg text-Subtitle_S_Regular !w-[122px] !h-[34px] !min-h-0 border-main-1 !justify-center"
-                >
-                  +AI 코스 생성
-                </Button>
+              <Button
+                variant="primary"
+                onClick={() => setIsModalOpen(true)}
+                className="!bg-main-1 !text-white !px-[10px] !py-[10px] rounded-lg text-Subtitle_S_Regular !w-[122px] !h-[34px] !min-h-0 border-main-1 !justify-center"
+              >
+                +AI 코스 생성
+              </Button>
               </div>
 
               {/* 코스 리스트 */}
@@ -119,6 +122,16 @@ const AILearningPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* AI 코스 생성 모달 */}
+      <AICourseCreateModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={(courseName, keywords) => {
+          console.log("코스 생성:", { courseName, keywords });
+          // TODO: 실제 API 호출로 코스 생성
+        }}
+      />
     </div>
   );
 };
