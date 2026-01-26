@@ -9,6 +9,7 @@ import NewsDetailPage from "@/pages/News/NewsDetailPage";
 import ChallengePage from "@/pages/Challenge/ChallengePage";
 import AILearningPage from "@/pages/AILearning/AILearningPage";
 import MyPage from "@/pages/MyPage/MyPage";
+import MyPageSettingsPage from "@/pages/MyPage/MyPageSettingsPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import MainLayout from "@/components/Layout/MainLayout";
 
@@ -35,6 +36,7 @@ function App() {
           <Route path="/news/:newsId" element={<NewsDetailPage />} />
           <Route path="/challenge" element={<ChallengePage />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage/settings" element={<MyPageSettingsPage />} />
         </Route>
         
         <Route path="/login" element={<LoginPage />} />

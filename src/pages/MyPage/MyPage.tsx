@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { TotalAssets, MyPortfolio } from "@/components";
 import { PortfolioPerformance } from "@/components/PortfolioPerformance";
 import SettingsIcon from "@/assets/svgs/SettingsIcon";
@@ -10,6 +11,8 @@ import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
 
 const MyPage: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
       <main className="px-8 2xl:px-[240px] py-[30px]">
@@ -19,7 +22,7 @@ const MyPage: React.FC = () => {
             <SettingsIcon
               className="w-10 h-10 text-main-1"
               ariaLabel="설정"
-              onClick={() => {}}
+              onClick={() => navigate("/mypage/settings")}
             />
           </div>
 
