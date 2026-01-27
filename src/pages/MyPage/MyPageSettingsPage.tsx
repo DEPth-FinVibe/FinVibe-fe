@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BackIcon from "@/assets/svgs/BackIcon";
 import { Button } from "@/components";
 import { cn } from "@/utils/cn";
+import WithdrawalModal from "./WithdrawalModal";
+import NicknameChangeModal from "./NicknameChangeModal";
+import LogoutModal from "./LogoutModal";
+import { useAuthStore } from "@/store/useAuthStore";
 
 type ToggleProps = {
   checked: boolean;
@@ -37,8 +40,22 @@ const Row: React.FC<{
   left: React.ReactNode;
   right?: React.ReactNode;
   divider?: boolean;
-}> = ({ left, right, divider = false }) => (
-  <div className={cn("flex items-center justify-between w-full py-[10px]", divider && "border-b border-gray-300")}>
+  onClick?: () => void;
+}> = ({ left, right, divider = false, onClick }) => (
+  <div
+    className={cn(
+      "flex items-center justify-between w-full py-[10px]",
+      divider && "border-b border-gray-300",
+      onClick && "cursor-pointer"
+    )}
+    onClick={onClick}
+    role={onClick ? "button" : undefined}
+    tabIndex={onClick ? 0 : undefined}
+    onKeyDown={(e) => {
+      if (!onClick) return;
+      if (e.key === "Enter" || e.key === " ") onClick();
+    }}
+  >
     <div className="w-[400px] p-[10px]">{left}</div>
     <div className="w-[400px] p-[10px] flex items-center justify-end">{right}</div>
   </div>
@@ -55,10 +72,14 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 
 const MyPageSettingsPage: React.FC = () => {
   const navigate = useNavigate();
+  const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const [allNoti, setAllNoti] = useState(true);
   const [commentNoti, setCommentNoti] = useState(true);
   const [tradeNoti, setTradeNoti] = useState(true);
+  const [isWithdrawalOpen, setIsWithdrawalOpen] = useState(false);
+  const [isNicknameChangeOpen, setIsNicknameChangeOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
@@ -71,7 +92,12 @@ const MyPageSettingsPage: React.FC = () => {
               onClick={() => navigate("/mypage")}
               className="flex items-center gap-5 text-Headline_L_Bold text-black"
             >
-              <BackIcon className="w-8 h-8" />
+              <span
+                className="w-8 h-8 flex items-center justify-center text-[32px] leading-none"
+                aria-hidden="true"
+              >
+                ←
+              </span>
               설정
             </button>
           </div>
@@ -110,6 +136,7 @@ const MyPageSettingsPage: React.FC = () => {
                   variant="secondary"
                   size="small"
                   className="!px-5 !py-[13px] !min-h-0 rounded-lg !bg-main-1 !border-main-1 !text-white"
+                  onClick={() => setIsNicknameChangeOpen(true)}
                 >
                   변경
                 </Button>
@@ -127,10 +154,12 @@ const MyPageSettingsPage: React.FC = () => {
             <Row
               left={<p className="text-Title_M_Medium text-black">이용약관</p>}
               right={<span className="text-[18px] text-[#4C4C4C]">&gt;</span>}
+              onClick={() => navigate("/mypage/terms")}
             />
             <Row
               left={<p className="text-Title_M_Medium text-black">개인정보처리방침</p>}
               right={<span className="text-[18px] text-[#4C4C4C]">&gt;</span>}
+              onClick={() => navigate("/mypage/privacy")}
             />
           </Section>
 
@@ -141,14 +170,37 @@ const MyPageSettingsPage: React.FC = () => {
                 divider
                 left={<p className="text-Title_L_Medium text-black">로그아웃</p>}
                 right={<span className="text-[18px] text-[#4C4C4C]">&gt;</span>}
+                onClick={() => setIsLogoutOpen(true)}
               />
               <Row
                 left={<p className="text-Title_M_Medium text-black">회원 탈퇴</p>}
+                onClick={() => setIsWithdrawalOpen(true)}
               />
             </div>
           </section>
         </div>
       </main>
+
+      <WithdrawalModal
+        isOpen={isWithdrawalOpen}
+        onClose={() => setIsWithdrawalOpen(false)}
+        onWithdraw={() => setIsWithdrawalOpen(false)}
+      />
+
+      <NicknameChangeModal
+        isOpen={isNicknameChangeOpen}
+        onClose={() => setIsNicknameChangeOpen(false)}
+      />
+
+      <LogoutModal
+        isOpen={isLogoutOpen}
+        onClose={() => setIsLogoutOpen(false)}
+        onConfirm={() => {
+          clearAuth();
+          setIsLogoutOpen(false);
+          navigate("/login");
+        }}
+      />
     </div>
   );
 };

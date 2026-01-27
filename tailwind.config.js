@@ -34,6 +34,7 @@ export default {
           "light-blue": "#DFE2FF",
           "light-yellow": "#FFF6E3",
           "light-red": "#FFC2C2",
+          "light-purple": "#EEE1FF",
           red: "#FF0000",
           blue: "#001AFF",
           green: "#00A63E",

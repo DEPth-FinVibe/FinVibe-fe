@@ -10,6 +10,9 @@ import ChallengePage from "@/pages/Challenge/ChallengePage";
 import AILearningPage from "@/pages/AILearning/AILearningPage";
 import MyPage from "@/pages/MyPage/MyPage";
 import MyPageSettingsPage from "@/pages/MyPage/MyPageSettingsPage";
+import TermsPage from "@/pages/MyPage/TermsPage";
+import PrivacyPolicyPage from "@/pages/MyPage/PrivacyPolicyPage";
+import MyAssetsPage from "@/pages/MyPage/MyAssetsPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import MainLayout from "@/components/Layout/MainLayout";
 
@@ -37,6 +40,9 @@ function App() {
           <Route path="/challenge" element={<ChallengePage />} />
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/mypage/settings" element={<MyPageSettingsPage />} />
+          <Route path="/mypage/terms" element={<TermsPage />} />
+          <Route path="/mypage/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/mypage/assets" element={<MyAssetsPage />} />
         </Route>
         
         <Route path="/login" element={<LoginPage />} />

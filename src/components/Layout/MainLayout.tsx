@@ -14,7 +14,7 @@ const MENU_ROUTES: Record<string, string> = {
 const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { clearAuth } = useAuthStore();
+  const { tokens } = useAuthStore();
 
   const handleMenuClick = (menu: string) => {
     const route = MENU_ROUTES[menu];
@@ -23,11 +23,9 @@ const MainLayout: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    if (window.confirm("로그아웃 하시겠습니까?")) {
-      clearAuth();
-      navigate("/login");
-    }
+  const handleProfileClick = () => {
+    // 로그인 상태면 마이페이지, 아니면 로그인으로 유도
+    navigate(tokens ? "/mypage" : "/login");
   };
 
   // 현재 경로에 맞는 활성화된 메뉴 찾기
@@ -41,7 +39,7 @@ const MainLayout: React.FC = () => {
       <Header 
         activeMenu={activeMenu} 
         onMenuClick={handleMenuClick} 
-        onProfileClick={handleLogout}
+        onProfileClick={handleProfileClick}
       />
       <Outlet />
     </div>

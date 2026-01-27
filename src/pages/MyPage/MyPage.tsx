@@ -28,18 +28,38 @@ const MyPage: React.FC = () => {
 
           {/* 상단 카드 4개 */}
           <div className="flex gap-[53px] items-center w-full">
-            <div className="w-[320px]">
+            <button
+              type="button"
+              className="w-[320px] text-left"
+              onClick={() => navigate("/mypage/assets")}
+              aria-label="총자산 상세 보기"
+            >
               <TotalAssets totalAmount={10450000} changeRate={4.5} />
-            </div>
-            <div className="w-[320px]">
+            </button>
+            <button
+              type="button"
+              className="w-[320px] text-left"
+              onClick={() => navigate("/mypage/assets")}
+              aria-label="총자산 상세 보기"
+            >
               <TotalAssets totalAmount={10450000} changeRate={4.5} />
-            </div>
-            <div className="w-[320px]">
+            </button>
+            <button
+              type="button"
+              className="w-[320px] text-left"
+              onClick={() => navigate("/mypage/assets")}
+              aria-label="총자산 상세 보기"
+            >
               <TotalAssets totalAmount={10450000} changeRate={4.5} />
-            </div>
-            <div className="w-[320px]">
+            </button>
+            <button
+              type="button"
+              className="w-[320px] text-left"
+              onClick={() => navigate("/mypage/assets")}
+              aria-label="총자산 상세 보기"
+            >
               <TotalAssets totalAmount={10450000} changeRate={4.5} />
-            </div>
+            </button>
           </div>
 
           {/* 포트폴리오 성과(라인 차트) */}
