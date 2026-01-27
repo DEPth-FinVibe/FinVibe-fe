@@ -36,9 +36,9 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
     >
       <div
         className={cn(
-          "bg-white rounded-lg shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)]",
-          "w-[910px] max-w-[90vw]",
-          "py-[60px] flex flex-col gap-[10px]",
+          "bg-white rounded-lg border border-black/5 shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)]",
+          "w-full max-w-4xl",
+          "py-16 flex flex-col gap-2.5",
           className
         )}
         onClick={(e) => e.stopPropagation()}
@@ -48,12 +48,12 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
         </h2>
 
         {/* 경고 박스 */}
-        <div className="pt-[22px] px-[122px] w-full">
-          <div className="bg-etc-light-red border border-red-600 rounded-lg p-[30px] w-full">
-            <div className="flex flex-col gap-[50px] w-full">
-              <div className="flex items-center gap-[30px] w-full">
+        <div className="pt-6 px-32 2xl:px-24 w-full">
+          <div className="bg-etc-light-red border border-red-600 rounded-lg p-8 2xl:p-6 w-full">
+            <div className="flex flex-col gap-12 w-full">
+              <div className="flex items-center gap-8 2xl:gap-6 w-full">
                 <ErrorIconMyPage className="w-6 h-6 shrink-0" />
-                <p className="text-[18px] leading-[18px] font-medium">
+                <p className="text-Subtitle_M_Medium break-keep 2xl:whitespace-nowrap flex-1 min-w-0">
                   <span className="text-[#4C4C4C]">탈퇴 시 보유하신</span>{" "}
                   <span className="text-red-600">
                     총 자산, 포트폴리오, 배지, XP가 모두 즉시 삭제
@@ -62,7 +62,7 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
                 </p>
               </div>
 
-              <div className="px-[50px] w-full">
+              <div className="px-12 w-full">
                 <p className="text-Subtitle_S_Regular text-red-600">
                   삭제된 데이터는 복수할 수 없습니다.
                 </p>
@@ -72,14 +72,14 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
         </div>
 
         {/* 안내 문구 */}
-        <div className="py-[30px] w-full">
+        <div className="py-8 w-full">
           <p className="text-Subtitle_S_Regular text-black text-center">
             위 내용을 모두 확인하였으며, 데이터 삭제에 동의합니다.
           </p>
         </div>
 
         {/* 버튼 */}
-        <div className="px-[122px] pt-[30px] pb-[10px] w-full flex gap-[30px]">
+        <div className="px-32 pt-8 pb-2.5 w-full flex gap-8">
           <Button
             variant="primary"
             size="large"

@@ -35,9 +35,9 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
     >
       <div
         className={cn(
-          "bg-white rounded-[8px] shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)]",
-          "w-[620px] max-w-[90vw]",
-          "py-[60px] flex flex-col gap-[10px]",
+          "bg-white rounded-lg border border-black/5 shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)]",
+          "w-full max-w-2xl",
+          "py-16 flex flex-col gap-2.5",
           className
         )}
       >
@@ -45,12 +45,12 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
           로그아웃 하시겠습니까?
         </p>
 
-        <div className="w-full flex items-center justify-center gap-[30px] pt-[30px] pb-[10px] px-[75px]">
+        <div className="w-full flex items-center justify-center gap-8 pt-8 pb-2.5 px-20">
           <Button
             variant="secondary"
             size="large"
             onClick={onClose}
-            className="!w-[220px] !bg-white !border-gray-300 !text-black !py-2 !min-h-0 rounded-[4px]"
+            className="!w-56 !bg-white !border-gray-300 !text-black !py-2 !min-h-0 rounded"
           >
             취소
           </Button>
@@ -59,7 +59,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
             variant="primary"
             size="large"
             onClick={onConfirm}
-            className="!w-[220px] !bg-main-1 !border-main-1 !text-white !py-2 !min-h-0 rounded-[4px]"
+            className="!w-56 !bg-main-1 !border-main-1 !text-white !py-2 !min-h-0 rounded"
           >
             확인
           </Button>

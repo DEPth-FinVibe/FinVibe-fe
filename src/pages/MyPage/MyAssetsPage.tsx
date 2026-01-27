@@ -59,17 +59,17 @@ const MyAssetsPage: React.FC = () => {
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
-      <main className="px-8 2xl:px-[240px] py-5">
-        <div className="w-full max-w-[1440px] mx-auto flex flex-col gap-[30px] py-[20px]">
+      <main className="px-8 2xl:px-60 py-5">
+        <div className="w-full max-w-[1440px] mx-auto flex flex-col gap-8 py-5">
           {/* 타이틀 */}
-          <div className="w-full px-[50px] py-[10px] flex items-center">
+          <div className="w-full px-12 py-2.5 flex items-center">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="flex items-center gap-5 text-[32px] font-bold leading-[1.25] text-black"
+              className="flex items-center gap-5 text-Headline_L_Bold text-black"
             >
               <span
-                className="w-8 h-8 flex items-center justify-center text-[32px] leading-none"
+                className="w-8 h-8 flex items-center justify-center text-Headline_L_Bold leading-none"
                 aria-hidden="true"
               >
                 ←
@@ -81,10 +81,10 @@ const MyAssetsPage: React.FC = () => {
           {/* 상단 2개 카드 */}
           <div className="w-full flex gap-[22px] items-center">
             {/* 총 자산 카드 */}
-            <section className="bg-white border border-gray-300 rounded-[8px] w-[710px] h-[465px] px-[40px] py-[30px] flex flex-col gap-[30px]">
+            <section className="bg-white border border-gray-300 rounded-lg w-[710px] h-[465px] px-10 py-8 flex flex-col gap-8">
               <div className="flex flex-col gap-10 w-full">
                 <div className="flex items-center gap-5 w-full">
-                  <div className="bg-etc-light-green rounded-[10px] h-[44px] p-2 flex items-center">
+                  <div className="bg-etc-light-green rounded-xl h-11 p-2 flex items-center">
                     <ChangeRateIcon
                       className="w-6 h-[26px]"
                       color="#00A63E"
@@ -92,7 +92,7 @@ const MyAssetsPage: React.FC = () => {
                       ariaLabel="총 자산"
                     />
                   </div>
-                  <p className="text-Subtitle_L_Regular text-[#747474] w-[260px]">총 자산</p>
+                  <p className="text-Subtitle_L_Regular text-[#747474] w-64">총 자산</p>
                 </div>
 
                 <div className="flex flex-col gap-1 w-full">
@@ -106,13 +106,13 @@ const MyAssetsPage: React.FC = () => {
               <div className="w-full flex flex-col gap-[10px] items-end">
                 <div className="w-full flex items-center justify-between">
                   <p className="text-Subtitle_M_Regular text-[#4C4C4C]">현금</p>
-                  <p className="text-Title_L_Medium text-black w-[128px] text-right">
+                  <p className="text-Title_L_Medium text-black w-32 text-right">
                     {formatWon(cash)}
                   </p>
                 </div>
                 <div className="w-full flex items-center justify-between">
                   <p className="text-Subtitle_M_Regular text-[#4C4C4C]">주식</p>
-                  <p className="text-Title_L_Medium text-black w-[128px] text-right">
+                  <p className="text-Title_L_Medium text-black w-32 text-right">
                     {formatWon(stock)}
                   </p>
                 </div>
@@ -120,15 +120,15 @@ const MyAssetsPage: React.FC = () => {
             </section>
 
             {/* 자산 배분 카드 */}
-            <section className="bg-white border border-gray-300 rounded-[8px] w-[708px] h-[465px] px-[40px] py-[30px] flex flex-col gap-10 items-center">
+            <section className="bg-white border border-gray-300 rounded-lg w-[708px] h-[465px] px-10 py-8 flex flex-col gap-10 items-center">
               <div className="w-full flex items-center gap-5">
-                <div className="bg-etc-light-blue rounded-[10px] h-[44px] p-2 flex items-center">
+                <div className="bg-etc-light-blue rounded-xl h-11 p-2 flex items-center">
                   <BagIcon className="w-6 h-[26px] text-etc-blue" ariaLabel="자산 배분" />
                 </div>
-                <p className="text-Subtitle_L_Regular text-[#747474] w-[260px]">자산 배분</p>
+                <p className="text-Subtitle_L_Regular text-[#747474] w-64">자산 배분</p>
               </div>
 
-              <div className="w-[252px] flex flex-col items-center gap-[30px]">
+              <div className="w-64 flex flex-col items-center gap-8">
                 {/* 도넛 차트 (Figma 스타일 근접) */}
                 <svg width="232" height="232" viewBox="0 0 232 232" aria-label="자산 배분 도넛 차트">
                   {/* 현금/주식 각각을 원호로 그림 + 둘 다 존재할 때만 여백(DONUT_GAP) 1개 유지 */}
@@ -163,13 +163,13 @@ const MyAssetsPage: React.FC = () => {
                 </svg>
 
                 <div className="w-full flex items-center gap-5 justify-center">
-                  <div className="flex items-center gap-[10px]">
+                  <div className="flex items-center gap-2.5">
                     <div className="size-5 bg-main-1" />
                     <p className="text-Subtitle_M_Regular text-black">
                       주식 ({Math.round(stockRatio * 100)}%)
                     </p>
                   </div>
-                  <div className="flex items-center gap-[10px]">
+                  <div className="flex items-center gap-2.5">
                     <div className="size-5 bg-[#EAEBED]" />
                     <p className="text-Subtitle_M_Regular text-black">
                       현금 ({Math.round(cashRatio * 100)}%)
@@ -181,16 +181,16 @@ const MyAssetsPage: React.FC = () => {
           </div>
 
           {/* 거래 내역 */}
-          <section className="bg-white border border-gray-300 rounded-[8px] w-full h-[491px] p-10 flex flex-col gap-10">
-            <div className="w-full h-[44px] flex items-center justify-between">
+          <section className="bg-white border border-gray-300 rounded-lg w-full h-[491px] p-10 flex flex-col gap-10">
+            <div className="w-full h-11 flex items-center justify-between">
               <div className="flex items-center gap-5">
-                <div className="bg-etc-light-purple rounded-[10px] h-[44px] p-2 flex items-center">
+                <div className="bg-etc-light-purple rounded-xl h-11 p-2 flex items-center">
                   <CalendarIcon className="text-[#7C3AED] bg-etc-light-purple" ariaLabel="거래 내역" />
                 </div>
                 <p className="text-Subtitle_L_Regular text-[#747474]">거래 내역</p>
               </div>
 
-              <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setFilter("전체")}
@@ -255,7 +255,7 @@ const MyAssetsPage: React.FC = () => {
 
                   <p
                     className={cn(
-                      "text-Subtitle_L_Regular w-[120px] text-right",
+                      "text-Subtitle_L_Regular w-32 text-right",
                       tx.amountTone === "mint"
                         ? "text-main-1"
                         : "text-sub-blue"

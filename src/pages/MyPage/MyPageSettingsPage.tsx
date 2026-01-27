@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components";
 import { cn } from "@/utils/cn";
-import WithdrawalModal from "./WithdrawalModal";
-import NicknameChangeModal from "./NicknameChangeModal";
-import LogoutModal from "./LogoutModal";
+import WithdrawalModal from "./modals/WithdrawalModal";
+import NicknameChangeModal from "./modals/NicknameChangeModal";
+import LogoutModal from "./modals/LogoutModal";
 import { useAuthStore } from "@/store/useAuthStore";
 
 type ToggleProps = {
@@ -19,7 +19,7 @@ const Toggle: React.FC<ToggleProps> = ({ checked, onChange, className }) => {
       type="button"
       onClick={() => onChange(!checked)}
       className={cn(
-        "w-[100px] h-[50px] rounded-full relative transition-colors",
+        "w-24 h-12 p-1 rounded-full relative transition-colors",
         checked ? "bg-main-1" : "bg-gray-300",
         className
       )}
@@ -28,8 +28,8 @@ const Toggle: React.FC<ToggleProps> = ({ checked, onChange, className }) => {
       <span
         className={cn(
           // thumb은 항상 "왼쪽 기준"으로 두고 translate로만 이동시켜야 상태가 명확함
-          "absolute left-0 top-[5px] w-10 h-10 rounded-full bg-white transition-transform",
-          checked ? "translate-x-[55px]" : "translate-x-[5px]"
+          "absolute left-1 top-1 size-10 rounded-full bg-white transition-transform",
+          checked ? "translate-x-12" : "translate-x-0"
         )}
       />
     </button>
@@ -44,7 +44,7 @@ const Row: React.FC<{
 }> = ({ left, right, divider = false, onClick }) => (
   <div
     className={cn(
-      "flex items-center justify-between w-full py-[10px]",
+      "flex items-center justify-between w-full py-2.5",
       divider && "border-b border-gray-300",
       onClick && "cursor-pointer"
     )}
@@ -56,14 +56,14 @@ const Row: React.FC<{
       if (e.key === "Enter" || e.key === " ") onClick();
     }}
   >
-    <div className="w-[400px] p-[10px]">{left}</div>
-    <div className="w-[400px] p-[10px] flex items-center justify-end">{right}</div>
+    <div className="flex-1 p-2.5">{left}</div>
+    <div className="flex-1 p-2.5 flex items-center justify-end">{right}</div>
   </div>
 );
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <section className="bg-white border border-gray-300 rounded-[4px] w-full px-10 py-[30px] flex flex-col gap-[30px]">
-    <div className="w-full p-[10px]">
+  <section className="bg-white border border-gray-300 rounded w-full px-10 py-8 flex flex-col gap-8">
+    <div className="w-full p-2.5">
       <h2 className="text-Title_L_Medium text-black">{title}</h2>
     </div>
     <div className="flex flex-col gap-5">{children}</div>
@@ -83,10 +83,10 @@ const MyPageSettingsPage: React.FC = () => {
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
-      <main className="px-8 2xl:px-[240px] py-5">
-        <div className="w-full max-w-[1440px] mx-auto flex flex-col gap-[30px]">
+      <main className="px-8 2xl:px-60 pt-5 pb-28">
+        <div className="w-full max-w-[1440px] mx-auto flex flex-col gap-8">
           {/* 상단 타이틀 */}
-          <div className="w-full px-[50px] py-[10px] flex items-center">
+          <div className="w-full px-12 py-2.5 flex items-center">
             <button
               type="button"
               onClick={() => navigate("/mypage")}
@@ -135,7 +135,7 @@ const MyPageSettingsPage: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="small"
-                  className="!px-5 !py-[13px] !min-h-0 rounded-lg !bg-main-1 !border-main-1 !text-white"
+                  className="text-Subtitle_S_Regular flex items-center justify-center gap-2.5 !px-5 !py-3 !min-h-0 rounded-lg !bg-main-1 !border-main-1 !text-white"
                   onClick={() => setIsNicknameChangeOpen(true)}
                 >
                   변경
@@ -164,7 +164,7 @@ const MyPageSettingsPage: React.FC = () => {
           </Section>
 
           {/* 로그아웃/회원탈퇴 */}
-          <section className="bg-white border border-gray-300 rounded-[4px] w-full px-10 py-[30px] flex flex-col">
+          <section className="bg-white border border-gray-300 rounded w-full px-10 py-8 flex flex-col">
             <div className="flex flex-col gap-5 w-full">
               <Row
                 divider
@@ -187,10 +187,12 @@ const MyPageSettingsPage: React.FC = () => {
         onWithdraw={() => setIsWithdrawalOpen(false)}
       />
 
-      <NicknameChangeModal
-        isOpen={isNicknameChangeOpen}
-        onClose={() => setIsNicknameChangeOpen(false)}
-      />
+      {isNicknameChangeOpen && (
+        <NicknameChangeModal
+          isOpen={isNicknameChangeOpen}
+          onClose={() => setIsNicknameChangeOpen(false)}
+        />
+      )}
 
       <LogoutModal
         isOpen={isLogoutOpen}

@@ -30,13 +30,11 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen, onClose]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setNickname(currentNickname);
-  }, [isOpen, currentNickname]);
-
   const helperText = useMemo(() => "최대 10자, 특수문자 불가", []);
-  const isValid = useMemo(() => NICKNAME_REGEX.test(nickname.trim()), [nickname]);
+  const isValid = useMemo(
+    () => NICKNAME_REGEX.test(nickname.trim()),
+    [nickname]
+  );
 
   if (!isOpen) return null;
 
@@ -50,20 +48,20 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
     >
       <div
         className={cn(
-          "bg-white rounded-[8px] shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)]",
-          "w-[428px]",
-          "py-[10px] flex flex-col gap-[10px]",
+          "bg-white rounded-lg border border-black/5 shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)]",
+          "w-full max-w-md",
+          "py-2.5 flex flex-col gap-2.5",
           className
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="border-b border-gray-300 flex items-center justify-between px-[30px] py-[20px]">
+        <div className="border-b border-gray-300 flex items-center justify-between px-8 py-5">
           <p className="text-Subtitle_L_Medium text-black">닉네임 변경</p>
           <button
             type="button"
             onClick={onClose}
-            className="w-[19px] h-[19px] flex items-center justify-center"
+            className="size-5 flex items-center justify-center"
             aria-label="닫기"
           >
             <CloseIcon />
@@ -71,17 +69,17 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
         </div>
 
         {/* 입력 영역 */}
-        <div className="flex flex-col gap-1 pt-[10px] w-full">
-          <div className="px-[40px] py-[10px]">
+        <div className="flex flex-col gap-1 pt-2.5 w-full">
+          <div className="px-10 py-2.5">
             <p className="text-Subtitle_S_Regular text-black">현재 닉네임</p>
           </div>
 
-          <div className="flex gap-2 px-[40px] w-full items-start">
-            <div className="bg-gray-100 p-[10px] rounded-[8px] w-[251px]">
+          <div className="flex gap-2 px-10 w-full items-start">
+            <div className="bg-gray-100 p-2.5 rounded-lg w-64">
               <input
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className="w-full bg-transparent outline-none text-[14px] leading-[20px] font-light text-black"
+                className="w-full bg-transparent outline-none text-Body_M_Light text-black"
                 aria-label="닉네임"
               />
             </div>
@@ -90,7 +88,7 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
               variant="secondary"
               size="small"
               className={cn(
-                "!px-5 !py-[13px] !min-h-0 rounded-[8px] !bg-white !border-gray-100 !text-gray-300",
+                "!px-5 !py-3 !min-h-0 rounded-lg !bg-white !border-gray-1 !text-[#4C4C4C]",
                 "whitespace-nowrap"
               )}
               onClick={() => {
@@ -104,17 +102,19 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
         </div>
 
         {/* 안내 문구 */}
-        <div className="px-[50px] pb-[20px] w-full">
-          <p className="text-[12px] leading-[17px] font-light text-black">{helperText}</p>
+        <div className="px-12 pb-5 w-full">
+          <p className="text-Caption_L_Light text-black">
+            {helperText}
+          </p>
         </div>
 
         {/* 하단 버튼 */}
-        <div className="border-t border-gray-300 pt-[20px] pb-[10px] px-[50px] w-full">
+        <div className="border-t border-gray-300 pt-5 pb-2.5 px-12 w-full">
           <Button
             variant="primary"
             size="large"
             disabled={!isValid}
-            className="!w-full !bg-main-1 !border-main-1 !text-white !py-2 !min-h-0 rounded-[4px]"
+            className="!w-full !bg-main-1 !border-main-1 !text-white !py-2 !min-h-0 rounded"
             onClick={() => {
               // TODO: 닉네임 변경 저장 API 연동
               console.log("닉네임 저장:", nickname);

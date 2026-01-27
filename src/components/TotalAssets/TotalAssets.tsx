@@ -36,7 +36,7 @@ export const TotalAssets: React.FC<TotalAssetsProps> = ({
   return (
     <div
       className={cn(
-        "bg-white border border-gray-300 rounded-lg px-[30px] py-5 flex flex-col gap-5 w-full",
+        "bg-white border border-gray-300 rounded-lg px-8 py-5 flex flex-col gap-5 w-full",
         className
       )}
     >

@@ -47,22 +47,22 @@ export const MyPortfolio: React.FC<MyPortfolioProps> = ({
   // 변화율에 따른 색상 결정
   const changeRateColor = changeRate >= 0 ? "text-etc-red" : "text-etc-blue";
 
-  // 차트 높이 (Figma)
-  const chartHeight = 77;
+  // 차트 높이 (Figma 근사: 표준 Tailwind 높이와 정렬)
+  const chartHeight = 80;
   const maxValue = Math.max(...data, 0);
 
   return (
     <div
       className={cn(
-        "bg-white border border-gray-300 rounded-lg px-10 py-[30px] flex flex-col gap-10 w-full",
+        "bg-white border border-gray-300 rounded-lg px-10 py-8 flex flex-col gap-10 w-full",
         className
       )}
     >
       {/* 헤더 */}
-      <div className="flex items-center gap-[25px]">
+      <div className="flex items-center gap-6">
         {/* 아이콘 */}
         {icon && (
-          <div className="w-6 h-[26px] flex items-center justify-center">
+          <div className="size-6 flex items-center justify-center">
             {React.createElement(icon, { className: `w-full h-full ${iconClassName}` })}
           </div>
         )}
@@ -77,13 +77,13 @@ export const MyPortfolio: React.FC<MyPortfolioProps> = ({
       </div>
 
       {/* 차트 */}
-      <div className="flex gap-[5.15px] h-[77px] items-end w-full">
+      <div className="flex gap-1.5 h-20 items-end w-full">
         {data.map((value, index) => {
           const height = maxValue > 0 ? (value / maxValue) * chartHeight : 0;
           return (
             <div
               key={index}
-              className="flex-1 bg-gradient-to-b from-main-1 via-[#99e9da] via-[60.577%] to-white rounded-[7.718px] min-h-0"
+              className="flex-1 bg-gradient-to-b from-main-1 via-[#99e9da] via-[60.577%] to-white rounded-lg min-h-0"
               style={{ height: `${height}px` }}
             />
           );

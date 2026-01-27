@@ -98,7 +98,7 @@ export const PortfolioPerformance: React.FC<PortfolioPerformanceProps> = ({
   return (
     <section
       className={cn(
-        "bg-white border border-gray-300 rounded-lg px-10 py-[30px] flex flex-col gap-10 w-full",
+        "bg-white border border-gray-300 rounded-lg px-10 py-8 flex flex-col gap-10 w-full",
         className
       )}
       aria-label={title}
@@ -106,7 +106,7 @@ export const PortfolioPerformance: React.FC<PortfolioPerformanceProps> = ({
       <h2 className="text-Title_L_Medium text-black">{title}</h2>
 
       {/* 차트 영역 (축/틱/라벨을 모두 SVG에서 처리해서 Figma와 동일하게 픽셀 정렬) */}
-      <div className="w-full h-[385.914px]">
+      <div className="w-full h-96">
         <svg
           // 좌/하 여백을 포함해서 축 바깥(tick/라벨)까지 한 좌표계로 그리기
           viewBox={`${-leftGutter} ${-topGutter} ${plotW + leftGutter + rightGutter} ${plotH + bottomGutter + topGutter}`}
