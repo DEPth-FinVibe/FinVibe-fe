@@ -54,7 +54,7 @@ const FolderChip: React.FC<{ folder: FolderMeta }> = ({ folder }) => {
       )}
     >
       {folder.tone === "blue" ? (
-        <ShieldIcon className="w-6 h-[26px] shrink-0" color="currentColor" ariaLabel={folder.label} />
+        <ShieldIcon className={cn("w-6 h-[26px] shrink-0", styles.icon)} ariaLabel={folder.label} />
       ) : folder.tone === "gray" ? (
         <CloseIcon className={cn("size-6 shrink-0", styles.icon)} ariaLabel={folder.label} />
       ) : (
@@ -68,9 +68,6 @@ const FolderChip: React.FC<{ folder: FolderMeta }> = ({ folder }) => {
 const MyPortfolioManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"folder" | "all">("folder");
-
-  // TODO: API 연동 시 교체 (피그마 더미 데이터)
-  const learningProgress = 65;
 
   const barData = useMemo(
     () => [

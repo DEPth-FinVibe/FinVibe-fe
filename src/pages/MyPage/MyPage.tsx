@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TotalAssets, MyPortfolio } from "@/components";
 import { PortfolioPerformance } from "@/components/PortfolioPerformance";
@@ -9,6 +9,7 @@ import BookIcon from "@/assets/svgs/BookIcon";
 import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
+import { walletApi } from "@/api/wallet";
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,29 @@ const MyPage: React.FC = () => {
   const communityRank = 247;
   const communityTopPercent = 15;
   const communityXp = 11_230;
+
+  // TODO: 주식 평가금/변화율 API 연동 시 교체
+  const stock = 8_000_000;
+  const changeRate = 4.5;
+  const [cash, setCash] = useState<number | null>(null);
+  const totalAssets = cash === null ? null : cash + stock;
+  const totalChangeRate = totalAssets === null ? null : changeRate;
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await walletApi.getBalance();
+        if (!alive) return;
+        setCash(Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0);
+      } catch {
+        // 실패 시 로딩 표시 유지
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
@@ -42,7 +66,7 @@ const MyPage: React.FC = () => {
               onClick={() => navigate("/mypage/assets")}
               aria-label="총자산 상세 보기"
             >
-              <TotalAssets totalAmount={10450000} changeRate={4.5} />
+              <TotalAssets totalAmount={totalAssets} changeRate={totalChangeRate} />
             </button>
 
             {/* 학습 진행률 (Figma: 2123:33997) */}

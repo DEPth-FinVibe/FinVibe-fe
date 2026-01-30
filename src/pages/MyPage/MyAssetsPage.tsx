@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Chip } from "@/components";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import BagIcon from "@/assets/svgs/BagIcon";
 import CalendarIcon from "@/assets/svgs/CalendarIcon";
 import { cn } from "@/utils/cn";
+import { walletApi } from "@/api/wallet";
 
 const formatWon = (value: number) => `₩${value.toLocaleString()}`;
 
@@ -21,10 +22,27 @@ const MyAssetsPage: React.FC = () => {
   const navigate = useNavigate();
 
   // TODO: API 연동 시 교체
-  const total = 10_450_000;
   const changeRate = 4.5;
-  const cash = 2_450_000;
   const stock = 8_000_000;
+  const [cash, setCash] = useState<number | null>(null);
+  const cashValue = cash ?? 0;
+  const total = cashValue + stock;
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await walletApi.getBalance();
+        if (!alive) return;
+        setCash(Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0);
+      } catch {
+        // 실패 시 로딩 표시 유지
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const [filter, setFilter] = useState<"전체" | "매수/매도" | "리워드">("전체");
 
@@ -44,7 +62,7 @@ const MyAssetsPage: React.FC = () => {
     return txList.filter((t) => t.type === "매수");
   }, [filter, txList]);
 
-  const stockRatio = stock / Math.max(1, cash + stock); // 0~1
+  const stockRatio = stock / Math.max(1, cashValue + stock); // 0~1
   const cashRatio = 1 - stockRatio;
   const DONUT_R = 72;
   const DONUT_C = 2 * Math.PI * DONUT_R;
@@ -107,7 +125,7 @@ const MyAssetsPage: React.FC = () => {
                 <div className="w-full flex items-center justify-between">
                   <p className="text-Subtitle_M_Regular text-[#4C4C4C]">현금</p>
                   <p className="text-Title_L_Medium text-black w-32 text-right">
-                    {formatWon(cash)}
+                    {cash === null ? "-" : formatWon(cash)}
                   </p>
                 </div>
                 <div className="w-full flex items-center justify-between">
