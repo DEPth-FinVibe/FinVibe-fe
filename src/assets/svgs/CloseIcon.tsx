@@ -4,12 +4,14 @@ export type Props = {
   className?: string;
   color?: string;
   onClick?: () => void;
+  ariaLabel?: string;
 };
 
 const CloseIcon: React.FC<Props> = ({
   className,
   color = "#1D1E20",
   onClick,
+  ariaLabel,
 }) => {
   return (
     <div className={cn("cursor-pointer ", className)} onClick={onClick}>
@@ -19,6 +21,9 @@ const CloseIcon: React.FC<Props> = ({
         height="12"
         viewBox="0 0 12 12"
         fill="none"
+        role="img"
+        aria-label={ariaLabel}
+        aria-hidden={ariaLabel ? undefined : true}
       >
         <line
           x1="0.75"
