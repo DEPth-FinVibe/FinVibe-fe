@@ -1,7 +1,7 @@
 import React from "react";
 import { cn } from "@/utils/cn";
 import SuccessIcon from "@/assets/svgs/SuccessIcon";
-import ErrorIcon from "@/assets/svgs/ErrorIcon";
+import ErrorIconTextField from "@/assets/svgs/ErrorIconTextField";
 
 type TextFieldSize = "small" | "medium" | "large";
 
@@ -174,7 +174,7 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
           <div
             className={cn(s.helper, "flex items-center gap-1.5 text-etc-red")}
           >
-            <ErrorIcon className="size-4" />
+            <ErrorIconTextField className="size-4" />
             <p id={errorId}>{errorMessage}</p>
           </div>
         ) : successMessage ? (
