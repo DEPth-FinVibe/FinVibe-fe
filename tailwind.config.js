@@ -7,6 +7,11 @@ export default {
   ],
   theme: {
     extend: {
+      spacing: {
+        // 디자인에서 자주 쓰는 고정값을 프로젝트 표준 스케일로 등록
+        7.5: "30px",
+        38: "152px",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

@@ -12,6 +12,14 @@ import CartIcon from "@/assets/svgs/CartIcon";
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
+  // TODO: API 연동 시 교체
+  const learningProgress = 65; // %
+  const achievedChallenges = 12;
+  const totalChallenges = 20;
+  const nextBadgeCount = 2;
+  const communityRank = 247;
+  const communityTopPercent = 15;
+  const communityXp = 11_230;
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
@@ -27,39 +35,56 @@ const MyPage: React.FC = () => {
           </div>
 
           {/* 상단 카드 4개 */}
-          <div className="flex gap-14 items-center w-full">
+          <div className="flex gap-[53px] items-center w-full">
             <button
               type="button"
-              className="w-80 text-left"
+              className="w-80 h-38 text-left"
               onClick={() => navigate("/mypage/assets")}
               aria-label="총자산 상세 보기"
             >
               <TotalAssets totalAmount={10450000} changeRate={4.5} />
             </button>
-            <button
-              type="button"
-              className="w-80 text-left"
-              onClick={() => navigate("/mypage/assets")}
-              aria-label="총자산 상세 보기"
-            >
-              <TotalAssets totalAmount={10450000} changeRate={4.5} />
-            </button>
-            <button
-              type="button"
-              className="w-80 text-left"
-              onClick={() => navigate("/mypage/assets")}
-              aria-label="총자산 상세 보기"
-            >
-              <TotalAssets totalAmount={10450000} changeRate={4.5} />
-            </button>
-            <button
-              type="button"
-              className="w-80 text-left"
-              onClick={() => navigate("/mypage/assets")}
-              aria-label="총자산 상세 보기"
-            >
-              <TotalAssets totalAmount={10450000} changeRate={4.5} />
-            </button>
+
+            {/* 학습 진행률 (Figma: 2123:33997) */}
+            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5">
+              <p className="text-[18px] leading-[17px] font-normal text-black">학습 진행률</p>
+              <div className="flex flex-col gap-[25px] w-full">
+                <p className="text-Title_L_Medium text-main-1">{learningProgress}%</p>
+                <div className="w-[260px]">
+                  <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-main-1 rounded-full"
+                      style={{ width: `${Math.max(0, Math.min(100, learningProgress))}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 달성 챌린지 (Figma: 2123:34002) */}
+            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap">
+              <p className="text-[18px] leading-[17px] font-normal text-black">달성 챌린지</p>
+              <div className="flex flex-col gap-2.5 w-full">
+                <p className="text-Title_L_Medium text-main-1">
+                  {achievedChallenges}/{totalChallenges}
+                </p>
+                <p className="text-[16px] leading-[17px] font-normal text-[#747474]">
+                  다음 배지까지 {nextBadgeCount}개
+                </p>
+              </div>
+            </div>
+
+            {/* 커뮤니티 랭킹 (Figma: 2123:34007) */}
+            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap">
+              <p className="text-[18px] leading-[17px] font-normal text-black">커뮤니티 랭킹</p>
+              <div className="flex flex-col gap-2.5 w-full">
+                <p className="text-Title_L_Medium text-main-1">#{communityRank}</p>
+                <div className="flex flex-col gap-1 text-[16px] leading-[17px] font-normal text-[#747474]">
+                  <p>상위 {communityTopPercent}%</p>
+                  <p>{communityXp.toLocaleString()} XP</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 포트폴리오 성과(라인 차트) */}
@@ -101,6 +126,7 @@ const MyPage: React.FC = () => {
                 <h2 className="text-Subtitle_L_Medium text-black">나의 포트폴리오</h2>
                 <button
                   type="button"
+                  onClick={() => navigate("/mypage/portfolio")}
                   className="flex items-center gap-1 text-Subtitle_S_Regular text-sub-blue"
                 >
                   관리/상세보기

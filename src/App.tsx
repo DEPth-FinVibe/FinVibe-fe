@@ -13,6 +13,7 @@ import MyPageSettingsPage from "@/pages/MyPage/MyPageSettingsPage";
 import TermsPage from "@/pages/MyPage/TermsPage";
 import PrivacyPolicyPage from "@/pages/MyPage/PrivacyPolicyPage";
 import MyAssetsPage from "@/pages/MyPage/MyAssetsPage";
+import MyPortfolioManagementPage from "@/pages/MyPage/MyPortfolioManagementPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import MainLayout from "@/components/Layout/MainLayout";
 
@@ -43,6 +44,7 @@ function App() {
           <Route path="/mypage/terms" element={<TermsPage />} />
           <Route path="/mypage/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/mypage/assets" element={<MyAssetsPage />} />
+          <Route path="/mypage/portfolio" element={<MyPortfolioManagementPage />} />
         </Route>
         
         <Route path="/login" element={<LoginPage />} />

@@ -36,7 +36,8 @@ export const TotalAssets: React.FC<TotalAssetsProps> = ({
   return (
     <div
       className={cn(
-        "bg-white border border-gray-300 rounded-lg px-8 py-5 flex flex-col gap-5 w-full",
+        // 상단 요약 카드(320x152, padding 20/30, gap 20)와 동일 규격
+        "bg-white border border-gray-300 rounded-lg w-full h-38 px-7.5 py-5 flex flex-col items-start gap-5",
         className
       )}
     >
