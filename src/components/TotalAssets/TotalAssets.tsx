@@ -3,9 +3,9 @@ import { cn } from "@/utils/cn";
 
 export interface TotalAssetsProps {
   /** 총 자산 금액 */
-  totalAmount?: number;
+  totalAmount?: number | null;
   /** 변화율 (퍼센트) */
-  changeRate?: number;
+  changeRate?: number | null;
   /** 추가 스타일 */
   className?: string;
 }
@@ -15,8 +15,8 @@ export interface TotalAssetsProps {
  * 마이페이지에서 사용자의 총 자산과 변화율을 표시합니다.
  */
 export const TotalAssets: React.FC<TotalAssetsProps> = ({
-  totalAmount = 10450000,
-  changeRate = 4.5,
+  totalAmount = null,
+  changeRate = null,
   className,
 }) => {
   // 금액 포맷팅 (천 단위 콤마)
@@ -30,8 +30,12 @@ export const TotalAssets: React.FC<TotalAssetsProps> = ({
     return `${sign}${rate}%`;
   };
 
+  const hasAmount = typeof totalAmount === "number" && Number.isFinite(totalAmount);
+  const hasRate = typeof changeRate === "number" && Number.isFinite(changeRate);
+
   // 변화율에 따른 색상 결정
-  const changeRateColor = changeRate >= 0 ? "text-etc-red" : "text-etc-blue";
+  const changeRateColor =
+    hasRate && (changeRate as number) >= 0 ? "text-etc-red" : "text-etc-blue";
 
   return (
     <div
@@ -48,11 +52,11 @@ export const TotalAssets: React.FC<TotalAssetsProps> = ({
       <div className="flex flex-col gap-1">
         {/* 총 자산 금액 */}
         <p className="text-Title_L_Medium text-black">
-          {formatAmount(totalAmount)}
+          {hasAmount ? formatAmount(totalAmount as number) : "-"}
         </p>
         {/* 변화율 */}
         <p className={cn("text-Subtitle_S_Regular", changeRateColor)}>
-          {formatChangeRate(changeRate)}
+          {hasRate ? formatChangeRate(changeRate as number) : "-"}
         </p>
       </div>
     </div>
