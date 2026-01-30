@@ -1,11 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import type { CandlestickData, Time } from "lightweight-charts";
 import { StockListItem } from "@/components/StockListItem";
 import StockChart, { generateMockCandleData, type ChartPeriod } from "./components/StockChart";
 import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
+import { fetchCandles } from "@/api/market";
 
 // Mock 호가 데이터
 const MOCK_ASK_ORDERS = [
@@ -28,6 +30,9 @@ const StockDetailPage = () => {
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
 
+  const [chartData, setChartData] = useState<CandlestickData<Time>[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const chartPeriods: ChartPeriod[] = ["분봉", "일봉", "주봉", "월봉", "년봉"];
 
   // Mock 주식 데이터 (실제로는 stockCode로 API 호출)
@@ -40,7 +45,23 @@ const StockDetailPage = () => {
     currentPrice: 71204,
   };
 
-  const chartData = useMemo(() => generateMockCandleData(chartPeriod), [chartPeriod]);
+  const loadCandles = useCallback(async () => {
+    if (!stockCode) return;
+    setIsLoading(true);
+    try {
+      const data = await fetchCandles(stockCode, chartPeriod);
+      setChartData(data);
+    } catch {
+      // API 실패 시 mock 데이터로 폴백
+      setChartData(generateMockCandleData(chartPeriod));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [stockCode, chartPeriod]);
+
+  useEffect(() => {
+    loadCandles();
+  }, [loadCandles]);
 
   const handleBack = () => {
     navigate("/simulation");
