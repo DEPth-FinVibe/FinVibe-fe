@@ -28,7 +28,7 @@ function App() {
             element={tokens ? <HomePage /> : <Navigate to="/login" replace />}
           />
           <Route path="/simulation" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><SimulationPage /></Suspense>} />
-          <Route path="/simulation/:stockCode" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><StockDetailPage /></Suspense>} />
+          <Route path="/simulation/:stockId" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><StockDetailPage /></Suspense>} />
           <Route path="/ai-learning" element={<AILearningPage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/news/:newsId" element={<NewsDetailPage />} />

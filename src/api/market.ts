@@ -21,7 +21,37 @@ marketApi.interceptors.request.use((config) => {
   return config;
 });
 
-// --- Types ---
+// --- Stock List / Closing Price Types ---
+
+export interface StockListItem {
+  stockId: number;
+  symbol: string;
+  name: string;
+  categoryId: number;
+}
+
+export interface StockClosingPrice {
+  stockId: number;
+  stockName: string;
+  at: string;
+  close: number;
+  prevDayChangePct: number;
+  volume: number;
+  value: number;
+}
+
+export interface StockWithPrice {
+  stockId: number;
+  symbol: string;
+  name: string;
+  categoryId: number;
+  close: number;
+  prevDayChangePct: number;
+  volume: number;
+  value: number;
+}
+
+// --- Candle Types ---
 
 export interface CandleResponse {
   open: number;
@@ -97,9 +127,97 @@ export async function fetchCandles(
   const timeframe = PERIOD_TO_TIMEFRAME[period];
 
   const res = await marketApi.get<CandleResponse[]>(
-    `/stocks/${stockId}/candles`,
+    `/market/stocks/${stockId}/candles`,
     { params: { startTime, endTime, timeframe } },
   );
 
   return toChartData(res.data);
+}
+
+// --- Stock List APIs ---
+
+export async function fetchTopRising(): Promise<StockListItem[]> {
+  const res = await marketApi.get<StockListItem[]>("/market/stocks/top-rising");
+  return res.data;
+}
+
+export async function fetchTopFalling(): Promise<StockListItem[]> {
+  const res = await marketApi.get<StockListItem[]>("/market/stocks/top-falling");
+  return res.data;
+}
+
+export async function fetchTopByVolume(): Promise<StockListItem[]> {
+  const res = await marketApi.get<StockListItem[]>("/market/stocks/top-by-volume");
+  return res.data;
+}
+
+export async function fetchTopByValue(): Promise<StockListItem[]> {
+  const res = await marketApi.get<StockListItem[]>("/market/stocks/top-by-value");
+  return res.data;
+}
+
+export async function searchStocks(
+  query: string,
+  marketType?: string,
+): Promise<StockListItem[]> {
+  const res = await marketApi.get<StockListItem[]>("/market/stocks/search", {
+    params: { query, marketType },
+  });
+  return res.data;
+}
+
+export async function fetchClosingPrices(
+  stockIds: number[],
+): Promise<StockClosingPrice[]> {
+  const BATCH_SIZE = 30;
+
+  if (stockIds.length <= BATCH_SIZE) {
+    const res = await marketApi.get<StockClosingPrice[]>(
+      "/market/stocks/closing-prices",
+      { params: { stockIds: stockIds.join(",") } },
+    );
+    return res.data;
+  }
+
+  const batches: number[][] = [];
+  for (let i = 0; i < stockIds.length; i += BATCH_SIZE) {
+    batches.push(stockIds.slice(i, i + BATCH_SIZE));
+  }
+
+  const results = await Promise.all(
+    batches.map((batch) =>
+      marketApi.get<StockClosingPrice[]>("/market/stocks/closing-prices", {
+        params: { stockIds: batch.join(",") },
+      }),
+    ),
+  );
+
+  return results.flatMap((r) => r.data);
+}
+
+export async function fetchMarketStatus(): Promise<unknown> {
+  const res = await marketApi.get("/market/stocks/status");
+  return res.data;
+}
+
+// --- Merge Helper ---
+
+export function mergeStockData(
+  stocks: StockListItem[],
+  prices: StockClosingPrice[],
+): StockWithPrice[] {
+  const priceMap = new Map(prices.map((p) => [p.stockId, p]));
+  return stocks.map((stock) => {
+    const price = priceMap.get(stock.stockId);
+    return {
+      stockId: stock.stockId,
+      symbol: stock.symbol,
+      name: stock.name,
+      categoryId: stock.categoryId,
+      close: price?.close ?? 0,
+      prevDayChangePct: price?.prevDayChangePct ?? 0,
+      volume: price?.volume ?? 0,
+      value: price?.value ?? 0,
+    };
+  });
 }

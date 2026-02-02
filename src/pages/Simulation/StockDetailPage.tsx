@@ -27,7 +27,7 @@ const MOCK_BID_ORDERS = [
 
 const StockDetailPage = () => {
   const navigate = useNavigate();
-  const { stockCode } = useParams<{ stockCode: string }>();
+  const { stockId } = useParams<{ stockId: string }>();
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
 
@@ -39,7 +39,7 @@ const StockDetailPage = () => {
   const [realtimeChangePct, setRealtimeChangePct] = useState<number | null>(null);
   const [realtimeVolume, setRealtimeVolume] = useState<number | null>(null);
 
-  const prevStockCodeRef = useRef<string | undefined>(undefined);
+  const prevStockIdRef = useRef<string | undefined>(undefined);
 
   const chartPeriods: ChartPeriod[] = ["분봉", "일봉", "주봉", "월봉", "년봉"];
 
@@ -67,29 +67,29 @@ const StockDetailPage = () => {
     };
   }, [connect, disconnect]);
 
-  // Subscribe to current stockCode when authenticated
+  // Subscribe to current stockId when authenticated
   useEffect(() => {
-    if (!isAuthenticated || !stockCode) return;
+    if (!isAuthenticated || !stockId) return;
 
-    const prev = prevStockCodeRef.current;
-    if (prev && prev !== stockCode) {
+    const prev = prevStockIdRef.current;
+    if (prev && prev !== stockId) {
       unsubscribe([prev]);
     }
 
-    subscribe([stockCode]);
-    prevStockCodeRef.current = stockCode;
+    subscribe([stockId]);
+    prevStockIdRef.current = stockId;
 
     return () => {
-      unsubscribe([stockCode]);
+      unsubscribe([stockId]);
     };
-  }, [isAuthenticated, stockCode, subscribe, unsubscribe]);
+  }, [isAuthenticated, stockId, subscribe, unsubscribe]);
 
-  // Reset realtime data when stockCode changes
+  // Reset realtime data when stockId changes
   useEffect(() => {
     setRealtimePrice(null);
     setRealtimeChangePct(null);
     setRealtimeVolume(null);
-  }, [stockCode]);
+  }, [stockId]);
 
   // Derive display values
   const displayPrice =
@@ -106,17 +106,17 @@ const StockDetailPage = () => {
 
   const stockData = {
     stockName: "주식 종목 이름",
-    stockCode: stockCode || "종목 코드",
+    stockCode: stockId || "종목 코드",
     tradingVolume: displayVolume,
     price: displayPrice,
     changeRate: displayChangeRate,
   };
 
   const loadCandles = useCallback(async () => {
-    if (!stockCode) return;
+    if (!stockId) return;
     setIsLoading(true);
     try {
-      const data = await fetchCandles(stockCode, chartPeriod);
+      const data = await fetchCandles(stockId, chartPeriod);
       setChartData(data);
     } catch {
       // API 실패 시 mock 데이터로 폴백
@@ -124,7 +124,7 @@ const StockDetailPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [stockCode, chartPeriod]);
+  }, [stockId, chartPeriod]);
 
   useEffect(() => {
     loadCandles();

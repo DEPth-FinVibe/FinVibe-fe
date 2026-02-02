@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField } from "@/components/TextField";
 import { StockListItem } from "@/components/StockListItem";
@@ -6,83 +6,24 @@ import Chip from "@/components/Chip/Chip";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import { cn } from "@/utils/cn";
+import { formatPriceWithSymbol, formatChangeRate, formatVolume } from "@/utils/formatStock";
+import { useTopByVolumeWithPrices, useStockSearchWithPrices } from "@/hooks/useMarketQueries";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import type { StockWithPrice } from "@/api/market";
 
 type MarketFilter = "전체" | "국내" | "해외";
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
 
-// Mock 데이터
-const MOCK_STOCKS = [
-  {
-    id: 1,
-    stockName: "삼성전자",
-    stockCode: "005930",
-    tradingVolume: "12.5M",
-    price: "₩70,542",
-    changeRate: "+2.23%",
-    isFavorited: true,
-  },
-  {
-    id: 2,
-    stockName: "SK하이닉스",
-    stockCode: "000660",
-    tradingVolume: "8.2M",
-    price: "₩186,500",
-    changeRate: "+1.85%",
-    isFavorited: false,
-  },
-  {
-    id: 3,
-    stockName: "LG에너지솔루션",
-    stockCode: "373220",
-    tradingVolume: "1.2M",
-    price: "₩412,000",
-    changeRate: "-0.72%",
-    isFavorited: false,
-  },
-  {
-    id: 4,
-    stockName: "현대차",
-    stockCode: "005380",
-    tradingVolume: "3.4M",
-    price: "₩234,500",
-    changeRate: "+0.85%",
-    isFavorited: false,
-  },
-  {
-    id: 5,
-    stockName: "카카오",
-    stockCode: "035720",
-    tradingVolume: "5.6M",
-    price: "₩45,600",
-    changeRate: "+1.12%",
-    isFavorited: false,
-  },
-  {
-    id: 6,
-    stockName: "NAVER",
-    stockCode: "035420",
-    tradingVolume: "2.1M",
-    price: "₩178,000",
-    changeRate: "-0.56%",
-    isFavorited: false,
-  },
-  {
-    id: 7,
-    stockName: "셀트리온",
-    stockCode: "068270",
-    tradingVolume: "1.8M",
-    price: "₩192,300",
-    changeRate: "+0.94%",
-    isFavorited: false,
-  },
-];
+const PAGE_SIZE = 20;
+
+const DOMESTIC_CATEGORY_IDS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
 const MOCK_WATCHLIST = [
   {
     id: 1,
     stockName: "삼성전자",
     stockCode: "005930",
-    tradingVolume: "12.5M",
+    tradingVolume: "",
     price: "₩70,542",
     changeRate: "+2.23%",
   },
@@ -197,22 +138,65 @@ const WatchlistCard = ({
   );
 };
 
+function toMarketTypeParam(filter: MarketFilter): string | undefined {
+  if (filter === "국내") return "DOMESTIC";
+  if (filter === "해외") return "OVERSEAS";
+  return undefined;
+}
+
 const SimulationPage = () => {
   const navigate = useNavigate();
   const [leftMarketFilter, setLeftMarketFilter] = useState<MarketFilter>("전체");
   const [rightMarketFilter, setRightMarketFilter] = useState<MarketFilter>("전체");
   const [rightTab, setRightTab] = useState<RightTab>("관심 종목");
   const [searchQuery, setSearchQuery] = useState("");
-  const [stocks, setStocks] = useState(MOCK_STOCKS);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const debouncedQuery = useDebouncedValue(searchQuery, 300);
+  const isSearchMode = debouncedQuery.length >= 1;
+
+  const marketTypeParam = isSearchMode ? toMarketTypeParam(leftMarketFilter) : undefined;
+  const topByVolume = useTopByVolumeWithPrices();
+  const searchResult = useStockSearchWithPrices(debouncedQuery, marketTypeParam);
 
   const rightTabs: RightTab[] = ["관심 종목", "거래 종목", "예약/자동 주문", "포트폴리오"];
 
-  const handleFavoriteToggle = (id: number) => {
-    setStocks((prev) =>
-      prev.map((stock) =>
-        stock.id === id ? { ...stock, isFavorited: !stock.isFavorited } : stock
-      )
-    );
+  const filteredStocks = useMemo(() => {
+    const sourceData = isSearchMode ? searchResult.data : topByVolume.data;
+    if (!sourceData) return [];
+
+    if (!isSearchMode && leftMarketFilter !== "전체") {
+      const isDomestic = leftMarketFilter === "국내";
+      return sourceData.filter((stock: StockWithPrice) =>
+        isDomestic
+          ? DOMESTIC_CATEGORY_IDS.includes(stock.categoryId)
+          : !DOMESTIC_CATEGORY_IDS.includes(stock.categoryId)
+      );
+    }
+
+    return sourceData;
+  }, [isSearchMode, searchResult.data, topByVolume.data, leftMarketFilter]);
+
+  const visibleStocks = useMemo(
+    () => filteredStocks.slice(0, visibleCount),
+    [filteredStocks, visibleCount],
+  );
+
+  const hasMore = visibleCount < filteredStocks.length;
+  const isLoading = isSearchMode ? searchResult.isLoading : topByVolume.isLoading;
+
+  const handleShowMore = () => {
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+  };
+
+  const handleFilterChange = (filter: MarketFilter) => {
+    setLeftMarketFilter(filter);
+    setVisibleCount(PAGE_SIZE);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setVisibleCount(PAGE_SIZE);
   };
 
   return (
@@ -222,7 +206,7 @@ const SimulationPage = () => {
         <section className="flex-1">
           {/* 마켓 필터 탭 */}
           <div className="mb-6">
-            <LeftMarketFilterTabs value={leftMarketFilter} onChange={setLeftMarketFilter} />
+            <LeftMarketFilterTabs value={leftMarketFilter} onChange={handleFilterChange} />
           </div>
 
           {/* 검색창 */}
@@ -231,26 +215,42 @@ const SimulationPage = () => {
             size="medium"
             leftIcon={<SearchIcon className="w-5 h-5 text-gray-400" />}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             className="mb-6"
             inputClassName="bg-gray-100 rounded-lg"
           />
 
           {/* 주식 리스트 */}
           <div className="flex flex-col gap-4">
-            {stocks.map((stock) => (
+            {isLoading && (
+              <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
+                로딩중...
+              </div>
+            )}
+            {!isLoading && visibleStocks.length === 0 && (
+              <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
+                {isSearchMode ? "검색 결과가 없습니다." : "종목 데이터를 불러올 수 없습니다."}
+              </div>
+            )}
+            {!isLoading && visibleStocks.map((stock: StockWithPrice) => (
               <StockListItem
-                key={stock.id}
-                stockName={stock.stockName}
-                stockCode={stock.stockCode}
-                tradingVolume={stock.tradingVolume}
-                price={stock.price}
-                changeRate={stock.changeRate}
-                isFavorited={stock.isFavorited}
-                onFavoriteToggle={() => handleFavoriteToggle(stock.id)}
-                onClick={() => navigate(`/simulation/${stock.stockCode}`)}
+                key={stock.stockId}
+                stockName={stock.name}
+                stockCode={stock.symbol}
+                tradingVolume={formatVolume(stock.volume)}
+                price={formatPriceWithSymbol(stock.close)}
+                changeRate={formatChangeRate(stock.prevDayChangePct)}
+                onClick={() => navigate(`/simulation/${stock.stockId}`)}
               />
             ))}
+            {!isLoading && hasMore && (
+              <button
+                onClick={handleShowMore}
+                className="w-full py-3 text-sm text-gray-500 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                더 보기
+              </button>
+            )}
           </div>
         </section>
 
