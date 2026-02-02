@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { CandlestickData, Time } from "lightweight-charts";
 import { StockListItem } from "@/components/StockListItem";
@@ -8,6 +8,7 @@ import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
 import { fetchCandles } from "@/api/market";
+import { useMarketWebSocket, type QuotePayload } from "@/hooks/useMarketWebSocket";
 
 // Mock 호가 데이터
 const MOCK_ASK_ORDERS = [
@@ -33,16 +34,82 @@ const StockDetailPage = () => {
   const [chartData, setChartData] = useState<CandlestickData<Time>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Real-time price state from WebSocket
+  const [realtimePrice, setRealtimePrice] = useState<number | null>(null);
+  const [realtimeChangePct, setRealtimeChangePct] = useState<number | null>(null);
+  const [realtimeVolume, setRealtimeVolume] = useState<number | null>(null);
+
+  const prevStockCodeRef = useRef<string | undefined>(undefined);
+
   const chartPeriods: ChartPeriod[] = ["분봉", "일봉", "주봉", "월봉", "년봉"];
 
-  // Mock 주식 데이터 (실제로는 stockCode로 API 호출)
+  const handleQuote = useCallback((payload: QuotePayload) => {
+    setRealtimePrice(payload.close);
+    setRealtimeChangePct(payload.prevDayChangePct);
+    setRealtimeVolume(payload.volume);
+  }, []);
+
+  const handleWsError = useCallback((code: string, message: string) => {
+    console.warn(`[MarketWS] error ${code}: ${message}`);
+  }, []);
+
+  const { isAuthenticated, subscribe, unsubscribe, connect, disconnect } =
+    useMarketWebSocket({
+      onQuote: handleQuote,
+      onError: handleWsError,
+    });
+
+  // Connect WebSocket on mount, disconnect on unmount
+  useEffect(() => {
+    connect();
+    return () => {
+      disconnect();
+    };
+  }, [connect, disconnect]);
+
+  // Subscribe to current stockCode when authenticated
+  useEffect(() => {
+    if (!isAuthenticated || !stockCode) return;
+
+    const prev = prevStockCodeRef.current;
+    if (prev && prev !== stockCode) {
+      unsubscribe([prev]);
+    }
+
+    subscribe([stockCode]);
+    prevStockCodeRef.current = stockCode;
+
+    return () => {
+      unsubscribe([stockCode]);
+    };
+  }, [isAuthenticated, stockCode, subscribe, unsubscribe]);
+
+  // Reset realtime data when stockCode changes
+  useEffect(() => {
+    setRealtimePrice(null);
+    setRealtimeChangePct(null);
+    setRealtimeVolume(null);
+  }, [stockCode]);
+
+  // Derive display values
+  const displayPrice =
+    realtimePrice != null
+      ? `₩${realtimePrice.toLocaleString()}`
+      : "₩실시간 가격";
+  const displayChangeRate =
+    realtimeChangePct != null
+      ? `${realtimeChangePct >= 0 ? "+" : ""}${realtimeChangePct.toFixed(2)}%`
+      : "+변화율";
+  const displayVolume =
+    realtimeVolume != null ? realtimeVolume.toLocaleString() : "";
+  const currentPrice = realtimePrice ?? 71204;
+
   const stockData = {
     stockName: "주식 종목 이름",
     stockCode: stockCode || "종목 코드",
-    tradingVolume: "",
-    price: "₩실시간 가격",
-    changeRate: "+변화율",
-    currentPrice: 71204,
+    tradingVolume: displayVolume,
+    price: displayPrice,
+    changeRate: displayChangeRate,
   };
 
   const loadCandles = useCallback(async () => {
@@ -123,7 +190,7 @@ const StockDetailPage = () => {
         {/* 오른쪽 패널 - 매수/매도 */}
         <aside className="w-[320px] shrink-0">
           <OrderPanel
-            currentPrice={stockData.currentPrice}
+            currentPrice={currentPrice}
             askOrders={MOCK_ASK_ORDERS}
             bidOrders={MOCK_BID_ORDERS}
           />

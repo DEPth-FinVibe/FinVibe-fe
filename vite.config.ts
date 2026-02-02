@@ -23,6 +23,7 @@ export default defineConfig({
       "/api": {
         target: "https://finvibe.space",
         changeOrigin: true,
+        ws: true,
       },
     },
   },
