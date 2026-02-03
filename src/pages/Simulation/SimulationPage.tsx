@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField } from "@/components/TextField";
 import { StockListItem } from "@/components/StockListItem";
@@ -6,6 +6,8 @@ import Chip from "@/components/Chip/Chip";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import { cn } from "@/utils/cn";
+import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPortfolioTab";
+import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
 
 type MarketFilter = "전체" | "국내" | "해외";
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
@@ -204,6 +206,9 @@ const SimulationPage = () => {
   const [rightTab, setRightTab] = useState<RightTab>("관심 종목");
   const [searchQuery, setSearchQuery] = useState("");
   const [stocks, setStocks] = useState(MOCK_STOCKS);
+  const [portfolioGroups, setPortfolioGroups] = useState<PortfolioGroup[] | null>(null);
+  const [isCreatingPortfolioGroup, setIsCreatingPortfolioGroup] = useState(false);
+  const [createPortfolioGroupError, setCreatePortfolioGroupError] = useState<string | null>(null);
 
   const rightTabs: RightTab[] = ["관심 종목", "거래 종목", "예약/자동 주문", "포트폴리오"];
 
@@ -213,6 +218,44 @@ const SimulationPage = () => {
         stock.id === id ? { ...stock, isFavorited: !stock.isFavorited } : stock
       )
     );
+  };
+
+  const fetchPortfolioGroups = async (opts?: { showLoading?: boolean }) => {
+    if (opts?.showLoading) setPortfolioGroups(null);
+    const groups = await assetPortfolioApi.getPortfolios();
+    setPortfolioGroups(Array.isArray(groups) ? groups : []);
+  };
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const groups = await assetPortfolioApi.getPortfolios();
+        if (!alive) return;
+        setPortfolioGroups(Array.isArray(groups) ? groups : []);
+      } catch {
+        if (!alive) return;
+        setPortfolioGroups([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const handleCreatePortfolioGroup = async (name: string) => {
+    setCreatePortfolioGroupError(null);
+    setIsCreatingPortfolioGroup(true);
+    try {
+      // NOTE: 아이콘 선택 UI는 아직 없어서 기본값 사용 (후속 단계에서 교체)
+      await assetPortfolioApi.createPortfolio({ name, iconCode: "ICON_01" });
+      await fetchPortfolioGroups({ showLoading: true });
+    } catch (e) {
+      setCreatePortfolioGroupError("폴더 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+      throw e;
+    } finally {
+      setIsCreatingPortfolioGroup(false);
+    }
   };
 
   return (
@@ -274,24 +317,39 @@ const SimulationPage = () => {
             ))}
           </div>
 
-          {/* 서브 필터 탭 */}
-          <div className="mb-4">
-            <RightMarketFilterTabs value={rightMarketFilter} onChange={setRightMarketFilter} />
-          </div>
+          {rightTab === "포트폴리오" ? (
+            <SimulationPortfolioTab
+              groups={portfolioGroups ?? []}
+              isLoading={portfolioGroups === null}
+              isCreating={isCreatingPortfolioGroup}
+              createErrorMessage={createPortfolioGroupError}
+              onSubmitCreateFolder={handleCreatePortfolioGroup}
+            />
+          ) : (
+            <>
+              {/* 서브 필터 탭 */}
+              <div className="mb-4">
+                <RightMarketFilterTabs
+                  value={rightMarketFilter}
+                  onChange={setRightMarketFilter}
+                />
+              </div>
 
-          {/* 관심 종목 리스트 */}
-          <div className="flex flex-col gap-3">
-            {MOCK_WATCHLIST.map((item) => (
-              <WatchlistCard
-                key={item.id}
-                stockName={item.stockName}
-                stockCode={item.stockCode}
-                tradingVolume={item.tradingVolume}
-                price={item.price}
-                changeRate={item.changeRate}
-              />
-            ))}
-          </div>
+              {/* 관심 종목 리스트 */}
+              <div className="flex flex-col gap-3">
+                {MOCK_WATCHLIST.map((item) => (
+                  <WatchlistCard
+                    key={item.id}
+                    stockName={item.stockName}
+                    stockCode={item.stockCode}
+                    tradingVolume={item.tradingVolume}
+                    price={item.price}
+                    changeRate={item.changeRate}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </aside>
       </main>
     </div>

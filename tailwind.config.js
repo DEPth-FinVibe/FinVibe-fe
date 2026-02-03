@@ -22,6 +22,8 @@ export default {
         gray: {
           1: "#DDDDDE",
           2: "#BDBDBD",
+       //   100: "#EAEBED",
+       //   200: "DDDDDE",
           300: "#C7C7C9",
           400: "#A5A6A9",
           500: "#696969"
@@ -39,6 +41,8 @@ export default {
           "light-blue": "#DFE2FF",
           "light-yellow": "#FFF6E3",
           "light-red": "#FFC2C2",
+          "light-mint": "#C7F3EB",
+          "light-navy": "#A5B5D5",
           "light-purple": "#EEE1FF",
           red: "#FF0000",
           blue: "#001AFF",

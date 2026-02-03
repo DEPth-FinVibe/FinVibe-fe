@@ -10,6 +10,8 @@ import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
 import { walletApi } from "@/api/wallet";
+import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
+import GraphIcon from "@/assets/svgs/GraphIcon";
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +28,11 @@ const MyPage: React.FC = () => {
   const stock = 8_000_000;
   const changeRate = 4.5;
   const [cash, setCash] = useState<number | null>(null);
+
+  // 포트폴리오 그룹(폴더) 목록
+  // - null: 로딩/미시도
+  // - []: 실패 또는 데이터 없음 (요청: 더미 대신 비어있게)
+  const [portfolioGroups, setPortfolioGroups] = useState<PortfolioGroup[] | null>(null);
   const totalAssets = cash === null ? null : cash + stock;
   const totalChangeRate = totalAssets === null ? null : changeRate;
 
@@ -44,6 +51,41 @@ const MyPage: React.FC = () => {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const groups = await assetPortfolioApi.getPortfolios();
+        if (!alive) return;
+        setPortfolioGroups(Array.isArray(groups) ? groups : []);
+      } catch {
+        // 실패 시 더미 대신 비어있게
+        if (!alive) return;
+        setPortfolioGroups([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // 제한 없이 그대로 노출
+  const myPortfolioGroups = portfolioGroups ?? [];
+
+  const getPortfolioIcon = (iconCode: string) => {
+    switch (iconCode) {
+      case "ICON_02":
+        return ShieldIcon;
+      case "ICON_03":
+        return GraphIcon;
+      case "ICON_01":
+      default:
+        return ChangeRateIcon;
+    }
+  };
+
+  // NOTE: 그룹 조회 API에는 수익률/차트 데이터가 없어서 임시로 0/undefined 처리
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
@@ -159,27 +201,16 @@ const MyPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-5 pl-4">
-                <MyPortfolio
-                  title="주력 성장주"
-                  changeRate={15.2}
-                  icon={ChangeRateIcon}
-                  iconClassName="text-sub-blue"
-                  chartData={[30, 100, 60, 58, 80, 93, 70, 80, 89, 78, 54, 72]}
-                />
-                <MyPortfolio
-                  title="안전 자산"
-                  changeRate={-1.4}
-                  icon={ShieldIcon}
-                  iconClassName="text-sub-blue"
-                  chartData={[40, 50, 55, 35, 54, 56, 50, 30, 40, 27, 36, 56]}
-                />
-                <MyPortfolio
-                  title="단타 연습"
-                  changeRate={3.0}
-                  icon={ChangeRateIcon}
-                  iconClassName="text-sub-blue"
-                  chartData={[60, 20, 40, 35, 62, 58, 68, 45, 28, 60, 70, 58]}
-                />
+                {myPortfolioGroups.map((g) => (
+                  <MyPortfolio
+                    key={g.id}
+                    title={g.name}
+                    changeRate={0}
+                    icon={getPortfolioIcon(g.iconCode)}
+                    iconClassName="text-sub-blue"
+                    chartData={undefined}
+                  />
+                ))}
               </div>
             </section>
           </div>
