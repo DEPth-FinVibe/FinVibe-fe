@@ -14,10 +14,20 @@ type Props = {
   isLoading?: boolean;
   isCreating?: boolean;
   createErrorMessage?: string | null;
+  isUpdating?: boolean;
+  updatingGroupId?: number | null;
+  updateErrorMessage?: string | null;
+  isDeleting?: boolean;
+  deletingGroupId?: number | null;
+  deleteErrorMessage?: string | null;
   /** 새 폴더 버튼 클릭 (API 연동 전이므로 선택) */
   onClickCreateFolder?: () => void;
   /** 폴더 생성 '추가' 클릭 (API 연동 전이므로 선택) */
   onSubmitCreateFolder?: (name: string) => Promise<void> | void;
+  /** 폴더명 수정 '저장' 클릭 */
+  onSubmitUpdateGroupName?: (groupId: number, name: string) => Promise<void> | void;
+  /** 폴더 삭제 */
+  onDeleteGroup?: (groupId: number) => Promise<void> | void;
   className?: string;
 };
 
@@ -89,19 +99,36 @@ const SimulationPortfolioTab: React.FC<Props> = ({
   isLoading = false,
   isCreating = false,
   createErrorMessage = null,
+  isUpdating = false,
+  updatingGroupId = null,
+  updateErrorMessage = null,
+  isDeleting = false,
+  deletingGroupId = null,
+  deleteErrorMessage = null,
   onClickCreateFolder,
   onSubmitCreateFolder,
+  onSubmitUpdateGroupName,
+  onDeleteGroup,
   className,
 }) => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const editInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isCreateOpen) return;
     const id = window.setTimeout(() => inputRef.current?.focus(), 0);
     return () => window.clearTimeout(id);
   }, [isCreateOpen]);
+
+  useEffect(() => {
+    if (editingGroupId == null) return;
+    const id = window.setTimeout(() => editInputRef.current?.focus(), 0);
+    return () => window.clearTimeout(id);
+  }, [editingGroupId]);
 
   const closeCreate = () => {
     setIsCreateOpen(false);
@@ -119,6 +146,38 @@ const SimulationPortfolioTab: React.FC<Props> = ({
     }
   };
 
+  const startEdit = (g: SimulationPortfolioGroup) => {
+    setEditingGroupId(g.id);
+    setEditingName(g.name);
+  };
+
+  const cancelEdit = () => {
+    setEditingGroupId(null);
+    setEditingName("");
+  };
+
+  const submitEdit = async () => {
+    if (editingGroupId == null) return;
+    const nextName = editingName.trim();
+    if (nextName.length === 0) return;
+    try {
+      await onSubmitUpdateGroupName?.(editingGroupId, nextName);
+      cancelEdit();
+    } catch {
+      // parent에서 에러 메시지를 내려주면 유지
+    }
+  };
+
+  const submitDelete = async (groupId: number) => {
+    try {
+      await onDeleteGroup?.(groupId);
+      // parent에서 refetch까지 처리
+      if (editingGroupId === groupId) cancelEdit();
+    } catch {
+      // parent에서 에러 메시지 내려주면 표시
+    }
+  };
+
   return (
     <div className={cn("w-[445px] flex flex-col gap-7.5 pt-2.5", className)}>
       {/* 헤더: 내 포트폴리오 + 새 폴더 버튼 */}
@@ -130,13 +189,14 @@ const SimulationPortfolioTab: React.FC<Props> = ({
             onClickCreateFolder?.();
             setIsCreateOpen(true);
           }}
-          disabled={isCreating}
+          disabled={isCreating || isUpdating || isDeleting}
           className={cn(
             "inline-flex items-center justify-center",
             "rounded-[14px] bg-main-1",
             "px-4 py-1",
             "text-Caption_L_Light text-white",
-            isCreating && "opacity-60 cursor-not-allowed"
+            (isCreating || isUpdating || isDeleting) &&
+              "opacity-60 cursor-not-allowed"
           )}
         >
           + 새 폴더
@@ -229,23 +289,117 @@ const SimulationPortfolioTab: React.FC<Props> = ({
                 <div className="flex items-center gap-2.5">
                   <FolderMintIcon />
                   <div className="flex items-center gap-2.5">
-                    <p className="text-Subtitle_S_Regular text-black">
-                      {g.name}
-                    </p>
+                    {editingGroupId === g.id ? (
+                      <input
+                        ref={editInputRef}
+                        value={editingName}
+                        disabled={isUpdating && updatingGroupId === g.id}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") submitEdit();
+                          if (e.key === "Escape") cancelEdit();
+                        }}
+                        className={cn(
+                          "h-9 w-[200px]",
+                          "rounded-lg border border-gray-300 bg-white",
+                          "px-4 py-2",
+                          "text-Body_M_Light text-black",
+                          "placeholder:text-gray-400",
+                          "focus:outline-none",
+                          "disabled:opacity-60 disabled:cursor-not-allowed"
+                        )}
+                        aria-label="폴더명 수정"
+                      />
+                    ) : (
+                      <p className="text-Subtitle_S_Regular text-black">
+                        {g.name}
+                      </p>
+                    )}
                     {/* NOTE: 종목 개수 API 미연동 - 후속 API에서 교체 */}
                     <p className="text-Caption_L_Light text-black">(2)</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-5">
-                  <button type="button" className="p-0" aria-label="폴더 편집">
-                    <PenIcon ariaLabel="편집" />
-                  </button>
-                  <button type="button" className="p-0" aria-label="폴더 삭제">
-                    <TrashIcon ariaLabel="삭제" />
-                  </button>
+                  {editingGroupId === g.id ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={submitEdit}
+                        disabled={
+                          (isUpdating && updatingGroupId === g.id) ||
+                          editingName.trim().length === 0
+                        }
+                        className={cn(
+                          "h-9 rounded-lg bg-main-1",
+                          "px-5 py-2.5",
+                          "text-Caption_L_Light text-white",
+                          ((isUpdating && updatingGroupId === g.id) ||
+                            editingName.trim().length === 0) &&
+                            "opacity-60 cursor-not-allowed"
+                        )}
+                      >
+                        저장
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        disabled={isUpdating && updatingGroupId === g.id}
+                        className={cn(
+                          "h-9 rounded-lg bg-white border border-gray-300",
+                          "px-4",
+                          "inline-flex items-center justify-center",
+                          (isUpdating && updatingGroupId === g.id) &&
+                            "opacity-60 cursor-not-allowed"
+                        )}
+                        aria-label="수정 취소"
+                      >
+                        <CloseIcon className="size-6" ariaLabel="닫기" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="p-0"
+                        aria-label="폴더 편집"
+                        onClick={() => startEdit(g)}
+                        disabled={isCreating || isUpdating || isDeleting}
+                      >
+                        <PenIcon ariaLabel="편집" />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-0"
+                        aria-label="폴더 삭제"
+                        disabled={
+                          isCreating ||
+                          isUpdating ||
+                          isDeleting ||
+                          (isDeleting && deletingGroupId === g.id)
+                        }
+                        onClick={() => submitDelete(g.id)}
+                      >
+                        <TrashIcon ariaLabel="삭제" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
+
+              {editingGroupId === g.id &&
+                updateErrorMessage &&
+                updatingGroupId === g.id && (
+                  <p className="text-Caption_L_Light text-etc-red px-5 pt-2">
+                    {updateErrorMessage}
+                  </p>
+                )}
+
+              {deleteErrorMessage && deletingGroupId === g.id && (
+                <p className="text-Caption_L_Light text-etc-red px-5 pt-2">
+                  {deleteErrorMessage}
+                </p>
+              )}
             </div>
           ))
         )}
