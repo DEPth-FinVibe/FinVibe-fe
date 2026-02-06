@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { CandlestickData, Time } from "lightweight-charts";
 import { StockListItem } from "@/components/StockListItem";
@@ -7,8 +7,8 @@ import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
-import { fetchCandles } from "@/api/market";
-import { useMarketWebSocket, type QuotePayload } from "@/hooks/useMarketWebSocket";
+import { fetchCandles, fetchClosingPrices, type StockClosingPrice } from "@/api/market";
+import { useMarketStore, useQuote } from "@/store/useMarketStore";
 
 // Mock 호가 데이터
 const MOCK_ASK_ORDERS = [
@@ -32,80 +32,60 @@ const StockDetailPage = () => {
   const [isFavorited, setIsFavorited] = useState(false);
 
   const [chartData, setChartData] = useState<CandlestickData<Time>[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
+  const [stockInfo, setStockInfo] = useState<StockClosingPrice | null>(null);
 
-  // Real-time price state from WebSocket
-  const [realtimePrice, setRealtimePrice] = useState<number | null>(null);
-  const [realtimeChangePct, setRealtimeChangePct] = useState<number | null>(null);
-  const [realtimeVolume, setRealtimeVolume] = useState<number | null>(null);
-
-  const prevStockIdRef = useRef<string | undefined>(undefined);
+  const { subscribe, unsubscribe } = useMarketStore();
+  const stockIdNum = stockId ? Number(stockId) : 0;
+  const quote = useQuote(stockIdNum);
 
   const chartPeriods: ChartPeriod[] = ["분봉", "일봉", "주봉", "월봉", "년봉"];
 
-  const handleQuote = useCallback((payload: QuotePayload) => {
-    setRealtimePrice(payload.close);
-    setRealtimeChangePct(payload.prevDayChangePct);
-    setRealtimeVolume(payload.volume);
-  }, []);
-
-  const handleWsError = useCallback((code: string, message: string) => {
-    console.warn(`[MarketWS] error ${code}: ${message}`);
-  }, []);
-
-  const { isAuthenticated, subscribe, unsubscribe, connect, disconnect } =
-    useMarketWebSocket({
-      onQuote: handleQuote,
-      onError: handleWsError,
-    });
-
-  // Connect WebSocket on mount, disconnect on unmount
+  // Subscribe to current stockId
   useEffect(() => {
-    connect();
+    if (!stockIdNum) return;
+    subscribe([stockIdNum]);
     return () => {
-      disconnect();
+      unsubscribe([stockIdNum]);
     };
-  }, [connect, disconnect]);
+  }, [stockIdNum, subscribe, unsubscribe]);
 
-  // Subscribe to current stockId when authenticated
+  // Fetch stock info (초기 데이터)
   useEffect(() => {
-    if (!isAuthenticated || !stockId) return;
-
-    const prev = prevStockIdRef.current;
-    if (prev && prev !== stockId) {
-      unsubscribe([prev]);
-    }
-
-    subscribe([stockId]);
-    prevStockIdRef.current = stockId;
-
-    return () => {
-      unsubscribe([stockId]);
+    if (!stockId) return;
+    const loadStockInfo = async () => {
+      try {
+        const [info] = await fetchClosingPrices([Number(stockId)]);
+        if (info) {
+          setStockInfo(info);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stock info:", error);
+      }
     };
-  }, [isAuthenticated, stockId, subscribe, unsubscribe]);
-
-  // Reset realtime data when stockId changes
-  useEffect(() => {
-    setRealtimePrice(null);
-    setRealtimeChangePct(null);
-    setRealtimeVolume(null);
+    loadStockInfo();
   }, [stockId]);
+
+  // 실시간 데이터 또는 초기 데이터 사용
+  const price = quote?.close ?? stockInfo?.close;
+  const changePct = quote?.prevDayChangePct ?? stockInfo?.prevDayChangePct;
+  const volume = quote?.volume ?? stockInfo?.volume;
 
   // Derive display values
   const displayPrice =
-    realtimePrice != null
-      ? `₩${realtimePrice.toLocaleString()}`
+    price != null
+      ? `₩${price.toLocaleString()}`
       : "₩실시간 가격";
   const displayChangeRate =
-    realtimeChangePct != null
-      ? `${realtimeChangePct >= 0 ? "+" : ""}${realtimeChangePct.toFixed(2)}%`
+    changePct != null
+      ? `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%`
       : "+변화율";
   const displayVolume =
-    realtimeVolume != null ? realtimeVolume.toLocaleString() : "";
-  const currentPrice = realtimePrice ?? 71204;
+    volume != null ? volume.toLocaleString() : "";
+  const currentPrice = price ?? 0;
 
   const stockData = {
-    stockName: "주식 종목 이름",
+    stockName: stockInfo?.stockName ?? "로딩 중...",
     stockCode: stockId || "종목 코드",
     tradingVolume: displayVolume,
     price: displayPrice,

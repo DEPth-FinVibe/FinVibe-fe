@@ -24,32 +24,36 @@ interface QuoteMessage {
 
 interface AuthResponseMessage {
   type: "auth";
-  status: "ok" | "error";
-  message?: string;
+  ok: boolean;
 }
 
 interface PingMessage {
   type: "ping";
+  ts: number;
 }
 
 interface ErrorMessage {
   type: "error";
+  request_id?: string;
   code: string;
   message: string;
+  details?: object;
 }
 
 interface SubscribeResponseMessage {
   type: "subscribe";
-  topic: string;
-  status: "ok" | "error";
-  message?: string;
+  request_id?: string;
+  subscribed: string[];
+  already_subscribed: string[];
+  rejected: string[];
 }
 
 interface UnsubscribeResponseMessage {
   type: "unsubscribe";
-  topic: string;
-  status: "ok" | "error";
-  message?: string;
+  ok: boolean;
+  request_id?: string;
+  unsubscribed: string[];
+  not_subscribed: string[];
 }
 
 type ServerMessage =
@@ -70,6 +74,11 @@ interface UseMarketWebSocketOptions {
 function buildWsUrl(): string {
   const envUrl = import.meta.env.VITE_WS_MARKET_URL;
   if (envUrl) return envUrl;
+
+  // 개발 환경에서는 직접 백엔드 WebSocket 연결
+  if (import.meta.env.DEV) {
+    return "wss://finvibe.space/market/ws";
+  }
 
   const { protocol, host } = window.location;
   const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
@@ -131,17 +140,28 @@ export function useMarketWebSocket(options: UseMarketWebSocketOptions = {}) {
 
     intentionalCloseRef.current = false;
     const url = buildWsUrl();
+    console.log("[MarketWS] Connecting to:", url);
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      console.log("[MarketWS] Connected");
       setIsConnected(true);
       reconnectAttemptRef.current = 0;
 
       // Authenticate immediately
       const tokens = useAuthStore.getState().tokens;
       if (tokens?.accessToken) {
+        console.log("[MarketWS] Sending auth");
         send({ type: "auth", token: tokens.accessToken });
+
+        // Python 테스트 코드처럼 auth 후 바로 subscribe (응답 안 기다림)
+        if (subscribedTopicsRef.current.size > 0) {
+          console.log("[MarketWS] Sending subscribe:", Array.from(subscribedTopicsRef.current));
+          send({ type: "subscribe", topics: Array.from(subscribedTopicsRef.current) });
+        }
+      } else {
+        console.warn("[MarketWS] No access token available");
       }
     };
 
@@ -159,15 +179,19 @@ export function useMarketWebSocket(options: UseMarketWebSocketOptions = {}) {
           break;
 
         case "auth":
-          if (msg.status === "ok") {
+          console.log("[MarketWS] Auth response:", msg);
+          if (msg.ok) {
+            console.log("[MarketWS] Authenticated successfully");
             setIsAuthenticated(true);
             // Re-subscribe to previously subscribed topics
-            for (const topic of subscribedTopicsRef.current) {
-              send({ type: "subscribe", topic });
+            if (subscribedTopicsRef.current.size > 0) {
+              console.log("[MarketWS] Re-subscribing to:", Array.from(subscribedTopicsRef.current));
+              send({ type: "subscribe", topics: Array.from(subscribedTopicsRef.current) });
             }
           } else {
+            console.warn("[MarketWS] Auth failed");
             setIsAuthenticated(false);
-            onErrorRef.current?.("AUTH_FAILED", msg.message ?? "Authentication failed");
+            onErrorRef.current?.("AUTH_FAILED", "Authentication failed");
           }
           break;
 
@@ -186,15 +210,16 @@ export function useMarketWebSocket(options: UseMarketWebSocketOptions = {}) {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      console.log("[MarketWS] Closed:", event.code, event.reason);
       setIsConnected(false);
       setIsAuthenticated(false);
       wsRef.current = null;
       scheduleReconnect();
     };
 
-    ws.onerror = () => {
-      // onclose will fire after onerror, reconnect is handled there
+    ws.onerror = (error) => {
+      console.error("[MarketWS] Error:", error);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [send, scheduleReconnect]);
@@ -213,10 +238,11 @@ export function useMarketWebSocket(options: UseMarketWebSocketOptions = {}) {
 
   const subscribe = useCallback(
     (stockIds: (string | number)[]) => {
-      for (const id of stockIds) {
-        const topic = `stock.${id}`;
-        subscribedTopicsRef.current.add(topic);
-        send({ type: "subscribe", topic });
+      const topics = stockIds.map((id) => `quote:${id}`);
+      topics.forEach((topic) => subscribedTopicsRef.current.add(topic));
+      if (topics.length > 0) {
+        console.log("[MarketWS] Subscribing to:", topics);
+        send({ type: "subscribe", topics });
       }
     },
     [send],
@@ -224,10 +250,10 @@ export function useMarketWebSocket(options: UseMarketWebSocketOptions = {}) {
 
   const unsubscribe = useCallback(
     (stockIds: (string | number)[]) => {
-      for (const id of stockIds) {
-        const topic = `stock.${id}`;
-        subscribedTopicsRef.current.delete(topic);
-        send({ type: "unsubscribe", topic });
+      const topics = stockIds.map((id) => `quote:${id}`);
+      topics.forEach((topic) => subscribedTopicsRef.current.delete(topic));
+      if (topics.length > 0) {
+        send({ type: "unsubscribe", topics });
       }
     },
     [send],

@@ -21,6 +21,25 @@ marketApi.interceptors.request.use((config) => {
   return config;
 });
 
+// --- Category Types ---
+
+export interface CategoryResponse {
+  categoryId: number;
+  name: string;
+}
+
+export interface CategoryStockListResponse {
+  categoryId: number;
+  categoryName: string;
+  stocks: StockListItem[];
+}
+
+export interface CategoryChangeRateResponse {
+  categoryId: number;
+  categoryName: string;
+  changeRate: number;
+}
+
 // --- Stock List / Closing Price Types ---
 
 export interface StockListItem {
@@ -76,9 +95,16 @@ const PERIOD_TO_TIMEFRAME: Record<ChartPeriod, Timeframe> = {
   "년봉": "YEAR",
 };
 
+function toLocalDateTime(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 function getDefaultTimeRange(period: ChartPeriod): { startTime: string; endTime: string } {
   const now = new Date();
-  const end = now.toISOString().slice(0, 19); // LocalDateTime 형식
+  // 서버 시간과의 차이를 고려해 10분 버퍼 적용
+  now.setMinutes(now.getMinutes() - 10);
+  const end = toLocalDateTime(now);
 
   const start = new Date(now);
   switch (period) {
@@ -100,7 +126,7 @@ function getDefaultTimeRange(period: ChartPeriod): { startTime: string; endTime:
   }
 
   return {
-    startTime: start.toISOString().slice(0, 19),
+    startTime: toLocalDateTime(start),
     endTime: end,
   };
 }
@@ -196,7 +222,32 @@ export async function fetchClosingPrices(
 }
 
 export async function fetchMarketStatus(): Promise<unknown> {
-  const res = await marketApi.get("/market/stocks/status");
+  const res = await marketApi.get("/market/status");
+  return res.data;
+}
+
+// --- Category APIs ---
+
+export async function fetchCategories(): Promise<CategoryResponse[]> {
+  const res = await marketApi.get<CategoryResponse[]>("/market/categories");
+  return res.data;
+}
+
+export async function fetchCategoryStocks(
+  categoryId: number,
+): Promise<CategoryStockListResponse> {
+  const res = await marketApi.get<CategoryStockListResponse>(
+    `/market/categories/${categoryId}/stocks`,
+  );
+  return res.data;
+}
+
+export async function fetchCategoryChangeRate(
+  categoryId: number,
+): Promise<CategoryChangeRateResponse> {
+  const res = await marketApi.get<CategoryChangeRateResponse>(
+    `/market/categories/${categoryId}/change-rate`,
+  );
   return res.data;
 }
 

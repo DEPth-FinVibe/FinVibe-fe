@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField } from "@/components/TextField";
 import { StockListItem } from "@/components/StockListItem";
@@ -9,6 +9,7 @@ import { cn } from "@/utils/cn";
 import { formatPriceWithSymbol, formatChangeRate, formatVolume } from "@/utils/formatStock";
 import { useTopByVolumeWithPrices, useStockSearchWithPrices } from "@/hooks/useMarketQueries";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import type { StockWithPrice } from "@/api/market";
 
 type MarketFilter = "전체" | "국내" | "해외";
@@ -144,6 +145,32 @@ function toMarketTypeParam(filter: MarketFilter): string | undefined {
   return undefined;
 }
 
+// 실시간 가격 업데이트를 위한 래퍼 컴포넌트
+interface RealTimeStockItemProps {
+  stock: StockWithPrice;
+  onClick: () => void;
+}
+
+const RealTimeStockItem = memo(({ stock, onClick }: RealTimeStockItemProps) => {
+  const quote = useQuote(stock.stockId);
+
+  // 실시간 데이터가 있으면 사용, 없으면 REST API 데이터 사용
+  const price = quote?.close ?? stock.close;
+  const changePct = quote?.prevDayChangePct ?? stock.prevDayChangePct;
+  const volume = quote?.volume ?? stock.volume;
+
+  return (
+    <StockListItem
+      stockName={stock.name}
+      stockCode={stock.symbol}
+      tradingVolume={formatVolume(volume)}
+      price={formatPriceWithSymbol(price)}
+      changeRate={formatChangeRate(changePct)}
+      onClick={onClick}
+    />
+  );
+});
+
 const SimulationPage = () => {
   const navigate = useNavigate();
   const [leftMarketFilter, setLeftMarketFilter] = useState<MarketFilter>("전체");
@@ -158,6 +185,8 @@ const SimulationPage = () => {
   const marketTypeParam = isSearchMode ? toMarketTypeParam(leftMarketFilter) : undefined;
   const topByVolume = useTopByVolumeWithPrices();
   const searchResult = useStockSearchWithPrices(debouncedQuery, marketTypeParam);
+
+  const { subscribe, unsubscribe } = useMarketStore();
 
   const rightTabs: RightTab[] = ["관심 종목", "거래 종목", "예약/자동 주문", "포트폴리오"];
 
@@ -185,6 +214,19 @@ const SimulationPage = () => {
   const hasMore = visibleCount < filteredStocks.length;
   const isLoading = isSearchMode ? searchResult.isLoading : topByVolume.isLoading;
 
+  // 화면에 보이는 종목들 웹소켓 구독
+  useEffect(() => {
+    const stockIds = visibleStocks.map((s) => s.stockId);
+    if (stockIds.length > 0) {
+      subscribe(stockIds);
+    }
+    return () => {
+      if (stockIds.length > 0) {
+        unsubscribe(stockIds);
+      }
+    };
+  }, [visibleStocks, subscribe, unsubscribe]);
+
   const handleShowMore = () => {
     setVisibleCount((prev) => prev + PAGE_SIZE);
   };
@@ -200,12 +242,12 @@ const SimulationPage = () => {
   };
 
   return (
-    <div className="bg-white ">
-      <main className="flex px-32 py-6 gap-20">
+    <div className="bg-white h-[calc(100vh-64px)] overflow-hidden">
+      <main className="flex px-32 py-6 gap-20 h-full">
         {/* 왼쪽 패널 - 주식 검색 및 리스트 */}
-        <section className="flex-1">
+        <section className="flex-1 flex flex-col min-h-0">
           {/* 마켓 필터 탭 */}
-          <div className="mb-6">
+          <div className="mb-6 shrink-0">
             <LeftMarketFilterTabs value={leftMarketFilter} onChange={handleFilterChange} />
           </div>
 
@@ -216,12 +258,12 @@ const SimulationPage = () => {
             leftIcon={<SearchIcon className="w-5 h-5 text-gray-400" />}
             value={searchQuery}
             onChange={handleSearchChange}
-            className="mb-6"
+            className="mb-6 shrink-0"
             inputClassName="bg-gray-100 rounded-lg"
           />
 
-          {/* 주식 리스트 */}
-          <div className="flex flex-col gap-4">
+          {/* 주식 리스트 - 스크롤 영역 */}
+          <div className="flex flex-col gap-4 overflow-y-auto flex-1 pr-2">
             {isLoading && (
               <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
                 로딩중...
@@ -233,13 +275,9 @@ const SimulationPage = () => {
               </div>
             )}
             {!isLoading && visibleStocks.map((stock: StockWithPrice) => (
-              <StockListItem
+              <RealTimeStockItem
                 key={stock.stockId}
-                stockName={stock.name}
-                stockCode={stock.symbol}
-                tradingVolume={formatVolume(stock.volume)}
-                price={formatPriceWithSymbol(stock.close)}
-                changeRate={formatChangeRate(stock.prevDayChangePct)}
+                stock={stock}
                 onClick={() => navigate(`/simulation/${stock.stockId}`)}
               />
             ))}
@@ -255,7 +293,7 @@ const SimulationPage = () => {
         </section>
 
         {/* 오른쪽 패널 - 관심 종목 등 */}
-        <aside className="shrink-0">
+        <aside className="shrink-0 flex flex-col min-h-0">
           {/* 상단 탭 */}
           <div className="flex border-b border-gray-200 mb-4">
             {rightTabs.map((tab) => (
@@ -275,12 +313,12 @@ const SimulationPage = () => {
           </div>
 
           {/* 서브 필터 탭 */}
-          <div className="mb-4">
+          <div className="mb-4 shrink-0">
             <RightMarketFilterTabs value={rightMarketFilter} onChange={setRightMarketFilter} />
           </div>
 
-          {/* 관심 종목 리스트 */}
-          <div className="flex flex-col gap-3">
+          {/* 관심 종목 리스트 - 스크롤 영역 */}
+          <div className="flex flex-col gap-3 overflow-y-auto flex-1">
             {MOCK_WATCHLIST.map((item) => (
               <WatchlistCard
                 key={item.id}

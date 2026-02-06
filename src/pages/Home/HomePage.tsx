@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, memo } from "react";
 import {
   StockChartHeader,
   TradingVolumeRank,
+  TradingVolumeRankSkeleton,
   RelatedNews,
   Chip
 } from "@/components";
@@ -14,6 +15,7 @@ import {
   useTopFalling,
 } from "@/hooks/useMarketQueries";
 import type { StockWithPrice } from "@/api/market";
+import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import LineChartIcon from "@/assets/svgs/LineChartIcon";
 
 const MOCK_FALLBACK = [
@@ -30,6 +32,36 @@ const MOCK_FALLBACK = [
 ];
 
 type FilterType = "거래대금" | "거래량" | "급상승" | "급하락";
+
+// 실시간 가격 업데이트를 위한 래퍼 컴포넌트
+interface RealTimeStockRowProps {
+  stock: StockWithPrice;
+  rank: number;
+  isSelected: boolean;
+  onSelect: () => void;
+}
+
+const RealTimeStockRow = memo(({ stock, rank, isSelected, onSelect }: RealTimeStockRowProps) => {
+  const quote = useQuote(stock.stockId);
+
+  // 실시간 데이터가 있으면 사용, 없으면 REST API 데이터 사용
+  const price = quote?.close ?? stock.close;
+  const changePct = quote?.prevDayChangePct ?? stock.prevDayChangePct;
+  const value = quote?.value ?? stock.value;
+
+  return (
+    <TradingVolumeRank
+      rank={rank}
+      stockName={stock.name}
+      ticker={stock.symbol}
+      currentPrice={formatPrice(price)}
+      changeRate={formatChangeRate(changePct)}
+      tradingVolume={formatTradingValue(value)}
+      onClick={onSelect}
+      className={`border-none ${isSelected ? "bg-gray-50" : ""}`}
+    />
+  );
+});
 
 const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"popular" | "personal">("popular");
@@ -61,18 +93,17 @@ const HomePage: React.FC = () => {
   const isError = activeQuery.isError;
   const stockData = activeQuery.data;
 
-  const stockList = useMemo(() => {
-    if (!stockData || stockData.length === 0) return null;
-    return stockData.map((stock: StockWithPrice, index: number) => ({
-      rank: index + 1,
-      name: stock.name,
-      ticker: stock.symbol,
-      stockId: stock.stockId,
-      price: formatPrice(stock.close),
-      change: formatChangeRate(stock.prevDayChangePct),
-      vol: formatTradingValue(stock.value),
-    }));
-  }, [stockData]);
+  const { subscribe, unsubscribe } = useMarketStore();
+
+  // 화면에 표시되는 종목들 웹소켓 구독
+  useEffect(() => {
+    if (!stockData || stockData.length === 0) return;
+    const stockIds = stockData.map((s) => s.stockId);
+    subscribe(stockIds);
+    return () => {
+      unsubscribe(stockIds);
+    };
+  }, [stockData, subscribe, unsubscribe]);
 
   return (
     <div className="bg-white font-noto">
@@ -175,11 +206,13 @@ const HomePage: React.FC = () => {
           {/* 리스트 아이템 */}
           <div className="flex flex-col">
             {isLoading && (
-              <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
-                로딩중...
-              </div>
+              <>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <TradingVolumeRankSkeleton key={i} className="border-none" />
+                ))}
+              </>
             )}
-            {(isError || (!isLoading && !stockList)) &&
+            {(isError || (!isLoading && (!stockData || stockData.length === 0))) &&
               MOCK_FALLBACK.map((stock) => (
                 <TradingVolumeRank
                   key={stock.ticker}
@@ -200,23 +233,19 @@ const HomePage: React.FC = () => {
                 />
               ))
             }
-            {!isLoading && stockList && stockList.map((stock) => (
-              <TradingVolumeRank
+            {!isLoading && !isError && stockData && stockData.length > 0 && stockData.map((stock: StockWithPrice, index: number) => (
+              <RealTimeStockRow
                 key={stock.stockId}
-                rank={stock.rank}
-                stockName={stock.name}
-                ticker={stock.ticker}
-                currentPrice={stock.price}
-                changeRate={stock.change}
-                tradingVolume={stock.vol}
-                onClick={() => setSelectedStock({
+                stock={stock}
+                rank={index + 1}
+                isSelected={selectedStock.ticker === stock.symbol}
+                onSelect={() => setSelectedStock({
                   ...selectedStock,
                   name: stock.name,
-                  ticker: stock.ticker,
-                  price: stock.price,
-                  change: stock.change
+                  ticker: stock.symbol,
+                  price: formatPrice(stock.close),
+                  change: formatChangeRate(stock.prevDayChangePct)
                 })}
-                className={`border-none ${selectedStock.ticker === stock.ticker ? "bg-gray-50" : ""}`}
               />
             ))}
           </div>

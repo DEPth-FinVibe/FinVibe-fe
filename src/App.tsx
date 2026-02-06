@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "@/pages/Login/LoginPage";
 import SignupPage from "@/pages/Signup/SignupPage";
@@ -9,6 +9,7 @@ import NewsDetailPage from "@/pages/News/NewsDetailPage";
 import ChallengePage from "@/pages/Challenge/ChallengePage";
 import AILearningPage from "@/pages/AILearning/AILearningPage";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useMarketStore } from "@/store/useMarketStore";
 import MainLayout from "@/components/Layout/MainLayout";
 
 // 차트 라이브러리를 사용하는 페이지는 lazy loading
@@ -18,6 +19,16 @@ const StockDetailPage = lazy(() => import("@/pages/Simulation/StockDetailPage"))
 // 앱 라우팅 설정
 function App() {
   const { tokens } = useAuthStore();
+  const { connect, disconnect } = useMarketStore();
+
+  // 로그인 시 웹소켓 연결, 로그아웃 시 연결 해제
+  useEffect(() => {
+    if (tokens) {
+      connect();
+    } else {
+      disconnect();
+    }
+  }, [tokens, connect, disconnect]);
 
   return (
     <BrowserRouter>
