@@ -32,3 +32,6 @@ export type { CourseItemProps, CourseLevel } from "./Progress/CourseItem";
 export { AILearningInsight, type AILearningInsightProps } from "./AILearningInsight";
 export { LearningStats, type LearningStatsProps } from "./LearningStats";
 export { BadgeCard, type BadgeCardProps, type BadgeType } from "./BadgeCard";
+export { TotalAssets, type TotalAssetsProps } from "./TotalAssets";
+export { MyPortfolio, type MyPortfolioProps } from "./MyPortfolio";
+export { PortfolioPerformance, type PortfolioPerformanceProps } from "./PortfolioPerformance";

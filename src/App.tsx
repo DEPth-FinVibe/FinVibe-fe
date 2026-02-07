@@ -8,6 +8,14 @@ import NewsPage from "@/pages/News/NewsPage";
 import NewsDetailPage from "@/pages/News/NewsDetailPage";
 import ChallengePage from "@/pages/Challenge/ChallengePage";
 import AILearningPage from "@/pages/AILearning/AILearningPage";
+import MyPage from "@/pages/MyPage/MyPage";
+import MyPageSettingsPage from "@/pages/MyPage/MyPageSettingsPage";
+import TermsPage from "@/pages/MyPage/TermsPage";
+import PrivacyPolicyPage from "@/pages/MyPage/PrivacyPolicyPage";
+import MyAssetsPage from "@/pages/MyPage/MyAssetsPage";
+import MyPortfolioManagementPage from "@/pages/MyPage/MyPortfolioManagementPage";
+import ServiceRankingPage from "@/pages/ServiceRanking/ServiceRankingPage";
+import ServiceRankingUserPage from "@/pages/ServiceRanking/ServiceRankingUserPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMarketStore } from "@/store/useMarketStore";
 import MainLayout from "@/components/Layout/MainLayout";
@@ -44,6 +52,14 @@ function App() {
           <Route path="/news" element={<NewsPage />} />
           <Route path="/news/:newsId" element={<NewsDetailPage />} />
           <Route path="/challenge" element={<ChallengePage />} />
+          <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage/settings" element={<MyPageSettingsPage />} />
+          <Route path="/mypage/terms" element={<TermsPage />} />
+          <Route path="/mypage/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/mypage/assets" element={<MyAssetsPage />} />
+          <Route path="/mypage/portfolio" element={<MyPortfolioManagementPage />} />
+          <Route path="/mypage/service-ranking" element={<ServiceRankingPage />} />
+          <Route path="/mypage/service-ranking/user" element={<ServiceRankingUserPage />} />
         </Route>
         
         <Route path="/login" element={<LoginPage />} />

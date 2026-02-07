@@ -25,4 +25,3 @@ const GraphIcon: React.FC<Props> = ({ className }) => {
 };
 
 export default GraphIcon;
-

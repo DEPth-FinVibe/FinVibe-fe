@@ -6,11 +6,20 @@ import Chip from "@/components/Chip/Chip";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import { cn } from "@/utils/cn";
-import { formatPriceWithSymbol, formatChangeRate, formatVolume } from "@/utils/formatStock";
-import { useTopByVolumeWithPrices, useStockSearchWithPrices } from "@/hooks/useMarketQueries";
+import {
+  formatPriceWithSymbol,
+  formatChangeRate,
+  formatVolume,
+} from "@/utils/formatStock";
+import {
+  useTopByVolumeWithPrices,
+  useStockSearchWithPrices,
+} from "@/hooks/useMarketQueries";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import type { StockWithPrice } from "@/api/market";
+import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPortfolioTab";
+import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
 
 type MarketFilter = "전체" | "국내" | "해외";
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
@@ -57,7 +66,7 @@ const LeftMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
             "px-8 py-2.5 rounded-lg text-Body_L_Regular transition-colors",
             value === filter
               ? "bg-main-1 text-white"
-              : "bg-white text-black border border-gray-300"
+              : "bg-white text-black border border-gray-300",
           )}
         >
           {filter}
@@ -83,7 +92,7 @@ const RightMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
             "px-4 py-1.5 rounded-[20px]",
             value === filter
               ? "bg-main-1 text-white border-main-1"
-              : "bg-white text-black border-gray-300"
+              : "bg-white text-black border-gray-300",
           )}
         />
       ))}
@@ -116,8 +125,12 @@ const WatchlistCard = ({
     <div className="flex items-center justify-between px-4 py-3 border border-gray-200 rounded-lg">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className="text-Subtitle_S_Medium text-sub-blue">{stockName}</span>
-          <span className="text-Caption_L_Light text-gray-400">{stockCode}</span>
+          <span className="text-Subtitle_S_Medium text-sub-blue">
+            {stockName}
+          </span>
+          <span className="text-Caption_L_Light text-gray-400">
+            {stockCode}
+          </span>
         </div>
         <span className="text-Caption_L_Light text-gray-400">
           {tradingVolume ? `거래량: ${tradingVolume}` : "거래량:"}
@@ -132,7 +145,9 @@ const WatchlistCard = ({
             direction={iconDirection}
             ariaLabel="등락률"
           />
-          <span className={cn("text-Body_M_Light", changeColor)}>{changeRate}</span>
+          <span className={cn("text-Body_M_Light", changeColor)}>
+            {changeRate}
+          </span>
         </div>
       </div>
     </div>
@@ -173,8 +188,10 @@ const RealTimeStockItem = memo(({ stock, onClick }: RealTimeStockItemProps) => {
 
 const SimulationPage = () => {
   const navigate = useNavigate();
-  const [leftMarketFilter, setLeftMarketFilter] = useState<MarketFilter>("전체");
-  const [rightMarketFilter, setRightMarketFilter] = useState<MarketFilter>("전체");
+  const [leftMarketFilter, setLeftMarketFilter] =
+    useState<MarketFilter>("전체");
+  const [rightMarketFilter, setRightMarketFilter] =
+    useState<MarketFilter>("전체");
   const [rightTab, setRightTab] = useState<RightTab>("관심 종목");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -182,13 +199,47 @@ const SimulationPage = () => {
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
   const isSearchMode = debouncedQuery.length >= 1;
 
-  const marketTypeParam = isSearchMode ? toMarketTypeParam(leftMarketFilter) : undefined;
+  const marketTypeParam = isSearchMode
+    ? toMarketTypeParam(leftMarketFilter)
+    : undefined;
   const topByVolume = useTopByVolumeWithPrices();
-  const searchResult = useStockSearchWithPrices(debouncedQuery, marketTypeParam);
+  const searchResult = useStockSearchWithPrices(
+    debouncedQuery,
+    marketTypeParam,
+  );
 
   const { subscribe, unsubscribe } = useMarketStore();
+  const [portfolioGroups, setPortfolioGroups] = useState<
+    PortfolioGroup[] | null
+  >(null);
+  const [isCreatingPortfolioGroup, setIsCreatingPortfolioGroup] =
+    useState(false);
+  const [createPortfolioGroupError, setCreatePortfolioGroupError] = useState<
+    string | null
+  >(null);
+  const [isUpdatingPortfolioGroup, setIsUpdatingPortfolioGroup] =
+    useState(false);
+  const [updatingPortfolioGroupId, setUpdatingPortfolioGroupId] = useState<
+    number | null
+  >(null);
+  const [updatePortfolioGroupError, setUpdatePortfolioGroupError] = useState<
+    string | null
+  >(null);
+  const [isDeletingPortfolioGroup, setIsDeletingPortfolioGroup] =
+    useState(false);
+  const [deletingPortfolioGroupId, setDeletingPortfolioGroupId] = useState<
+    number | null
+  >(null);
+  const [deletePortfolioGroupError, setDeletePortfolioGroupError] = useState<
+    string | null
+  >(null);
 
-  const rightTabs: RightTab[] = ["관심 종목", "거래 종목", "예약/자동 주문", "포트폴리오"];
+  const rightTabs: RightTab[] = [
+    "관심 종목",
+    "거래 종목",
+    "예약/자동 주문",
+    "포트폴리오",
+  ];
 
   const filteredStocks = useMemo(() => {
     const sourceData = isSearchMode ? searchResult.data : topByVolume.data;
@@ -199,7 +250,7 @@ const SimulationPage = () => {
       return sourceData.filter((stock: StockWithPrice) =>
         isDomestic
           ? DOMESTIC_CATEGORY_IDS.includes(stock.categoryId)
-          : !DOMESTIC_CATEGORY_IDS.includes(stock.categoryId)
+          : !DOMESTIC_CATEGORY_IDS.includes(stock.categoryId),
       );
     }
 
@@ -212,7 +263,9 @@ const SimulationPage = () => {
   );
 
   const hasMore = visibleCount < filteredStocks.length;
-  const isLoading = isSearchMode ? searchResult.isLoading : topByVolume.isLoading;
+  const isLoading = isSearchMode
+    ? searchResult.isLoading
+    : topByVolume.isLoading;
 
   // 화면에 보이는 종목들 웹소켓 구독
   useEffect(() => {
@@ -241,6 +294,172 @@ const SimulationPage = () => {
     setVisibleCount(PAGE_SIZE);
   };
 
+  const fetchPortfolioGroups = async (opts?: { showLoading?: boolean }) => {
+    if (opts?.showLoading) setPortfolioGroups(null);
+    const groups = await assetPortfolioApi.getPortfolios();
+    setPortfolioGroups(Array.isArray(groups) ? groups : []);
+  };
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const groups = await assetPortfolioApi.getPortfolios();
+        if (!alive) return;
+        setPortfolioGroups(Array.isArray(groups) ? groups : []);
+      } catch {
+        if (!alive) return;
+        setPortfolioGroups([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const handleCreatePortfolioGroup = async (name: string) => {
+    setCreatePortfolioGroupError(null);
+    setIsCreatingPortfolioGroup(true);
+    try {
+      // NOTE: 아이콘 선택 UI는 아직 없어서 기본값 사용 (후속 단계에서 교체)
+      await assetPortfolioApi.createPortfolio({ name, iconCode: "ICON_01" });
+      await fetchPortfolioGroups({ showLoading: true });
+    } catch (e) {
+      setCreatePortfolioGroupError(
+        "폴더 생성에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
+      throw e;
+    } finally {
+      setIsCreatingPortfolioGroup(false);
+    }
+  };
+
+  const handleUpdatePortfolioGroupName = async (
+    groupId: number,
+    name: string,
+  ) => {
+    setUpdatePortfolioGroupError(null);
+    setIsUpdatingPortfolioGroup(true);
+    setUpdatingPortfolioGroupId(groupId);
+
+    const current = (portfolioGroups ?? []).find((g) => g.id === groupId);
+    const iconCode = current?.iconCode ?? "ICON_01";
+
+    try {
+      await assetPortfolioApi.updatePortfolio(groupId, { name, iconCode });
+      await fetchPortfolioGroups({ showLoading: true });
+      setUpdatingPortfolioGroupId(null);
+    } catch (e) {
+      setUpdatePortfolioGroupError(
+        "폴더명 수정에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
+      throw e;
+    } finally {
+      setIsUpdatingPortfolioGroup(false);
+    }
+  };
+
+  const handleDeletePortfolioGroup = async (groupId: number) => {
+    setDeletePortfolioGroupError(null);
+    setIsDeletingPortfolioGroup(true);
+    setDeletingPortfolioGroupId(groupId);
+    try {
+      await assetPortfolioApi.deletePortfolio(groupId);
+      await fetchPortfolioGroups({ showLoading: true });
+      setDeletingPortfolioGroupId(null);
+    } catch (e) {
+      setDeletePortfolioGroupError(
+        "폴더 삭제에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
+      throw e;
+    } finally {
+      setIsDeletingPortfolioGroup(false);
+    }
+  };
+
+  const fetchPortfolioGroups = async (opts?: { showLoading?: boolean }) => {
+    if (opts?.showLoading) setPortfolioGroups(null);
+    const groups = await assetPortfolioApi.getPortfolios();
+    setPortfolioGroups(Array.isArray(groups) ? groups : []);
+  };
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const groups = await assetPortfolioApi.getPortfolios();
+        if (!alive) return;
+        setPortfolioGroups(Array.isArray(groups) ? groups : []);
+      } catch {
+        if (!alive) return;
+        setPortfolioGroups([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const handleCreatePortfolioGroup = async (name: string) => {
+    setCreatePortfolioGroupError(null);
+    setIsCreatingPortfolioGroup(true);
+    try {
+      // NOTE: 아이콘 선택 UI는 아직 없어서 기본값 사용 (후속 단계에서 교체)
+      await assetPortfolioApi.createPortfolio({ name, iconCode: "ICON_01" });
+      await fetchPortfolioGroups({ showLoading: true });
+    } catch (e) {
+      setCreatePortfolioGroupError(
+        "폴더 생성에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
+      throw e;
+    } finally {
+      setIsCreatingPortfolioGroup(false);
+    }
+  };
+
+  const handleUpdatePortfolioGroupName = async (
+    groupId: number,
+    name: string,
+  ) => {
+    setUpdatePortfolioGroupError(null);
+    setIsUpdatingPortfolioGroup(true);
+    setUpdatingPortfolioGroupId(groupId);
+
+    const current = (portfolioGroups ?? []).find((g) => g.id === groupId);
+    const iconCode = current?.iconCode ?? "ICON_01";
+
+    try {
+      await assetPortfolioApi.updatePortfolio(groupId, { name, iconCode });
+      await fetchPortfolioGroups({ showLoading: true });
+      setUpdatingPortfolioGroupId(null);
+    } catch (e) {
+      setUpdatePortfolioGroupError(
+        "폴더명 수정에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
+      throw e;
+    } finally {
+      setIsUpdatingPortfolioGroup(false);
+    }
+  };
+
+  const handleDeletePortfolioGroup = async (groupId: number) => {
+    setDeletePortfolioGroupError(null);
+    setIsDeletingPortfolioGroup(true);
+    setDeletingPortfolioGroupId(groupId);
+    try {
+      await assetPortfolioApi.deletePortfolio(groupId);
+      await fetchPortfolioGroups({ showLoading: true });
+      setDeletingPortfolioGroupId(null);
+    } catch (e) {
+      setDeletePortfolioGroupError(
+        "폴더 삭제에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
+      throw e;
+    } finally {
+      setIsDeletingPortfolioGroup(false);
+    }
+  };
+
   return (
     <div className="bg-white h-[calc(100vh-64px)] overflow-hidden">
       <main className="flex px-32 py-6 gap-20 h-full">
@@ -248,7 +467,10 @@ const SimulationPage = () => {
         <section className="flex-1 flex flex-col min-h-0">
           {/* 마켓 필터 탭 */}
           <div className="mb-6 shrink-0">
-            <LeftMarketFilterTabs value={leftMarketFilter} onChange={handleFilterChange} />
+            <LeftMarketFilterTabs
+              value={leftMarketFilter}
+              onChange={handleFilterChange}
+            />
           </div>
 
           {/* 검색창 */}
@@ -271,16 +493,19 @@ const SimulationPage = () => {
             )}
             {!isLoading && visibleStocks.length === 0 && (
               <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
-                {isSearchMode ? "검색 결과가 없습니다." : "종목 데이터를 불러올 수 없습니다."}
+                {isSearchMode
+                  ? "검색 결과가 없습니다."
+                  : "종목 데이터를 불러올 수 없습니다."}
               </div>
             )}
-            {!isLoading && visibleStocks.map((stock: StockWithPrice) => (
-              <RealTimeStockItem
-                key={stock.stockId}
-                stock={stock}
-                onClick={() => navigate(`/simulation/${stock.stockId}`)}
-              />
-            ))}
+            {!isLoading &&
+              visibleStocks.map((stock: StockWithPrice) => (
+                <RealTimeStockItem
+                  key={stock.stockId}
+                  stock={stock}
+                  onClick={() => navigate(`/simulation/${stock.stockId}`)}
+                />
+              ))}
             {!isLoading && hasMore && (
               <button
                 onClick={handleShowMore}
@@ -304,7 +529,7 @@ const SimulationPage = () => {
                   "px-4 py-3 text-Subtitle_S_Medium transition-colors whitespace-nowrap",
                   rightTab === tab
                     ? "text-black border-b-2 border-main-1"
-                    : "text-gray-400 hover:text-gray-600"
+                    : "text-gray-400 hover:text-gray-600",
                 )}
               >
                 {tab}
@@ -312,24 +537,47 @@ const SimulationPage = () => {
             ))}
           </div>
 
-          {/* 서브 필터 탭 */}
-          <div className="mb-4 shrink-0">
-            <RightMarketFilterTabs value={rightMarketFilter} onChange={setRightMarketFilter} />
-          </div>
+          {rightTab === "포트폴리오" ? (
+            <SimulationPortfolioTab
+              groups={portfolioGroups ?? []}
+              isLoading={portfolioGroups === null}
+              isCreating={isCreatingPortfolioGroup}
+              createErrorMessage={createPortfolioGroupError}
+              onSubmitCreateFolder={handleCreatePortfolioGroup}
+              isUpdating={isUpdatingPortfolioGroup}
+              updatingGroupId={updatingPortfolioGroupId}
+              updateErrorMessage={updatePortfolioGroupError}
+              onSubmitUpdateGroupName={handleUpdatePortfolioGroupName}
+              isDeleting={isDeletingPortfolioGroup}
+              deletingGroupId={deletingPortfolioGroupId}
+              deleteErrorMessage={deletePortfolioGroupError}
+              onDeleteGroup={handleDeletePortfolioGroup}
+            />
+          ) : (
+            <>
+              {/* 서브 필터 탭 */}
+              <div className="mb-4 shrink-0">
+                <RightMarketFilterTabs
+                  value={rightMarketFilter}
+                  onChange={setRightMarketFilter}
+                />
+              </div>
 
-          {/* 관심 종목 리스트 - 스크롤 영역 */}
-          <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-            {MOCK_WATCHLIST.map((item) => (
-              <WatchlistCard
-                key={item.id}
-                stockName={item.stockName}
-                stockCode={item.stockCode}
-                tradingVolume={item.tradingVolume}
-                price={item.price}
-                changeRate={item.changeRate}
-              />
-            ))}
-          </div>
+              {/* 관심 종목 리스트 - 스크롤 영역 */}
+              <div className="flex flex-col gap-3 overflow-y-auto flex-1">
+                {MOCK_WATCHLIST.map((item) => (
+                  <WatchlistCard
+                    key={item.id}
+                    stockName={item.stockName}
+                    stockCode={item.stockCode}
+                    tradingVolume={item.tradingVolume}
+                    price={item.price}
+                    changeRate={item.changeRate}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </aside>
       </main>
     </div>

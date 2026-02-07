@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/utils/cn";
+import { walletApi } from "@/api/wallet";
 
 interface OrderBookItem {
   price: number;
@@ -20,6 +21,24 @@ const OrderPanel = ({ currentPrice, askOrders, bidOrders }: OrderPanelProps) => 
   const [orderType, setOrderType] = useState<OrderType>("지정가");
   const [price, setPrice] = useState(currentPrice);
   const [quantity, setQuantity] = useState(1);
+  const [balance, setBalance] = useState<number | null>(null);
+
+  // 보유잔액 api
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await walletApi.getBalance();
+        if (!alive) return;
+        setBalance(Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0);
+      } catch {
+        // 실패 시 로딩 표시 유지
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const percentButtons = ["10%", "25%", "50%", "75%", "100%"];
   const quantityButtons = ["10주", "50주", "100주"];
@@ -135,7 +154,7 @@ const OrderPanel = ({ currentPrice, askOrders, bidOrders }: OrderPanelProps) => 
       <div className="flex justify-between items-center">
         <span className="text-Body_M_Light text-gray-500">보유 잔액</span>
         <div className="bg-gray-100 px-4 py-2 rounded-lg text-Body_M_Light text-gray-400">
-          {"{현재 잔액}"} KRW
+          {balance === null ? "-" : balance.toLocaleString()} KRW
         </div>
       </div>
 
