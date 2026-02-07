@@ -1,13 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { CandlestickData, Time } from "lightweight-charts";
 import { StockListItem } from "@/components/StockListItem";
 import StockChart, { generateMockCandleData, type ChartPeriod } from "./components/StockChart";
 import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
-import { fetchCandles, fetchClosingPrices, type StockClosingPrice } from "@/api/market";
+import { fetchCandles, fetchClosingPrices, toUtcDateTime, type StockClosingPrice, type CandleWithVolume } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 
@@ -32,9 +31,10 @@ const StockDetailPage = () => {
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
 
-  const [chartData, setChartData] = useState<CandlestickData<Time>[]>([]);
+  const [chartData, setChartData] = useState<CandleWithVolume[]>([]);
   const [, setIsLoading] = useState(false);
   const [stockInfo, setStockInfo] = useState<StockClosingPrice | null>(null);
+  const allChartDataRef = useRef<CandleWithVolume[]>([]);
 
   const { subscribe, unsubscribe } = useMarketStore();
   const stockIdNum = stockId ? Number(stockId) : 0;
@@ -100,14 +100,17 @@ const StockDetailPage = () => {
     try {
       const data = await fetchCandles(stockId, chartPeriod);
       if (data.length === 0) {
-        // 빈 배열 반환 시 mock 데이터로 폴백
-        setChartData(generateMockCandleData(chartPeriod));
+        const mock = generateMockCandleData(chartPeriod);
+        allChartDataRef.current = mock;
+        setChartData(mock);
       } else {
+        allChartDataRef.current = data;
         setChartData(data);
       }
     } catch {
-      // API 실패 시 mock 데이터로 폴백
-      setChartData(generateMockCandleData(chartPeriod));
+      const mock = generateMockCandleData(chartPeriod);
+      allChartDataRef.current = mock;
+      setChartData(mock);
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +119,41 @@ const StockDetailPage = () => {
   useEffect(() => {
     loadCandles();
   }, [loadCandles]);
+
+  // 스크롤 시 과거 데이터 추가 로딩
+  const handleLoadMore = useCallback(async (endTime: string) => {
+    if (!stockId) return;
+    try {
+      const startDate = new Date(endTime);
+      // 기간별로 추가 로딩할 범위 결정
+      switch (chartPeriod) {
+        case "분봉": startDate.setDate(startDate.getDate() - 3); break;
+        case "일봉": startDate.setMonth(startDate.getMonth() - 3); break;
+        case "주봉": startDate.setFullYear(startDate.getFullYear() - 1); break;
+        case "월봉": startDate.setFullYear(startDate.getFullYear() - 3); break;
+        case "년봉": startDate.setFullYear(startDate.getFullYear() - 10); break;
+      }
+      const olderData = await fetchCandles(stockId, chartPeriod, {
+        startTime: toUtcDateTime(startDate),
+        endTime: endTime,
+      });
+      if (olderData.length > 0) {
+        const merged = [...olderData, ...allChartDataRef.current];
+        // 중복 제거 (time 기준)
+        const seen = new Set<string>();
+        const unique = merged.filter((d) => {
+          const key = String(d.time);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        allChartDataRef.current = unique;
+        setChartData(unique);
+      }
+    } catch {
+      // 추가 로딩 실패 시 무시
+    }
+  }, [stockId, chartPeriod]);
 
   const handleBack = () => {
     navigate("/simulation");
@@ -170,7 +208,7 @@ const StockDetailPage = () => {
 
           {/* 차트 */}
           <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <StockChart data={chartData} />
+            <StockChart data={chartData} onLoadMore={handleLoadMore} />
           </div>
         </section>
 

@@ -85,6 +85,8 @@ export interface CandleResponse {
   prevDayChangePct: number;
 }
 
+export type IndexType = "KOSPI" | "KOSDAQ";
+
 type Timeframe = "MINUTE" | "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR";
 
 const PERIOD_TO_TIMEFRAME: Record<ChartPeriod, Timeframe> = {
@@ -96,19 +98,20 @@ const PERIOD_TO_TIMEFRAME: Record<ChartPeriod, Timeframe> = {
 };
 
 // 서버가 UTC 기준으로 시간을 검증하므로 UTC로 변환하여 전송
-function toUtcDateTime(date: Date): string {
+export function toUtcDateTime(date: Date): string {
   const pad = (n: number) => n.toString().padStart(2, "0");
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
 }
 
-function getDefaultTimeRange(period: ChartPeriod): { startTime: string; endTime: string } {
+export function getDefaultTimeRange(period: ChartPeriod): { startTime: string; endTime: string } {
   const now = new Date();
   const end = toUtcDateTime(now);
 
   const start = new Date(now);
   switch (period) {
     case "분봉":
-      start.setHours(start.getHours() - 6);
+      // 주말/공휴일 대비 3거래일 분량 조회
+      start.setDate(start.getDate() - 3);
       break;
     case "일봉":
       start.setMonth(start.getMonth() - 3);
@@ -130,7 +133,11 @@ function getDefaultTimeRange(period: ChartPeriod): { startTime: string; endTime:
   };
 }
 
-function toChartData(candles: CandleResponse[]): CandlestickData<Time>[] {
+export interface CandleWithVolume extends CandlestickData<Time> {
+  volume: number;
+}
+
+function toChartData(candles: CandleResponse[]): CandleWithVolume[] {
   return candles
     .map((c) => {
       const isIntraday = c.timeframe === "MINUTE" || c.timeframe === "HOUR";
@@ -138,10 +145,9 @@ function toChartData(candles: CandleResponse[]): CandlestickData<Time>[] {
         ? (Math.floor(new Date(c.at).getTime() / 1000) as Time)
         : (c.at.split("T")[0] as Time);
 
-      return { time, open: c.open, high: c.high, low: c.low, close: c.close };
+      return { time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume ?? 0 };
     })
     .filter((d) => {
-      // 유효하지 않은 데이터 필터링
       if (typeof d.time === "number" && (isNaN(d.time) || d.time <= 0)) return false;
       if (typeof d.time === "string" && (!d.time || d.time === "undefined")) return false;
       if (d.open == null || d.high == null || d.low == null || d.close == null) return false;
@@ -156,7 +162,7 @@ export async function fetchCandles(
   stockId: number | string,
   period: ChartPeriod,
   range?: { startTime: string; endTime: string },
-): Promise<CandlestickData<Time>[]> {
+): Promise<CandleWithVolume[]> {
   const { startTime, endTime } = range ?? getDefaultTimeRange(period);
   const timeframe = PERIOD_TO_TIMEFRAME[period];
 
@@ -271,6 +277,64 @@ export async function fetchCategoryChangeRate(
     `/market/categories/${categoryId}/change-rate`,
   );
   return res.data;
+}
+
+// --- Index Candle API ---
+
+export interface IndexCandleResponse {
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+  volume: number;
+  value: number;
+  indexType: string;
+  timeframe: string;
+  at: string;
+}
+
+export async function fetchIndexCandles(
+  indexType: IndexType,
+  period: ChartPeriod = "일봉",
+): Promise<CandlestickData<Time>[]> {
+  const { startTime, endTime } = getDefaultTimeRange(period);
+  const timeframe = PERIOD_TO_TIMEFRAME[period];
+
+  const res = await marketApi.get<IndexCandleResponse[]>(
+    `/market/indexes/${indexType}/candles`,
+    { params: { startTime, endTime, timeframe } },
+  );
+
+  if (!Array.isArray(res.data) || res.data.length === 0) {
+    return [];
+  }
+
+  return res.data
+    .map((c) => {
+      const isIntraday = c.timeframe === "MINUTE" || c.timeframe === "HOUR";
+      const time = isIntraday
+        ? (Math.floor(new Date(c.at).getTime() / 1000) as Time)
+        : (c.at.split("T")[0] as Time);
+      return { time, open: c.open, high: c.high, low: c.low, close: c.close };
+    })
+    .filter((d) => {
+      if (typeof d.time === "number" && (isNaN(d.time) || d.time <= 0)) return false;
+      if (typeof d.time === "string" && (!d.time || d.time === "undefined")) return false;
+      if (d.open == null || d.high == null || d.low == null || d.close == null) return false;
+      if (isNaN(d.open) || isNaN(d.high) || isNaN(d.low) || isNaN(d.close)) return false;
+      return true;
+    });
+}
+
+// --- Area Chart Data Converter ---
+
+export interface AreaDataPoint {
+  time: Time;
+  value: number;
+}
+
+export function toAreaData(candles: CandlestickData<Time>[]): AreaDataPoint[] {
+  return candles.map((c) => ({ time: c.time, value: c.close }));
 }
 
 // --- Merge Helper ---

@@ -47,7 +47,7 @@ async function refreshTokens() {
 // Response: Handle token refresh
 assetApiClient.interceptors.response.use(
   (res) => res,
-  async (err: AxiosError<any>) => {
+  async (err: AxiosError<{ code?: string }>) => {
     const status = err.response?.status;
     const code = err.response?.data?.code;
     const originalRequest = err.config;
@@ -56,9 +56,9 @@ assetApiClient.interceptors.response.use(
       status === 401 &&
       code === "INVALID_REFRESH_TOKEN" &&
       originalRequest &&
-      !(originalRequest as any)._retry
+      !(originalRequest as { _retry?: boolean })._retry
     ) {
-      (originalRequest as any)._retry = true;
+      (originalRequest as { _retry?: boolean })._retry = true;
       try {
         const newAccessToken = await refreshTokens();
         if (originalRequest.headers) {
@@ -71,7 +71,5 @@ assetApiClient.interceptors.response.use(
     }
 
     return Promise.reject(err);
-  }
+  },
 );
-
-

@@ -120,7 +120,9 @@ export const useMarketStore = create<MarketState>((set, get) => ({
             // Re-subscribe to topics
             const { subscribedStockIds } = get();
             if (subscribedStockIds.size > 0) {
-              const topics = Array.from(subscribedStockIds).map((id) => `quote:${id}`);
+              const topics = Array.from(subscribedStockIds).map(
+                (id) => `quote:${id}`,
+              );
               console.log("[MarketStore] Re-subscribing to:", topics);
               send({ type: "subscribe", topics });
             }

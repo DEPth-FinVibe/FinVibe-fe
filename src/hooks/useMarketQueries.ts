@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import {
   fetchTopRising,
   fetchTopFalling,
@@ -8,7 +8,15 @@ import {
   fetchClosingPrices,
   mergeStockData,
   fetchMarketStatus,
+  fetchIndexCandles,
+  fetchCandles,
+  fetchCategories,
+  fetchCategoryStocks,
+  fetchCategoryChangeRate,
+  toAreaData,
 } from "@/api/market";
+import type { IndexType, AreaDataPoint } from "@/api/market";
+import type { ChartPeriod } from "@/pages/Simulation/components/StockChart";
 
 // --- 장 상태 훅 ---
 
@@ -110,5 +118,86 @@ export function useStockSearchWithPrices(query: string, marketType?: string) {
     },
     enabled: query.length >= 1,
     staleTime: 30_000,
+  });
+}
+
+// --- 지수 캔들 훅 ---
+
+export function useIndexCandles(indexType: IndexType) {
+  return useQuery({
+    queryKey: ["market", "index-candles", indexType],
+    queryFn: async () => {
+      const candles = await fetchIndexCandles(indexType, "일봉");
+      if (candles.length === 0) return null;
+      const last = candles[candles.length - 1];
+      const prev = candles.length >= 2 ? candles[candles.length - 2] : last;
+      const currentValue = last.close;
+      const changeAmount = currentValue - prev.close;
+      const changeRate = prev.close !== 0 ? (changeAmount / prev.close) * 100 : 0;
+      return { currentValue, changeAmount, changeRate };
+    },
+    staleTime: 60_000,
+  });
+}
+
+// --- 카테고리 훅 ---
+
+export function useCategories() {
+  return useQuery({
+    queryKey: ["market", "categories"],
+    queryFn: fetchCategories,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCategoryChangeRate(categoryId: number | undefined) {
+  return useQuery({
+    queryKey: ["market", "category-change-rate", categoryId],
+    queryFn: () => fetchCategoryChangeRate(categoryId!),
+    enabled: categoryId != null,
+    staleTime: 60_000,
+  });
+}
+
+export function useCategoryStocks(categoryId: number | undefined) {
+  return useQuery({
+    queryKey: ["market", "category-stocks", categoryId],
+    queryFn: async () => {
+      const data = await fetchCategoryStocks(categoryId!);
+      const stockIds = data.stocks.map((s) => s.stockId);
+      if (stockIds.length === 0) return { ...data, prices: [] };
+      try {
+        const prices = await fetchClosingPrices(stockIds);
+        return { ...data, prices };
+      } catch {
+        return { ...data, prices: [] };
+      }
+    },
+    enabled: categoryId != null,
+    staleTime: 60_000,
+  });
+}
+
+export function useAllCategoryChangeRates(categoryIds: number[]) {
+  return useQueries({
+    queries: categoryIds.map((id) => ({
+      queryKey: ["market", "category-change-rate", id],
+      queryFn: () => fetchCategoryChangeRate(id),
+      staleTime: 60_000,
+    })),
+  });
+}
+
+// --- 종목 캔들 훅 (에어리어 차트용) ---
+
+export function useStockCandles(stockId: number | undefined, period: ChartPeriod = "일봉") {
+  return useQuery<AreaDataPoint[]>({
+    queryKey: ["market", "stock-candles-area", stockId, period],
+    queryFn: async () => {
+      const candles = await fetchCandles(stockId!, period);
+      return toAreaData(candles);
+    },
+    enabled: stockId != null,
+    staleTime: 60_000,
   });
 }
