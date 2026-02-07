@@ -9,6 +9,7 @@ import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
 import { fetchCandles, fetchClosingPrices, type StockClosingPrice } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
+import { useMarketStatus } from "@/hooks/useMarketQueries";
 
 // Mock 호가 데이터
 const MOCK_ASK_ORDERS = [
@@ -38,17 +39,18 @@ const StockDetailPage = () => {
   const { subscribe, unsubscribe } = useMarketStore();
   const stockIdNum = stockId ? Number(stockId) : 0;
   const quote = useQuote(stockIdNum);
+  const { isMarketOpen } = useMarketStatus();
 
   const chartPeriods: ChartPeriod[] = ["분봉", "일봉", "주봉", "월봉", "년봉"];
 
-  // Subscribe to current stockId
+  // 장 열림 시에만 WebSocket 구독
   useEffect(() => {
-    if (!stockIdNum) return;
+    if (!stockIdNum || !isMarketOpen) return;
     subscribe([stockIdNum]);
     return () => {
       unsubscribe([stockIdNum]);
     };
-  }, [stockIdNum, subscribe, unsubscribe]);
+  }, [stockIdNum, isMarketOpen, subscribe, unsubscribe]);
 
   // Fetch stock info (초기 데이터)
   useEffect(() => {
@@ -66,10 +68,10 @@ const StockDetailPage = () => {
     loadStockInfo();
   }, [stockId]);
 
-  // 실시간 데이터 또는 초기 데이터 사용
-  const price = quote?.close ?? stockInfo?.close;
-  const changePct = quote?.prevDayChangePct ?? stockInfo?.prevDayChangePct;
-  const volume = quote?.volume ?? stockInfo?.volume;
+  // 장 열림: 실시간 WebSocket 데이터 우선, 장 닫힘: 종가 API 데이터만 사용
+  const price = isMarketOpen ? (quote?.close ?? stockInfo?.close) : stockInfo?.close;
+  const changePct = isMarketOpen ? (quote?.prevDayChangePct ?? stockInfo?.prevDayChangePct) : stockInfo?.prevDayChangePct;
+  const volume = isMarketOpen ? (quote?.volume ?? stockInfo?.volume) : stockInfo?.volume;
 
   // Derive display values
   const displayPrice =
@@ -97,7 +99,12 @@ const StockDetailPage = () => {
     setIsLoading(true);
     try {
       const data = await fetchCandles(stockId, chartPeriod);
-      setChartData(data);
+      if (data.length === 0) {
+        // 빈 배열 반환 시 mock 데이터로 폴백
+        setChartData(generateMockCandleData(chartPeriod));
+      } else {
+        setChartData(data);
+      }
     } catch {
       // API 실패 시 mock 데이터로 폴백
       setChartData(generateMockCandleData(chartPeriod));
@@ -173,6 +180,7 @@ const StockDetailPage = () => {
             currentPrice={currentPrice}
             askOrders={MOCK_ASK_ORDERS}
             bidOrders={MOCK_BID_ORDERS}
+            isMarketOpen={isMarketOpen}
           />
         </aside>
       </main>

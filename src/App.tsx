@@ -18,6 +18,7 @@ import ServiceRankingPage from "@/pages/ServiceRanking/ServiceRankingPage";
 import ServiceRankingUserPage from "@/pages/ServiceRanking/ServiceRankingUserPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMarketStore } from "@/store/useMarketStore";
+import { useMarketStatus } from "@/hooks/useMarketQueries";
 import MainLayout from "@/components/Layout/MainLayout";
 
 // 차트 라이브러리를 사용하는 페이지는 lazy loading
@@ -28,15 +29,16 @@ const StockDetailPage = lazy(() => import("@/pages/Simulation/StockDetailPage"))
 function App() {
   const { tokens } = useAuthStore();
   const { connect, disconnect } = useMarketStore();
+  const { isMarketOpen } = useMarketStatus();
 
-  // 로그인 시 웹소켓 연결, 로그아웃 시 연결 해제
+  // 장 열림 + 로그인 시 웹소켓 연결, 장 닫힘 or 로그아웃 시 연결 해제
   useEffect(() => {
-    if (tokens) {
+    if (tokens && isMarketOpen) {
       connect();
     } else {
       disconnect();
     }
-  }, [tokens, connect, disconnect]);
+  }, [tokens, isMarketOpen, connect, disconnect]);
 
   return (
     <BrowserRouter>

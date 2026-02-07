@@ -95,16 +95,15 @@ const PERIOD_TO_TIMEFRAME: Record<ChartPeriod, Timeframe> = {
   "년봉": "YEAR",
 };
 
-function toLocalDateTime(date: Date): string {
+// 서버가 UTC 기준으로 시간을 검증하므로 UTC로 변환하여 전송
+function toUtcDateTime(date: Date): string {
   const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
 }
 
 function getDefaultTimeRange(period: ChartPeriod): { startTime: string; endTime: string } {
   const now = new Date();
-  // 서버 시간과의 차이를 고려해 10분 버퍼 적용
-  now.setMinutes(now.getMinutes() - 10);
-  const end = toLocalDateTime(now);
+  const end = toUtcDateTime(now);
 
   const start = new Date(now);
   switch (period) {
@@ -112,34 +111,43 @@ function getDefaultTimeRange(period: ChartPeriod): { startTime: string; endTime:
       start.setHours(start.getHours() - 6);
       break;
     case "일봉":
-      start.setMonth(start.getMonth() - 6);
+      start.setMonth(start.getMonth() - 3);
       break;
     case "주봉":
-      start.setFullYear(start.getFullYear() - 2);
+      start.setFullYear(start.getFullYear() - 1);
       break;
     case "월봉":
-      start.setFullYear(start.getFullYear() - 5);
+      start.setFullYear(start.getFullYear() - 3);
       break;
     case "년봉":
-      start.setFullYear(start.getFullYear() - 20);
+      start.setFullYear(start.getFullYear() - 10);
       break;
   }
 
   return {
-    startTime: toLocalDateTime(start),
+    startTime: toUtcDateTime(start),
     endTime: end,
   };
 }
 
 function toChartData(candles: CandleResponse[]): CandlestickData<Time>[] {
-  return candles.map((c) => {
-    const isIntraday = c.timeframe === "MINUTE" || c.timeframe === "HOUR";
-    const time = isIntraday
-      ? (Math.floor(new Date(c.at).getTime() / 1000) as Time)
-      : (c.at.split("T")[0] as Time);
+  return candles
+    .map((c) => {
+      const isIntraday = c.timeframe === "MINUTE" || c.timeframe === "HOUR";
+      const time = isIntraday
+        ? (Math.floor(new Date(c.at).getTime() / 1000) as Time)
+        : (c.at.split("T")[0] as Time);
 
-    return { time, open: c.open, high: c.high, low: c.low, close: c.close };
-  });
+      return { time, open: c.open, high: c.high, low: c.low, close: c.close };
+    })
+    .filter((d) => {
+      // 유효하지 않은 데이터 필터링
+      if (typeof d.time === "number" && (isNaN(d.time) || d.time <= 0)) return false;
+      if (typeof d.time === "string" && (!d.time || d.time === "undefined")) return false;
+      if (d.open == null || d.high == null || d.low == null || d.close == null) return false;
+      if (isNaN(d.open) || isNaN(d.high) || isNaN(d.low) || isNaN(d.close)) return false;
+      return true;
+    });
 }
 
 // --- API ---
@@ -152,10 +160,18 @@ export async function fetchCandles(
   const { startTime, endTime } = range ?? getDefaultTimeRange(period);
   const timeframe = PERIOD_TO_TIMEFRAME[period];
 
+  console.log("[fetchCandles] request:", { stockId, period, timeframe, startTime, endTime });
+
   const res = await marketApi.get<CandleResponse[]>(
     `/market/stocks/${stockId}/candles`,
     { params: { startTime, endTime, timeframe } },
   );
+
+  console.log("[fetchCandles] response:", { stockId, period, count: res.data?.length });
+
+  if (!Array.isArray(res.data) || res.data.length === 0) {
+    return [];
+  }
 
   return toChartData(res.data);
 }
@@ -221,8 +237,14 @@ export async function fetchClosingPrices(
   return results.flatMap((r) => r.data);
 }
 
-export async function fetchMarketStatus(): Promise<unknown> {
-  const res = await marketApi.get("/market/status");
+// --- Market Status Types ---
+
+export interface MarketStatusResponse {
+  status: "OPEN" | "CLOSED";
+}
+
+export async function fetchMarketStatus(): Promise<MarketStatusResponse> {
+  const res = await marketApi.get<MarketStatusResponse>("/market/status");
   return res.data;
 }
 

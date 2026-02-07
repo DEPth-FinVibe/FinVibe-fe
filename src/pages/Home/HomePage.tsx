@@ -16,6 +16,7 @@ import {
 } from "@/hooks/useMarketQueries";
 import type { StockWithPrice } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
+import { useMarketStatus } from "@/hooks/useMarketQueries";
 import LineChartIcon from "@/assets/svgs/LineChartIcon";
 
 const MOCK_FALLBACK = [
@@ -94,16 +95,17 @@ const HomePage: React.FC = () => {
   const stockData = activeQuery.data;
 
   const { subscribe, unsubscribe } = useMarketStore();
+  const { isMarketOpen } = useMarketStatus();
 
-  // 화면에 표시되는 종목들 웹소켓 구독
+  // 장 열림 시에만 화면에 표시되는 종목들 웹소켓 구독
   useEffect(() => {
-    if (!stockData || stockData.length === 0) return;
+    if (!isMarketOpen || !stockData || stockData.length === 0) return;
     const stockIds = stockData.map((s) => s.stockId);
     subscribe(stockIds);
     return () => {
       unsubscribe(stockIds);
     };
-  }, [stockData, subscribe, unsubscribe]);
+  }, [stockData, isMarketOpen, subscribe, unsubscribe]);
 
   return (
     <div className="bg-white font-noto">

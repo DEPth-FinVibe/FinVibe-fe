@@ -7,7 +7,23 @@ import {
   searchStocks,
   fetchClosingPrices,
   mergeStockData,
+  fetchMarketStatus,
 } from "@/api/market";
+
+// --- 장 상태 훅 ---
+
+export function useMarketStatus() {
+  const query = useQuery({
+    queryKey: ["market", "status"],
+    queryFn: fetchMarketStatus,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
+
+  const isMarketOpen = query.data?.status === "OPEN";
+
+  return { ...query, isMarketOpen };
+}
 
 // --- 홈페이지용 훅 (상위 10개만 closing-prices 호출) ---
 

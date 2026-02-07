@@ -17,6 +17,7 @@ import {
 } from "@/hooks/useMarketQueries";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
+import { useMarketStatus } from "@/hooks/useMarketQueries";
 import type { StockWithPrice } from "@/api/market";
 import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPortfolioTab";
 import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
@@ -209,6 +210,7 @@ const SimulationPage = () => {
   );
 
   const { subscribe, unsubscribe } = useMarketStore();
+  const { isMarketOpen } = useMarketStatus();
   const [portfolioGroups, setPortfolioGroups] = useState<
     PortfolioGroup[] | null
   >(null);
@@ -267,8 +269,9 @@ const SimulationPage = () => {
     ? searchResult.isLoading
     : topByVolume.isLoading;
 
-  // 화면에 보이는 종목들 웹소켓 구독
+  // 장 열림 시에만 화면에 보이는 종목들 웹소켓 구독
   useEffect(() => {
+    if (!isMarketOpen) return;
     const stockIds = visibleStocks.map((s) => s.stockId);
     if (stockIds.length > 0) {
       subscribe(stockIds);
@@ -278,10 +281,12 @@ const SimulationPage = () => {
         unsubscribe(stockIds);
       }
     };
-  }, [visibleStocks, subscribe, unsubscribe]);
+  }, [visibleStocks, isMarketOpen, subscribe, unsubscribe]);
 
   const handleShowMore = () => {
     setVisibleCount((prev) => prev + PAGE_SIZE);
+
+    
   };
 
   const handleFilterChange = (filter: MarketFilter) => {
@@ -291,90 +296,8 @@ const SimulationPage = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+
     setVisibleCount(PAGE_SIZE);
-  };
-
-  const fetchPortfolioGroups = async (opts?: { showLoading?: boolean }) => {
-    if (opts?.showLoading) setPortfolioGroups(null);
-    const groups = await assetPortfolioApi.getPortfolios();
-    setPortfolioGroups(Array.isArray(groups) ? groups : []);
-  };
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const groups = await assetPortfolioApi.getPortfolios();
-        if (!alive) return;
-        setPortfolioGroups(Array.isArray(groups) ? groups : []);
-      } catch {
-        if (!alive) return;
-        setPortfolioGroups([]);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const handleCreatePortfolioGroup = async (name: string) => {
-    setCreatePortfolioGroupError(null);
-    setIsCreatingPortfolioGroup(true);
-    try {
-      // NOTE: 아이콘 선택 UI는 아직 없어서 기본값 사용 (후속 단계에서 교체)
-      await assetPortfolioApi.createPortfolio({ name, iconCode: "ICON_01" });
-      await fetchPortfolioGroups({ showLoading: true });
-    } catch (e) {
-      setCreatePortfolioGroupError(
-        "폴더 생성에 실패했어요. 잠시 후 다시 시도해주세요.",
-      );
-      throw e;
-    } finally {
-      setIsCreatingPortfolioGroup(false);
-    }
-  };
-
-  const handleUpdatePortfolioGroupName = async (
-    groupId: number,
-    name: string,
-  ) => {
-    setUpdatePortfolioGroupError(null);
-    setIsUpdatingPortfolioGroup(true);
-    setUpdatingPortfolioGroupId(groupId);
-
-    const current = (portfolioGroups ?? []).find((g) => g.id === groupId);
-    const iconCode = current?.iconCode ?? "ICON_01";
-
-    try {
-      await assetPortfolioApi.updatePortfolio(groupId, { name, iconCode });
-      await fetchPortfolioGroups({ showLoading: true });
-      setUpdatingPortfolioGroupId(null);
-    } catch (e) {
-      setUpdatePortfolioGroupError(
-        "폴더명 수정에 실패했어요. 잠시 후 다시 시도해주세요.",
-      );
-      throw e;
-    } finally {
-      setIsUpdatingPortfolioGroup(false);
-    }
-  };
-
-  const handleDeletePortfolioGroup = async (groupId: number) => {
-    setDeletePortfolioGroupError(null);
-    setIsDeletingPortfolioGroup(true);
-    setDeletingPortfolioGroupId(groupId);
-    try {
-      await assetPortfolioApi.deletePortfolio(groupId);
-      await fetchPortfolioGroups({ showLoading: true });
-      setDeletingPortfolioGroupId(null);
-    } catch (e) {
-      setDeletePortfolioGroupError(
-        "폴더 삭제에 실패했어요. 잠시 후 다시 시도해주세요.",
-      );
-      throw e;
-    } finally {
-      setIsDeletingPortfolioGroup(false);
-    }
   };
 
   const fetchPortfolioGroups = async (opts?: { showLoading?: boolean }) => {
