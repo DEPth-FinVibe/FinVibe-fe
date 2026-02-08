@@ -1,7 +1,6 @@
 import { cn } from "@/utils/cn";
 import PinIcon from "@/assets/svgs/PinIcon";
 import CalendarIcon from "@/assets/svgs/CalendarIcon";
-import PeopleIcon from "@/assets/svgs/PeopleIcon";
 import AwardsIcon from "@/assets/svgs/AwardsIcon";
 
 export type ChallengeDifficulty = "쉬움" | "보통" | "어려움";
@@ -17,8 +16,6 @@ export interface ChallengeStatusProps {
   completedDays?: number;
   /** 총 일수 */
   totalDays?: number;
-  /** 참가자 수 */
-  participants?: number;
   /** 종료까지 남은 일수 */
   daysUntilEnd?: number;
   /** 보상 XP */
@@ -27,12 +24,8 @@ export interface ChallengeStatusProps {
   isPinned?: boolean;
   /** 추가 스타일 */
   className?: string;
-  /** 실패 여부 */
-  isFailed?: boolean;
   /** 핀 클릭 핸들러 */
   onPinClick?: () => void;
-  /** 목표 달성 버튼 클릭 핸들러 */
-  onCompleteClick?: () => void;
 }
 
 export const ChallengeStatus = ({
@@ -41,17 +34,15 @@ export const ChallengeStatus = ({
   difficulty = "쉬움",
   completedDays = 7,
   totalDays = 7,
-  participants = 1234,
   daysUntilEnd = 3,
   rewardXp = 100,
   isPinned = false,
   className,
-  isFailed = false,
   onPinClick,
-  onCompleteClick,
 }: ChallengeStatusProps) => {
   const progressPercentage = (completedDays / totalDays) * 100;
   const isCompleted = completedDays >= totalDays;
+  const statusLabel = isCompleted ? "성공" : "진행중";
 
   // 난이도별 스타일 정의
   const difficultyStyles: Record<ChallengeDifficulty, { bg: string; border: string; text: string }> = {
@@ -146,46 +137,30 @@ export const ChallengeStatus = ({
         />
       </div>
 
-      {/* 참가자 수와 종료일 */}
-      <div className="flex gap-[30px] items-center relative self-stretch w-full">
-        <div className="flex gap-2.5 items-center relative">
-          <PeopleIcon className="w-6 h-[26px] text-gray-500" />
-          <span className="text-Body_L_Light text-black">
-            {participants.toLocaleString()}명 참가
-          </span>
-        </div>
+      {/* 종료일 */}
+      <div className="flex items-center relative self-stretch w-full">
         <div className="flex gap-2.5 items-center relative">
           <CalendarIcon className="w-6 h-[26px] text-gray-500" />
           <span className="text-Body_L_Light text-black">{daysUntilEnd}일 후 종료</span>
         </div>
       </div>
 
-      {/* 보상과 완료 버튼 */}
+      {/* 보상과 상태 */}
       <div className="flex items-start justify-between relative self-stretch w-full">
         <div className="flex gap-1 items-center relative">
           <AwardsIcon className="w-6 h-[26px] text-point-yellow" />
           <span className="text-Body_L_Regular text-black">보상: {rewardXp} XP</span>
         </div>
-        {isCompleted ? (
-          <button
-            type="button"
-            onClick={onCompleteClick}
-            className="bg-main-1 text-white text-Body_L_Regular px-4 py-2.5 rounded-lg flex items-center justify-center shadow-sm"
-            aria-label="목표 달성"
-          >
-            목표 달성!
-          </button>
-        ) : isFailed ? (
-          <button
-            type="button"
-            className="bg-etc-red text-white text-Body_L_Regular px-4 py-2.5 rounded-lg flex items-center justify-center shadow-sm"
-            aria-label="실패"
-          >
-            실패
-          </button>
-        ) : null}
+        <span
+          className={cn(
+            "px-4 py-2 rounded-lg text-Body_L_Regular",
+            isCompleted ? "bg-main-1 text-white" : "bg-gray-100 text-gray-600"
+          )}
+          aria-label={`상태: ${statusLabel}`}
+        >
+          {statusLabel}
+        </span>
       </div>
     </article>
   );
 };
-

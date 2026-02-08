@@ -8,7 +8,7 @@ const meta = {
     layout: "padded",
     docs: {
       description: {
-        component: "챌린지 현황을 표시하는 컴포넌트입니다. 제목, 난이도, 진행률, 참가자 수, 종료일, 보상 정보를 포함합니다.",
+        component: "챌린지 현황을 표시하는 컴포넌트입니다. 제목, 난이도, 진행률, 종료일, 보상, 상태 정보를 포함합니다.",
       },
       canvas: {
         sourceState: "shown",
@@ -48,10 +48,6 @@ const meta = {
       control: { type: "number", min: 1, max: 30, step: 1 },
       description: "총 일수",
     },
-    participants: {
-      control: { type: "number", min: 0, step: 1 },
-      description: "참가자 수",
-    },
     daysUntilEnd: {
       control: { type: "number", min: 0, step: 1 },
       description: "종료까지 남은 일수",
@@ -77,7 +73,6 @@ export const Default: Story = {
     difficulty: "쉬움",
     completedDays: 7,
     totalDays: 7,
-    participants: 1234,
     daysUntilEnd: 3,
     rewardXp: 100,
     isPinned: false,
@@ -91,7 +86,6 @@ export const InProgress: Story = {
     difficulty: "보통",
     completedDays: 15,
     totalDays: 30,
-    participants: 5678,
     daysUntilEnd: 15,
     rewardXp: 500,
     isPinned: true,
@@ -105,10 +99,8 @@ export const HardChallenge: Story = {
     difficulty: "어려움",
     completedDays: 45,
     totalDays: 100,
-    participants: 234,
     daysUntilEnd: 55,
     rewardXp: 2000,
     isPinned: false,
   },
 };
-
