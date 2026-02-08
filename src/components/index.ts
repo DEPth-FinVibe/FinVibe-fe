@@ -39,3 +39,4 @@ export { default as SquadWeeklyBattle, type SquadWeeklyBattleProps } from "./Squ
 export { default as SquadRanking, type SquadRankingProps } from "./SquadRanking";
 export { default as SquadMVP, type SquadMVPProps } from "./SquadMVP";
 export { default as SquadInfoPanel, type SquadInfoPanelProps } from "./SquadInfoPanel";
+export { default as SquadRankingModal, type SquadRankingModalProps } from "./SquadRankingModal";

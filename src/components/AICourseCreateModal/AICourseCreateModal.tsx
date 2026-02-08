@@ -1,23 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/utils/cn";
 import { Button } from "@/components/Button";
 import BrainIcon from "@/assets/svgs/BrainIcon";
 import StarIcon from "@/assets/svgs/StarIcon";
 import CloseIcon from "@/assets/svgs/CloseIcon";
 import WhiteCheckCircleIcon from "@/assets/svgs/WhiteCheckCircleIcon";
+import { studyApi, type CourseDifficulty } from "@/api/study";
 
 export interface AICourseCreateModalProps {
   /** 모달 열림/닫힘 상태 */
   isOpen: boolean;
   /** 모달 닫기 핸들러 */
   onClose: () => void;
-  /** 코스 생성 핸들러 */
-  onCreate?: (courseName: string, keywords: string[]) => void;
-  /** 사용 가능한 키워드 목록 */
-  availableKeywords?: string[];
+  /** 코스 생성 완료 핸들러 */
+  onCreated?: () => void;
 }
 
-const DEFAULT_KEYWORDS = [
+const FALLBACK_KEYWORDS = [
   "삼성전자",
   "NAVER",
   "Apple",
@@ -35,17 +34,47 @@ const DEFAULT_KEYWORDS = [
   "스윙",
 ];
 
+const DIFFICULTY_OPTIONS: { value: CourseDifficulty; label: string }[] = [
+  { value: "BEGINNER", label: "초급" },
+  { value: "INTERMEDIATE", label: "중급" },
+  { value: "ADVANCED", label: "고급" },
+];
+
 export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
   isOpen,
   onClose,
-  onCreate,
-  availableKeywords = DEFAULT_KEYWORDS,
+  onCreated,
 }) => {
   const [courseName, setCourseName] = useState("");
-  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(
-    new Set()
-  );
+  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
+  const [difficulty, setDifficulty] = useState<CourseDifficulty>("BEGINNER");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // API 상태
+  const [availableKeywords, setAvailableKeywords] = useState<string[]>(FALLBACK_KEYWORDS);
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  // 모달 열릴 때 추천 키워드 조회
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+
+    const fetchKeywords = async () => {
+      try {
+        const keywords = await studyApi.getRecommendedKeywords();
+        if (!cancelled && keywords.length > 0) {
+          setAvailableKeywords(keywords);
+        }
+      } catch {
+        // 실패 시 fallback 키워드 유지
+      }
+    };
+
+    fetchKeywords();
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   const handleKeywordToggle = (keyword: string) => {
     const newSelected = new Set(selectedKeywords);
@@ -58,53 +87,67 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
       }
     }
     setSelectedKeywords(newSelected);
+    setPreviewContent(null);
   };
 
   const handleRemoveKeyword = (keyword: string) => {
     const newSelected = new Set(selectedKeywords);
     newSelected.delete(keyword);
     setSelectedKeywords(newSelected);
+    setPreviewContent(null);
   };
 
-  // AI가 생성할 학습 내용 미리보기 (선택된 키워드 기반)
-  const generatePreviewContent = (keywords: string[]): string[] => {
-    if (keywords.length === 0) return [];
-    
-    // 예시 학습 내용 생성 (실제로는 API 호출로 대체)
-    const previews: string[] = [];
-    
-    // 첫 번째 키워드 기반 내용
-    if (keywords[0]) {
-      previews.push(`${keywords[0]} 기초 개념 이해하기`);
+  // 코스 미리보기 API 호출
+  const handlePreview = async () => {
+    if (!courseName.trim() || selectedKeywords.size === 0) return;
+    setPreviewLoading(true);
+    try {
+      const res = await studyApi.previewCourseContent({
+        title: courseName.trim(),
+        keywords: Array.from(selectedKeywords),
+        difficulty,
+      });
+      setPreviewContent(res.content);
+    } catch {
+      setPreviewContent("미리보기를 불러오지 못했습니다. 다시 시도해주세요.");
+    } finally {
+      setPreviewLoading(false);
     }
-    
-    // 공통 학습 내용
-    previews.push("관련 차트 분석 및 지표 활용법");
-    previews.push("실전 투자 전략 수집하기");
-    previews.push("포트폴리오 구성 및 리스크 관리");
-    
-    return previews;
   };
 
-  const handleCreate = () => {
-    if (courseName.trim() && selectedKeywords.size > 0) {
-      onCreate?.(courseName.trim(), Array.from(selectedKeywords));
-      // 성공 모달 표시
+  // 코스 생성 API 호출
+  const handleCreate = async () => {
+    if (creating || !courseName.trim() || selectedKeywords.size === 0) return;
+    setCreating(true);
+    try {
+      await studyApi.createCourse({
+        title: courseName.trim(),
+        keywords: Array.from(selectedKeywords),
+        difficulty,
+      });
       setShowSuccessModal(true);
+    } catch {
+      alert("코스 생성에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setCreating(false);
     }
   };
 
   const handleSuccessModalClose = () => {
-    // 초기화
     setCourseName("");
     setSelectedKeywords(new Set());
+    setDifficulty("BEGINNER");
+    setPreviewContent(null);
     setShowSuccessModal(false);
+    onCreated?.();
     onClose();
   };
 
   const handleCancel = () => {
     setCourseName("");
     setSelectedKeywords(new Set());
+    setDifficulty("BEGINNER");
+    setPreviewContent(null);
     onClose();
   };
 
@@ -186,6 +229,28 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
               onChange={(e) => setCourseName(e.target.value)}
               className="w-full bg-transparent text-Body_M_Light text-black placeholder:text-black focus:outline-none"
             />
+          </div>
+        </div>
+
+        {/* 난이도 선택 */}
+        <div className="flex flex-col gap-3 pt-5 mb-[2px]">
+          <label className="text-Subtitle_S_Regular text-black">난이도</label>
+          <div className="flex gap-3">
+            {DIFFICULTY_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setDifficulty(opt.value)}
+                className={cn(
+                  "px-4 py-2 rounded-lg border transition-all text-Body_M_Light",
+                  difficulty === opt.value
+                    ? "bg-main-1 text-white border-main-1"
+                    : "bg-white text-black border-gray-300 hover:bg-gray-50"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -272,29 +337,36 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
           </div>
         )}
 
-        {/* AI가 생성할 학습 내용 미리보기 (키워드가 1개 이상일 때만 표시) */}
+        {/* AI 미리보기 */}
         {selectedKeywords.size > 0 && (
           <div className="bg-[#C7F3EB] rounded-lg p-5 flex flex-col gap-[14px] mb-[30px]">
-            <div className="flex items-center gap-[10px]">
-              <div className="w-6 h-[26px] flex items-center justify-center">
-                <StarIcon className="w-6 h-[26px]" color="#4C4C4C" ariaLabel="AI 생성 학습 내용" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-[10px]">
+                <div className="w-6 h-[26px] flex items-center justify-center">
+                  <StarIcon className="w-6 h-[26px]" color="#4C4C4C" ariaLabel="AI 생성 학습 내용" />
+                </div>
+                <h3 className="text-Subtitle_S_Regular text-[#4C4C4C]">
+                  AI 코스 미리보기
+                </h3>
               </div>
-              <h3 className="text-Subtitle_S_Regular text-[#4C4C4C]">
-                AI가 생성할 학습 내용 미리보기
-              </h3>
+              <button
+                type="button"
+                onClick={handlePreview}
+                disabled={previewLoading || !courseName.trim()}
+                className="text-Caption_L_Light text-sub-blue hover:underline disabled:opacity-50"
+              >
+                {previewLoading ? "생성 중..." : "미리보기 생성"}
+              </button>
             </div>
             <div className="flex flex-col gap-2 pl-5">
-              {generatePreviewContent(Array.from(selectedKeywords)).map(
-                (content, index) => (
-                  <div key={index} className="flex items-center gap-[10px]">
-                    <span className="text-Subtitle_S_Regular text-[#4C4C4C]">
-                      ·
-                    </span>
-                    <span className="text-Body_S_Regular text-[#4C4C4C]">
-                      {content}
-                    </span>
-                  </div>
-                )
+              {previewContent ? (
+                <p className="text-Body_S_Regular text-[#4C4C4C] whitespace-pre-wrap">
+                  {previewContent}
+                </p>
+              ) : (
+                <p className="text-Body_S_Regular text-[#4C4C4C]">
+                  "미리보기 생성" 버튼을 클릭하면 AI가 코스 소개를 생성합니다.
+                </p>
               )}
             </div>
           </div>
@@ -314,10 +386,10 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
             variant="primary"
             size="medium"
             onClick={handleCreate}
-            disabled={!courseName.trim() || selectedKeywords.size === 0}
+            disabled={!courseName.trim() || selectedKeywords.size === 0 || creating}
             className="!flex-1 !h-auto !py-2 !min-h-0 !min-w-0 !px-4 !bg-main-1 !text-white !border-main-1"
           >
-            학습 코스 만들기
+            {creating ? "생성 중..." : "학습 코스 만들기"}
           </Button>
         </div>
       </div>
@@ -326,4 +398,3 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
 };
 
 export default AICourseCreateModal;
-

@@ -26,12 +26,14 @@ export type MyXpInfo = {
 
 export type SquadItem = {
   userId: string;
+  nickname: string;
   totalXp: number;
   level: number;
 };
 
 export type MySquadInfo = {
   userId: string;
+  nickname: string;
   totalXp: number;
   level: number;
 };

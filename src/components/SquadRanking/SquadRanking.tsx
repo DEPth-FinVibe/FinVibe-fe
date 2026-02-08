@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 import { cn } from "@/utils/cn";
 import type { SquadRankingItem } from "@/api/gamification";
 
 export interface SquadRankingProps {
   items: SquadRankingItem[];
   mySquadId: number | null;
+  onViewAll?: () => void;
   className?: string;
 }
 
-const INITIAL_DISPLAY_COUNT = 5;
+const INITIAL_DISPLAY_COUNT = 3;
 
-const getRankMedal = (rank: number): string | null => {
+export const getRankMedal = (rank: number): string | null => {
   if (rank === 1) return "🥇";
   if (rank === 2) return "🥈";
   if (rank === 3) return "🥉";
@@ -26,18 +27,27 @@ const getRankChangeDisplay = (change: number) => {
 export const SquadRanking: React.FC<SquadRankingProps> = ({
   items,
   mySquadId,
+  onViewAll,
   className,
 }) => {
-  const [expanded, setExpanded] = useState(false);
-
   const sorted = [...items].sort((a, b) => a.currentRanking - b.currentRanking);
-  const displayItems = expanded ? sorted : sorted.slice(0, INITIAL_DISPLAY_COUNT);
+  const displayItems = sorted.slice(0, INITIAL_DISPLAY_COUNT);
 
   return (
     <div className={cn("bg-white rounded-lg p-6 shadow-sm border border-gray-200", className)}>
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-xl">🏫</span>
-        <h3 className="text-Subtitle_M_Medium text-black font-bold">실시간 대학 랭킹</h3>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🏫</span>
+          <h3 className="text-Subtitle_M_Medium text-black font-bold">실시간 대학 랭킹</h3>
+        </div>
+        {onViewAll && (
+          <button
+            onClick={onViewAll}
+            className="text-Body_S_Light text-main-1 font-medium hover:underline"
+          >
+            대학 전체 보기
+          </button>
+        )}
       </div>
       <p className="text-Caption_L_Light text-gray-400 mb-6">주간 XP 기준 대학 순위</p>
 
@@ -90,15 +100,6 @@ export const SquadRanking: React.FC<SquadRankingProps> = ({
           );
         })}
       </div>
-
-      {sorted.length > INITIAL_DISPLAY_COUNT && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full mt-4 py-2 text-Body_M_Light text-main-1 font-medium hover:bg-main-1/5 rounded-lg transition-colors"
-        >
-          {expanded ? "접기" : `대학 전체 보기 (${sorted.length})`}
-        </button>
-      )}
     </div>
   );
 };

@@ -11,11 +11,13 @@ import {
   SquadMVP,
   SquadInfoPanel,
 } from "@/components";
+import { SquadRankingModal } from "@/components/SquadRankingModal";
 import {
   gamificationApi,
   type SquadRankingItem,
   type SquadContributionItem,
   type MyXpInfo,
+  type MySquadInfo,
 } from "@/api/gamification";
 
 type ChallengeTab = "personal" | "squad";
@@ -142,8 +144,13 @@ const ChallengePage = () => {
   const [squadRanking, setSquadRanking] = useState<SquadRankingItem[]>([]);
   const [squadContributions, setSquadContributions] = useState<SquadContributionItem[]>([]);
   const [myXp, setMyXp] = useState<MyXpInfo | null>(null);
+  const [mySquadInfo, setMySquadInfo] = useState<MySquadInfo | null>(null);
   const [squadLoading, setSquadLoading] = useState(false);
   const [squadLoaded, setSquadLoaded] = useState(false);
+
+  // 모달 상태
+  const [showRankingModal, setShowRankingModal] = useState(false);
+  const [showContributionModal, setShowContributionModal] = useState(false);
 
   // 스쿼드 탭 활성화 시 API 호출
   useEffect(() => {
@@ -155,10 +162,11 @@ const ChallengePage = () => {
     const fetchSquadData = async () => {
       setSquadLoading(true);
 
-      const [rankingResult, contributionsResult, xpResult] = await Promise.allSettled([
+      const [rankingResult, contributionsResult, xpResult, mySquadResult] = await Promise.allSettled([
         gamificationApi.getSquadRanking(),
         gamificationApi.getMySquadContributions(),
         gamificationApi.getMyXp(),
+        gamificationApi.getMySquad(),
       ]);
 
       if (cancelled) return;
@@ -166,6 +174,7 @@ const ChallengePage = () => {
       if (rankingResult.status === "fulfilled") setSquadRanking(rankingResult.value);
       if (contributionsResult.status === "fulfilled") setSquadContributions(contributionsResult.value);
       if (xpResult.status === "fulfilled") setMyXp(xpResult.value);
+      if (mySquadResult.status === "fulfilled") setMySquadInfo(mySquadResult.value);
 
       setSquadLoading(false);
       setSquadLoaded(true);
@@ -300,10 +309,17 @@ const ChallengePage = () => {
             <SquadWeeklyBattle mySquad={mySquadData} rivalSquad={rivalSquad} />
           )}
           {squadRanking.length > 0 && (
-            <SquadRanking items={squadRanking} mySquadId={mySquadId} />
+            <SquadRanking
+              items={squadRanking}
+              mySquadId={mySquadId}
+              onViewAll={() => setShowRankingModal(true)}
+            />
           )}
           {squadContributions.length > 0 && (
-            <SquadMVP items={squadContributions} />
+            <SquadMVP
+              items={squadContributions}
+              onViewAll={() => setShowContributionModal(true)}
+            />
           )}
         </section>
 
@@ -346,6 +362,24 @@ const ChallengePage = () => {
           {activeTab === "personal" ? renderPersonalTab() : renderSquadTab()}
         </div>
       </main>
+
+      {/* 대학 랭킹 모달 */}
+      <SquadRankingModal
+        isOpen={showRankingModal}
+        onClose={() => setShowRankingModal(false)}
+        variant="university"
+        squadRankingItems={squadRanking}
+        mySquadId={mySquadId}
+      />
+
+      {/* 기여도 랭킹 모달 */}
+      <SquadRankingModal
+        isOpen={showContributionModal}
+        onClose={() => setShowContributionModal(false)}
+        variant="contribution"
+        contributionItems={squadContributions}
+        myNickname={mySquadInfo?.nickname}
+      />
     </div>
   );
 };
