@@ -44,6 +44,11 @@ const MOCK_FALLBACK = [
 
 type FilterType = "거래대금" | "거래량" | "급상승" | "급하락";
 
+function isExcludedThemeCategory(categoryName: string): boolean {
+  const name = categoryName.replace(/\s+/g, "");
+  return name.includes("지수") || name.includes("기타");
+}
+
 // 실시간 가격 업데이트를 위한 래퍼 컴포넌트
 interface RealTimeStockRowProps {
   stock: StockWithPrice;
@@ -138,15 +143,28 @@ const HomePage: React.FC = () => {
 
   // 우측 테마 섹션 데이터
   const { data: categories } = useCategories();
+  const visibleCategories = useMemo(
+    () => (categories ?? []).filter((c) => !isExcludedThemeCategory(c.categoryName)),
+    [categories],
+  );
   const categoryStocks = useCategoryStocks(selectedCategoryId);
   const categoryChangeRate = useCategoryChangeRate(selectedCategoryId);
 
   // 첫 카테고리 자동 선택
   useEffect(() => {
-    if (categories && categories.length > 0 && selectedCategoryId == null) {
-      setSelectedCategoryId(categories[0].categoryId);
+    if (visibleCategories.length > 0 && selectedCategoryId == null) {
+      setSelectedCategoryId(visibleCategories[0].categoryId);
+      return;
     }
-  }, [categories, selectedCategoryId]);
+
+    if (
+      selectedCategoryId != null &&
+      visibleCategories.length > 0 &&
+      !visibleCategories.some((c) => c.categoryId === selectedCategoryId)
+    ) {
+      setSelectedCategoryId(visibleCategories[0].categoryId);
+    }
+  }, [visibleCategories, selectedCategoryId]);
 
   // 선택된 카테고리의 오늘의 테마 AI 분석 로드
   useEffect(() => {
@@ -187,8 +205,8 @@ const HomePage: React.FC = () => {
 
   // 드롭다운용 전체 카테고리 등락률
   const categoryIds = useMemo(
-    () => (categories ?? []).map((c) => c.categoryId),
-    [categories],
+    () => visibleCategories.map((c) => c.categoryId),
+    [visibleCategories],
   );
   const allChangeRatesQueries = useAllCategoryChangeRates(
     showThemeList ? categoryIds : [],
@@ -350,9 +368,9 @@ const HomePage: React.FC = () => {
 
           {/* 테마 리스트 (열림) OR 에어리어 차트 (닫힘) */}
           {showThemeList ? (
-            categories && categories.length > 0 && (
+            visibleCategories.length > 0 && (
               <ThemeListDropdown
-                categories={categories}
+                categories={visibleCategories}
                 changeRates={allChangeRates}
                 topStockByCategory={topStockByCategory}
                 selectedCategoryId={selectedCategoryId!}

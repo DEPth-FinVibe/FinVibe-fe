@@ -33,6 +33,17 @@ const AreaChart = ({ data, height = 250, className }: AreaChartProps) => {
       timeScale: {
         borderVisible: false,
       },
+      handleScroll: {
+        mouseWheel: false,
+        pressedMouseMove: false,
+        horzTouchDrag: false,
+        vertTouchDrag: false,
+      },
+      handleScale: {
+        axisPressedMouseMove: false,
+        mouseWheel: false,
+        pinch: false,
+      },
       crosshair: {
         mode: 1,
       },
