@@ -17,15 +17,19 @@ import {
 } from "@/api/market";
 import type { IndexType, AreaDataPoint } from "@/api/market";
 import type { ChartPeriod } from "@/pages/Simulation/components/StockChart";
+import { useAuthStore } from "@/store/useAuthStore";
 
 // --- 장 상태 훅 ---
 
 export function useMarketStatus() {
+  const isLoggedIn = useAuthStore((s) => s.tokens != null);
+
   const query = useQuery({
     queryKey: ["market", "status"],
     queryFn: fetchMarketStatus,
+    enabled: isLoggedIn,
     staleTime: 30_000,
-    refetchInterval: 30_000,
+    refetchInterval: isLoggedIn ? 30_000 : false,
   });
 
   const isMarketOpen = query.data?.status === "OPEN";
