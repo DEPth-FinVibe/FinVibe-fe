@@ -1,11 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { StockListItem } from "@/components/StockListItem";
-import StockChart, { generateMockCandleData, type ChartPeriod } from "./components/StockChart";
+import StockChart, { type ChartPeriod } from "./components/StockChart";
 import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
+import { fetchCandles, fetchClosingPrices, toUtcDateTime, type StockClosingPrice, type CandleWithVolume } from "@/api/market";
+import { useMarketStore, useQuote } from "@/store/useMarketStore";
+import { useMarketStatus } from "@/hooks/useMarketQueries";
 
 // Mock 호가 데이터
 const MOCK_ASK_ORDERS = [
@@ -24,23 +27,126 @@ const MOCK_BID_ORDERS = [
 
 const StockDetailPage = () => {
   const navigate = useNavigate();
-  const { stockCode } = useParams<{ stockCode: string }>();
+  const { stockId } = useParams<{ stockId: string }>();
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
 
+  const [chartData, setChartData] = useState<CandleWithVolume[]>([]);
+  const [isChartLoading, setIsChartLoading] = useState(false);
+  const [stockInfo, setStockInfo] = useState<StockClosingPrice | null>(null);
+  const allChartDataRef = useRef<CandleWithVolume[]>([]);
+
+  const { subscribe, unsubscribe } = useMarketStore();
+  const stockIdNum = stockId ? Number(stockId) : 0;
+  const quote = useQuote(stockIdNum);
+  const { isMarketOpen } = useMarketStatus();
+
   const chartPeriods: ChartPeriod[] = ["분봉", "일봉", "주봉", "월봉", "년봉"];
 
-  // Mock 주식 데이터 (실제로는 stockCode로 API 호출)
+  // 장 열림 시에만 WebSocket 구독
+  useEffect(() => {
+    if (!stockIdNum || !isMarketOpen) return;
+    subscribe([stockIdNum]);
+    return () => {
+      unsubscribe([stockIdNum]);
+    };
+  }, [stockIdNum, isMarketOpen, subscribe, unsubscribe]);
+
+  // Fetch stock info (초기 데이터)
+  useEffect(() => {
+    if (!stockId) return;
+    const loadStockInfo = async () => {
+      try {
+        const [info] = await fetchClosingPrices([Number(stockId)]);
+        if (info) {
+          setStockInfo(info);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stock info:", error);
+      }
+    };
+    loadStockInfo();
+  }, [stockId]);
+
+  // 장 열림: 실시간 WebSocket 데이터 우선, 장 닫힘: 종가 API 데이터만 사용
+  const price = isMarketOpen ? (quote?.close ?? stockInfo?.close) : stockInfo?.close;
+  const changePct = isMarketOpen ? (quote?.prevDayChangePct ?? stockInfo?.prevDayChangePct) : stockInfo?.prevDayChangePct;
+  const volume = isMarketOpen ? (quote?.volume ?? stockInfo?.volume) : stockInfo?.volume;
+
+  // Derive display values
+  const displayPrice =
+    price != null
+      ? `₩${price.toLocaleString()}`
+      : "₩실시간 가격";
+  const displayChangeRate =
+    changePct != null
+      ? `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%`
+      : "+변화율";
+  const displayVolume =
+    volume != null ? volume.toLocaleString() : "";
+  const currentPrice = price ?? 0;
+
   const stockData = {
-    stockName: "주식 종목 이름",
-    stockCode: stockCode || "종목 코드",
-    tradingVolume: "",
-    price: "₩실시간 가격",
-    changeRate: "+변화율",
-    currentPrice: 71204,
+    stockName: stockInfo?.stockName ?? "로딩 중...",
+    stockCode: stockId || "종목 코드",
+    tradingVolume: displayVolume,
+    price: displayPrice,
+    changeRate: displayChangeRate,
   };
 
-  const chartData = useMemo(() => generateMockCandleData(chartPeriod), [chartPeriod]);
+  const loadCandles = useCallback(async () => {
+    if (!stockId) return;
+    setIsChartLoading(true);
+    try {
+      const data = await fetchCandles(stockId, chartPeriod);
+      allChartDataRef.current = data;
+      setChartData(data);
+    } catch {
+      allChartDataRef.current = [];
+      setChartData([]);
+    } finally {
+      setIsChartLoading(false);
+    }
+  }, [stockId, chartPeriod]);
+
+  useEffect(() => {
+    loadCandles();
+  }, [loadCandles]);
+
+  // 스크롤 시 과거 데이터 추가 로딩
+  const handleLoadMore = useCallback(async (endTime: string) => {
+    if (!stockId) return;
+    try {
+      const startDate = new Date(endTime);
+      // 기간별로 추가 로딩할 범위 결정
+      switch (chartPeriod) {
+        case "분봉": startDate.setDate(startDate.getDate() - 3); break;
+        case "일봉": startDate.setMonth(startDate.getMonth() - 3); break;
+        case "주봉": startDate.setFullYear(startDate.getFullYear() - 1); break;
+        case "월봉": startDate.setFullYear(startDate.getFullYear() - 3); break;
+        case "년봉": startDate.setFullYear(startDate.getFullYear() - 10); break;
+      }
+      const olderData = await fetchCandles(stockId, chartPeriod, {
+        startTime: toUtcDateTime(startDate),
+        endTime: endTime,
+      });
+      if (olderData.length > 0) {
+        const merged = [...olderData, ...allChartDataRef.current];
+        // 중복 제거 (time 기준)
+        const seen = new Set<string>();
+        const unique = merged.filter((d) => {
+          const key = String(d.time);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        allChartDataRef.current = unique;
+        setChartData(unique);
+      }
+    } catch {
+      // 추가 로딩 실패 시 무시
+    }
+  }, [stockId, chartPeriod]);
 
   const handleBack = () => {
     navigate("/simulation");
@@ -94,17 +200,29 @@ const StockDetailPage = () => {
           </div>
 
           {/* 차트 */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <StockChart data={chartData} />
+          <div className="border border-gray-200 rounded-lg overflow-hidden relative">
+            {isChartLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
+                <span className="text-gray-400 text-sm">차트 로딩중...</span>
+              </div>
+            )}
+            {!isChartLoading && chartData.length === 0 ? (
+              <div className="flex items-center justify-center h-[500px] text-gray-400 text-sm">
+                해당 기간의 차트 데이터가 없습니다.
+              </div>
+            ) : (
+              <StockChart data={chartData} onLoadMore={handleLoadMore} />
+            )}
           </div>
         </section>
 
         {/* 오른쪽 패널 - 매수/매도 */}
         <aside className="w-[320px] shrink-0">
           <OrderPanel
-            currentPrice={stockData.currentPrice}
+            currentPrice={currentPrice}
             askOrders={MOCK_ASK_ORDERS}
             bidOrders={MOCK_BID_ORDERS}
+            isMarketOpen={isMarketOpen}
           />
         </aside>
       </main>

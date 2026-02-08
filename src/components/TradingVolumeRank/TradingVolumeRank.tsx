@@ -118,5 +118,49 @@ export const TradingVolumeRank = ({
   );
 };
 
+// 스켈레톤 컴포넌트
+export const TradingVolumeRankSkeleton = ({ className }: { className?: string }) => {
+  return (
+    <div
+      className={cn(
+        "flex items-start w-full py-[10px] border-b border-gray-300 border-solid animate-pulse",
+        className
+      )}
+    >
+      {/* 순위 */}
+      <div className="flex flex-col h-[47px] items-center justify-center pl-[40px] shrink-0 w-[87px]">
+        <div className="h-4 w-6 bg-gray-200 rounded" />
+      </div>
+
+      {/* 종목명 */}
+      <div className="flex flex-col items-start shrink-0 w-[120px] gap-1">
+        <div className="h-4 w-16 bg-gray-200 rounded" />
+        <div className="h-3 w-12 bg-gray-100 rounded" />
+      </div>
+
+      {/* 현재가 */}
+      <div className="flex flex-col items-center justify-center shrink-0 w-[62px]">
+        <div className="h-4 w-14 bg-gray-200 rounded" />
+      </div>
+
+      {/* 등락률 */}
+      <div className="flex gap-[4px] items-start pl-[45px] pr-[20px] shrink-0 w-[120px]">
+        <div className="h-6 w-6 bg-gray-200 rounded" />
+        <div className="h-4 w-12 bg-gray-200 rounded" />
+      </div>
+
+      {/* 거래대금 */}
+      <div className="flex items-center justify-center pl-[36px] shrink-0 w-[104px]">
+        <div className="h-4 w-12 bg-gray-200 rounded" />
+      </div>
+
+      {/* 차트 */}
+      <div className="h-[47px] shrink-0 w-[78px] py-[10px]">
+        <div className="w-full h-full bg-gray-200 rounded" />
+      </div>
+    </div>
+  );
+};
+
 export default TradingVolumeRank;
 

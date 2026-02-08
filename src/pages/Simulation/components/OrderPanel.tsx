@@ -11,12 +11,13 @@ interface OrderPanelProps {
   currentPrice: number;
   askOrders: OrderBookItem[]; // 매도 호가 (위쪽)
   bidOrders: OrderBookItem[]; // 매수 호가 (아래쪽)
+  isMarketOpen?: boolean;
 }
 
 type OrderType = "지정가" | "시장가" | "예약";
 type TradeType = "buy" | "sell";
 
-const OrderPanel = ({ currentPrice, askOrders, bidOrders }: OrderPanelProps) => {
+const OrderPanel = ({ currentPrice, askOrders, bidOrders, isMarketOpen = true }: OrderPanelProps) => {
   const [tradeType, setTradeType] = useState<TradeType>("buy");
   const [orderType, setOrderType] = useState<OrderType>("지정가");
   const [price, setPrice] = useState(currentPrice);
@@ -51,28 +52,43 @@ const OrderPanel = ({ currentPrice, askOrders, bidOrders }: OrderPanelProps) => 
     setQuantity((prev) => Math.max(1, prev + delta));
   };
 
+  const disabled = !isMarketOpen;
+
   return (
     <div className="flex flex-col gap-4">
+      {/* 장 마감 안내 배너 */}
+      {disabled && (
+        <div className="bg-gray-100 text-gray-500 text-center py-3 rounded-lg text-Body_M_Light">
+          현재 장이 마감되어 주문이 불가합니다.
+        </div>
+      )}
+
       {/* 매수/매도 탭 */}
       <div className="flex gap-2">
         <button
           onClick={() => setTradeType("buy")}
+          disabled={disabled}
           className={cn(
             "flex-1 py-3 rounded-lg text-Subtitle_S_Medium transition-colors",
-            tradeType === "buy"
-              ? "bg-etc-red text-white"
-              : "bg-gray-100 text-gray-400"
+            disabled
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : tradeType === "buy"
+                ? "bg-etc-red text-white"
+                : "bg-gray-100 text-gray-400"
           )}
         >
           매수
         </button>
         <button
           onClick={() => setTradeType("sell")}
+          disabled={disabled}
           className={cn(
             "flex-1 py-3 rounded-lg text-Subtitle_S_Medium transition-colors",
-            tradeType === "sell"
-              ? "bg-etc-blue text-white"
-              : "bg-gray-100 text-gray-400"
+            disabled
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : tradeType === "sell"
+                ? "bg-etc-blue text-white"
+                : "bg-gray-100 text-gray-400"
           )}
         >
           매도
@@ -164,7 +180,8 @@ const OrderPanel = ({ currentPrice, askOrders, bidOrders }: OrderPanelProps) => 
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
           <button
             onClick={() => handlePriceChange(-100)}
-            className="px-3 py-2 bg-main-1 text-white text-lg"
+            disabled={disabled}
+            className={cn("px-3 py-2 text-lg", disabled ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-main-1 text-white")}
           >
             −
           </button>
@@ -172,12 +189,14 @@ const OrderPanel = ({ currentPrice, askOrders, bidOrders }: OrderPanelProps) => 
             type="number"
             value={price}
             onChange={(e) => setPrice(Number(e.target.value))}
-            className="flex-1 text-center py-2 text-Subtitle_S_Medium outline-none"
+            disabled={disabled}
+            className={cn("flex-1 text-center py-2 text-Subtitle_S_Medium outline-none", disabled && "bg-gray-50 text-gray-400")}
           />
           <span className="pr-2 text-Body_M_Light text-gray-400">원</span>
           <button
             onClick={() => handlePriceChange(100)}
-            className="px-3 py-2 bg-etc-red text-white text-lg"
+            disabled={disabled}
+            className={cn("px-3 py-2 text-lg", disabled ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-etc-red text-white")}
           >
             +
           </button>
@@ -201,7 +220,8 @@ const OrderPanel = ({ currentPrice, askOrders, bidOrders }: OrderPanelProps) => 
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
           <button
             onClick={() => handleQuantityChange(-1)}
-            className="px-3 py-2 bg-main-1 text-white text-lg"
+            disabled={disabled}
+            className={cn("px-3 py-2 text-lg", disabled ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-main-1 text-white")}
           >
             −
           </button>
@@ -209,12 +229,14 @@ const OrderPanel = ({ currentPrice, askOrders, bidOrders }: OrderPanelProps) => 
             type="number"
             value={quantity}
             onChange={(e) => setQuantity(Number(e.target.value))}
-            className="flex-1 text-center py-2 text-Subtitle_S_Medium outline-none"
+            disabled={disabled}
+            className={cn("flex-1 text-center py-2 text-Subtitle_S_Medium outline-none", disabled && "bg-gray-50 text-gray-400")}
           />
           <span className="pr-2 text-Body_M_Light text-gray-400">주</span>
           <button
             onClick={() => handleQuantityChange(1)}
-            className="px-3 py-2 bg-etc-red text-white text-lg"
+            disabled={disabled}
+            className={cn("px-3 py-2 text-lg", disabled ? "bg-gray-300 text-gray-400 cursor-not-allowed" : "bg-etc-red text-white")}
           >
             +
           </button>

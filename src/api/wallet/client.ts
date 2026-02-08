@@ -29,9 +29,15 @@ async function refreshTokens() {
 
   try {
     // NOTE: refresh는 user 서비스에서 수행
-    const res = await axios.post(`${import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user")}/auth/refresh`, {
-      refreshToken: tokens.refreshToken,
-    });
+    const res = await axios.post(
+      `${
+        import.meta.env.VITE_API_BASE ??
+        (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user")
+      }/auth/refresh`,
+      {
+        refreshToken: tokens.refreshToken,
+      },
+    );
     setTokens(res.data);
     return res.data.accessToken as string;
   } catch (error) {
@@ -43,13 +49,18 @@ async function refreshTokens() {
 // Response: Handle token refresh
 walletApiClient.interceptors.response.use(
   (res) => res,
-  async (err: AxiosError<any>) => {
+  async (err: AxiosError<{ code?: string }>) => {
     const status = err.response?.status;
     const code = err.response?.data?.code;
     const originalRequest = err.config;
 
-    if (status === 401 && code === "INVALID_REFRESH_TOKEN" && originalRequest && !(originalRequest as any)._retry) {
-      (originalRequest as any)._retry = true;
+    if (
+      status === 401 &&
+      code === "INVALID_REFRESH_TOKEN" &&
+      originalRequest &&
+      !(originalRequest as { _retry?: boolean })._retry
+    ) {
+      (originalRequest as { _retry?: boolean })._retry = true;
       try {
         const newAccessToken = await refreshTokens();
         if (originalRequest.headers) {
@@ -62,7 +73,5 @@ walletApiClient.interceptors.response.use(
     }
 
     return Promise.reject(err);
-  }
+  },
 );
-
-

@@ -16,7 +16,7 @@ export const walletApi = {
       const res = await walletApiClient.get<WalletBalance>("/wallets/balance");
       return res.data;
     } catch (e) {
-      const err = e as AxiosError<any>;
+      const err = e as AxiosError<{ code?: string }>;
 
       // 2) 현재 프로젝트는 기본이 /api/user 기반이라, 일부 환경에서는 /api/user/wallet/...로 붙어있을 수 있음
       if (err.response?.status === 404) {
@@ -27,5 +27,3 @@ export const walletApi = {
     }
   },
 };
-
-

@@ -1,21 +1,33 @@
-import { useEffect, useRef } from "react";
-import { createChart, CandlestickSeries } from "lightweight-charts";
-import type { IChartApi, CandlestickData, Time } from "lightweight-charts";
+import { useEffect, useRef, useCallback } from "react";
+import {
+  createChart,
+  CandlestickSeries,
+  HistogramSeries,
+  CrosshairMode,
+} from "lightweight-charts";
+import type {
+  IChartApi,
+  ISeriesApi,
+  CandlestickData,
+  Time,
+  SeriesType,
+} from "lightweight-charts";
+import type { CandleWithVolume } from "@/api/market";
 
 interface StockChartProps {
-  data: CandlestickData<Time>[];
+  data: CandleWithVolume[];
   className?: string;
+  onLoadMore?: (endTime: string) => void;
 }
 
 export type ChartPeriod = "분봉" | "일봉" | "주봉" | "월봉" | "년봉";
 
 // 기간별 Mock 캔들스틱 데이터 생성
-export const generateMockCandleData = (period: ChartPeriod = "일봉"): CandlestickData<Time>[] => {
-  const data: CandlestickData<Time>[] = [];
+export const generateMockCandleData = (period: ChartPeriod = "일봉"): CandleWithVolume[] => {
+  const data: CandleWithVolume[] = [];
   let basePrice = 71000;
   const now = new Date();
 
-  // 기간별 설정
   const config = {
     "분봉": { count: 60, volatility: 100, getTime: (i: number) => {
       const date = new Date(now);
@@ -59,6 +71,7 @@ export const generateMockCandleData = (period: ChartPeriod = "일봉"): Candlest
       high: Math.round(high),
       low: Math.round(low),
       close: Math.round(close),
+      volume: Math.round(Math.random() * 100000),
     });
 
     basePrice = close;
@@ -67,67 +80,144 @@ export const generateMockCandleData = (period: ChartPeriod = "일봉"): Candlest
   return data;
 };
 
-const StockChart = ({ data, className }: StockChartProps) => {
+const StockChart = ({ data, className, onLoadMore }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
+  const isLoadingMoreRef = useRef(false);
 
+  // 차트 초기 생성 (한 번만)
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { color: "#ffffff" },
-        textColor: "#333",
+        textColor: "#6b7280",
+        fontFamily: "'Noto Sans KR', sans-serif",
+        fontSize: 11,
       },
       grid: {
-        vertLines: { color: "#f0f0f0" },
-        horzLines: { color: "#f0f0f0" },
+        vertLines: { color: "#f3f4f6" },
+        horzLines: { color: "#f3f4f6" },
       },
       width: chartContainerRef.current.clientWidth,
       height: 500,
       crosshair: {
-        mode: 1,
+        mode: CrosshairMode.Normal,
+        vertLine: {
+          color: "#9ca3af",
+          width: 1,
+          style: 2,
+          labelBackgroundColor: "#374151",
+        },
+        horzLine: {
+          color: "#9ca3af",
+          width: 1,
+          style: 2,
+          labelBackgroundColor: "#374151",
+        },
       },
       rightPriceScale: {
-        borderColor: "#e0e0e0",
+        borderColor: "#e5e7eb",
+        scaleMargins: { top: 0.1, bottom: 0.25 },
       },
       timeScale: {
-        borderColor: "#e0e0e0",
+        borderColor: "#e5e7eb",
         timeVisible: true,
+        secondsVisible: false,
+        rightOffset: 5,
+        barSpacing: 8,
+        minBarSpacing: 3,
       },
     });
 
     chartRef.current = chart;
 
-    // lightweight-charts v5 API
-    const candlestickSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#FF0000",
-      downColor: "#001AFF",
-      borderUpColor: "#FF0000",
-      borderDownColor: "#001AFF",
-      wickUpColor: "#FF0000",
-      wickDownColor: "#001AFF",
+    // 캔들스틱 시리즈
+    const candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: "#ef4444",
+      downColor: "#3b82f6",
+      borderUpColor: "#ef4444",
+      borderDownColor: "#3b82f6",
+      wickUpColor: "#ef4444",
+      wickDownColor: "#3b82f6",
     });
+    candleSeriesRef.current = candleSeries;
 
-    candlestickSeries.setData(data);
-    chart.timeScale().fitContent();
+    // 거래량 히스토그램 시리즈
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: "volume" },
+      priceScaleId: "volume",
+    });
+    chart.priceScale("volume").applyOptions({
+      scaleMargins: { top: 0.8, bottom: 0 },
+    });
+    volumeSeriesRef.current = volumeSeries;
 
-    // ResizeObserver로 컨테이너 크기 변화 감지
+    // 리사이즈 감지
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        chart.applyOptions({
-          width: entry.contentRect.width,
-        });
+        chart.applyOptions({ width: entry.contentRect.width });
       }
     });
-
     resizeObserver.observe(chartContainerRef.current);
 
     return () => {
       resizeObserver.disconnect();
       chart.remove();
+      chartRef.current = null;
+      candleSeriesRef.current = null;
+      volumeSeriesRef.current = null;
     };
+  }, []);
+
+  // 데이터 변경 시 시리즈만 업데이트 (차트 재생성 X)
+  useEffect(() => {
+    if (!candleSeriesRef.current || !volumeSeriesRef.current || !chartRef.current) return;
+
+    const candleData: CandlestickData<Time>[] = data.map(({ volume: _v, ...rest }) => rest);
+    candleSeriesRef.current.setData(candleData);
+
+    const volumeData = data.map((d) => ({
+      time: d.time,
+      value: d.volume,
+      color: d.close >= d.open ? "rgba(239, 68, 68, 0.3)" : "rgba(59, 130, 246, 0.3)",
+    }));
+    volumeSeriesRef.current.setData(volumeData);
+
+    chartRef.current.timeScale().fitContent();
   }, [data]);
+
+  // 스크롤 시 과거 데이터 로드
+  const handleVisibleRangeChange = useCallback(() => {
+    if (!onLoadMore || !chartRef.current || isLoadingMoreRef.current) return;
+
+    const logicalRange = chartRef.current.timeScale().getVisibleLogicalRange();
+    if (!logicalRange) return;
+
+    // 왼쪽 끝에 도달했을 때 (logicalRange.from이 -10 이하)
+    if (logicalRange.from <= -10 && data.length > 0) {
+      isLoadingMoreRef.current = true;
+      const oldestTime = data[0].time;
+      const endTimeStr = typeof oldestTime === "number"
+        ? new Date(oldestTime * 1000).toISOString().replace("Z", "").split(".")[0]
+        : `${oldestTime}T00:00:00`;
+      onLoadMore(endTimeStr);
+      // 3초 후 다시 로딩 가능
+      setTimeout(() => { isLoadingMoreRef.current = false; }, 3000);
+    }
+  }, [data, onLoadMore]);
+
+  useEffect(() => {
+    if (!chartRef.current || !onLoadMore) return;
+    const timeScale = chartRef.current.timeScale();
+    timeScale.subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+    return () => {
+      timeScale.unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+    };
+  }, [handleVisibleRangeChange, onLoadMore]);
 
   return <div ref={chartContainerRef} className={className} />;
 };

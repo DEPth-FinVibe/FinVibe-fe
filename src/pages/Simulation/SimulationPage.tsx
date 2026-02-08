@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useMemo, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField } from "@/components/TextField";
 import { StockListItem } from "@/components/StockListItem";
@@ -6,85 +6,35 @@ import Chip from "@/components/Chip/Chip";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import { cn } from "@/utils/cn";
+import {
+  formatPriceWithSymbol,
+  formatChangeRate,
+  formatVolume,
+} from "@/utils/formatStock";
+import {
+  useTopByVolumeWithPrices,
+  useStockSearchWithPrices,
+} from "@/hooks/useMarketQueries";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useMarketStore, useQuote } from "@/store/useMarketStore";
+import { useMarketStatus } from "@/hooks/useMarketQueries";
+import type { StockWithPrice } from "@/api/market";
 import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPortfolioTab";
 import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
 
-type MarketFilter = "전체" | "국내" | "해외";
+type MarketFilter = "전체" | "국내";
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
 
-// Mock 데이터
-const MOCK_STOCKS = [
-  {
-    id: 1,
-    stockName: "삼성전자",
-    stockCode: "005930",
-    tradingVolume: "12.5M",
-    price: "₩70,542",
-    changeRate: "+2.23%",
-    isFavorited: true,
-  },
-  {
-    id: 2,
-    stockName: "SK하이닉스",
-    stockCode: "000660",
-    tradingVolume: "8.2M",
-    price: "₩186,500",
-    changeRate: "+1.85%",
-    isFavorited: false,
-  },
-  {
-    id: 3,
-    stockName: "LG에너지솔루션",
-    stockCode: "373220",
-    tradingVolume: "1.2M",
-    price: "₩412,000",
-    changeRate: "-0.72%",
-    isFavorited: false,
-  },
-  {
-    id: 4,
-    stockName: "현대차",
-    stockCode: "005380",
-    tradingVolume: "3.4M",
-    price: "₩234,500",
-    changeRate: "+0.85%",
-    isFavorited: false,
-  },
-  {
-    id: 5,
-    stockName: "카카오",
-    stockCode: "035720",
-    tradingVolume: "5.6M",
-    price: "₩45,600",
-    changeRate: "+1.12%",
-    isFavorited: false,
-  },
-  {
-    id: 6,
-    stockName: "NAVER",
-    stockCode: "035420",
-    tradingVolume: "2.1M",
-    price: "₩178,000",
-    changeRate: "-0.56%",
-    isFavorited: false,
-  },
-  {
-    id: 7,
-    stockName: "셀트리온",
-    stockCode: "068270",
-    tradingVolume: "1.8M",
-    price: "₩192,300",
-    changeRate: "+0.94%",
-    isFavorited: false,
-  },
-];
+const PAGE_SIZE = 20;
+
+const DOMESTIC_CATEGORY_IDS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
 const MOCK_WATCHLIST = [
   {
     id: 1,
     stockName: "삼성전자",
     stockCode: "005930",
-    tradingVolume: "12.5M",
+    tradingVolume: "",
     price: "₩70,542",
     changeRate: "+2.23%",
   },
@@ -105,7 +55,7 @@ interface MarketFilterTabsProps {
 }
 
 const LeftMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
-  const filters: MarketFilter[] = ["전체", "국내", "해외"];
+  const filters: MarketFilter[] = ["전체", "국내"];
 
   return (
     <div className="flex gap-3">
@@ -117,7 +67,7 @@ const LeftMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
             "px-8 py-2.5 rounded-lg text-Body_L_Regular transition-colors",
             value === filter
               ? "bg-main-1 text-white"
-              : "bg-white text-black border border-gray-300"
+              : "bg-white text-black border border-gray-300",
           )}
         >
           {filter}
@@ -129,7 +79,7 @@ const LeftMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
 
 // 오른쪽 패널 마켓 필터 (Chip 스타일 - 작고 rounded 큼)
 const RightMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
-  const filters: MarketFilter[] = ["전체", "국내", "해외"];
+  const filters: MarketFilter[] = ["전체", "국내"];
 
   return (
     <div className="flex gap-2">
@@ -143,7 +93,7 @@ const RightMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
             "px-4 py-1.5 rounded-[20px]",
             value === filter
               ? "bg-main-1 text-white border-main-1"
-              : "bg-white text-black border-gray-300"
+              : "bg-white text-black border-gray-300",
           )}
         />
       ))}
@@ -176,8 +126,12 @@ const WatchlistCard = ({
     <div className="flex items-center justify-between px-4 py-3 border border-gray-200 rounded-lg">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className="text-Subtitle_S_Medium text-sub-blue">{stockName}</span>
-          <span className="text-Caption_L_Light text-gray-400">{stockCode}</span>
+          <span className="text-Subtitle_S_Medium text-sub-blue">
+            {stockName}
+          </span>
+          <span className="text-Caption_L_Light text-gray-400">
+            {stockCode}
+          </span>
         </div>
         <span className="text-Caption_L_Light text-gray-400">
           {tradingVolume ? `거래량: ${tradingVolume}` : "거래량:"}
@@ -192,38 +146,154 @@ const WatchlistCard = ({
             direction={iconDirection}
             ariaLabel="등락률"
           />
-          <span className={cn("text-Body_M_Light", changeColor)}>{changeRate}</span>
+          <span className={cn("text-Body_M_Light", changeColor)}>
+            {changeRate}
+          </span>
         </div>
       </div>
     </div>
   );
 };
 
+function toMarketTypeParam(filter: MarketFilter): string | undefined {
+  if (filter === "국내") return "DOMESTIC";
+  return undefined;
+}
+
+// 실시간 가격 업데이트를 위한 래퍼 컴포넌트
+interface RealTimeStockItemProps {
+  stock: StockWithPrice;
+  onClick: () => void;
+}
+
+const RealTimeStockItem = memo(({ stock, onClick }: RealTimeStockItemProps) => {
+  const quote = useQuote(stock.stockId);
+
+  // 실시간 데이터가 있으면 사용, 없으면 REST API 데이터 사용
+  const price = quote?.close ?? stock.close;
+  const changePct = quote?.prevDayChangePct ?? stock.prevDayChangePct;
+  const volume = quote?.volume ?? stock.volume;
+
+  return (
+    <StockListItem
+      stockName={stock.name}
+      stockCode={stock.symbol}
+      tradingVolume={formatVolume(volume)}
+      price={formatPriceWithSymbol(price)}
+      changeRate={formatChangeRate(changePct)}
+      onClick={onClick}
+    />
+  );
+});
+
 const SimulationPage = () => {
   const navigate = useNavigate();
-  const [leftMarketFilter, setLeftMarketFilter] = useState<MarketFilter>("전체");
-  const [rightMarketFilter, setRightMarketFilter] = useState<MarketFilter>("전체");
+  const [leftMarketFilter, setLeftMarketFilter] =
+    useState<MarketFilter>("전체");
+  const [rightMarketFilter, setRightMarketFilter] =
+    useState<MarketFilter>("전체");
   const [rightTab, setRightTab] = useState<RightTab>("관심 종목");
   const [searchQuery, setSearchQuery] = useState("");
-  const [stocks, setStocks] = useState(MOCK_STOCKS);
-  const [portfolioGroups, setPortfolioGroups] = useState<PortfolioGroup[] | null>(null);
-  const [isCreatingPortfolioGroup, setIsCreatingPortfolioGroup] = useState(false);
-  const [createPortfolioGroupError, setCreatePortfolioGroupError] = useState<string | null>(null);
-  const [isUpdatingPortfolioGroup, setIsUpdatingPortfolioGroup] = useState(false);
-  const [updatingPortfolioGroupId, setUpdatingPortfolioGroupId] = useState<number | null>(null);
-  const [updatePortfolioGroupError, setUpdatePortfolioGroupError] = useState<string | null>(null);
-  const [isDeletingPortfolioGroup, setIsDeletingPortfolioGroup] = useState(false);
-  const [deletingPortfolioGroupId, setDeletingPortfolioGroupId] = useState<number | null>(null);
-  const [deletePortfolioGroupError, setDeletePortfolioGroupError] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  const rightTabs: RightTab[] = ["관심 종목", "거래 종목", "예약/자동 주문", "포트폴리오"];
+  const debouncedQuery = useDebouncedValue(searchQuery, 300);
+  const isSearchMode = debouncedQuery.length >= 1;
 
-  const handleFavoriteToggle = (id: number) => {
-    setStocks((prev) =>
-      prev.map((stock) =>
-        stock.id === id ? { ...stock, isFavorited: !stock.isFavorited } : stock
-      )
-    );
+  const marketTypeParam = isSearchMode
+    ? toMarketTypeParam(leftMarketFilter)
+    : undefined;
+  const topByVolume = useTopByVolumeWithPrices();
+  const searchResult = useStockSearchWithPrices(
+    debouncedQuery,
+    marketTypeParam,
+  );
+
+  const { subscribe, unsubscribe } = useMarketStore();
+  const { isMarketOpen } = useMarketStatus();
+  const [portfolioGroups, setPortfolioGroups] = useState<
+    PortfolioGroup[] | null
+  >(null);
+  const [isCreatingPortfolioGroup, setIsCreatingPortfolioGroup] =
+    useState(false);
+  const [createPortfolioGroupError, setCreatePortfolioGroupError] = useState<
+    string | null
+  >(null);
+  const [isUpdatingPortfolioGroup, setIsUpdatingPortfolioGroup] =
+    useState(false);
+  const [updatingPortfolioGroupId, setUpdatingPortfolioGroupId] = useState<
+    number | null
+  >(null);
+  const [updatePortfolioGroupError, setUpdatePortfolioGroupError] = useState<
+    string | null
+  >(null);
+  const [isDeletingPortfolioGroup, setIsDeletingPortfolioGroup] =
+    useState(false);
+  const [deletingPortfolioGroupId, setDeletingPortfolioGroupId] = useState<
+    number | null
+  >(null);
+  const [deletePortfolioGroupError, setDeletePortfolioGroupError] = useState<
+    string | null
+  >(null);
+
+  const rightTabs: RightTab[] = [
+    "관심 종목",
+    "거래 종목",
+    "예약/자동 주문",
+    "포트폴리오",
+  ];
+
+  const filteredStocks = useMemo(() => {
+    const sourceData = isSearchMode ? searchResult.data : topByVolume.data;
+    if (!sourceData) return [];
+
+    if (!isSearchMode && leftMarketFilter === "국내") {
+      return sourceData.filter((stock: StockWithPrice) =>
+        DOMESTIC_CATEGORY_IDS.includes(stock.categoryId),
+      );
+    }
+
+    return sourceData;
+  }, [isSearchMode, searchResult.data, topByVolume.data, leftMarketFilter]);
+
+  const visibleStocks = useMemo(
+    () => filteredStocks.slice(0, visibleCount),
+    [filteredStocks, visibleCount],
+  );
+
+  const hasMore = visibleCount < filteredStocks.length;
+  const isLoading = isSearchMode
+    ? searchResult.isLoading
+    : topByVolume.isLoading;
+
+  // 장 열림 시에만 화면에 보이는 종목들 웹소켓 구독
+  useEffect(() => {
+    if (!isMarketOpen) return;
+    const stockIds = visibleStocks.map((s) => s.stockId);
+    if (stockIds.length > 0) {
+      subscribe(stockIds);
+    }
+    return () => {
+      if (stockIds.length > 0) {
+        unsubscribe(stockIds);
+      }
+    };
+  }, [visibleStocks, isMarketOpen, subscribe, unsubscribe]);
+
+  const handleShowMore = () => {
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+
+    
+  };
+
+  const handleFilterChange = (filter: MarketFilter) => {
+    setLeftMarketFilter(filter);
+    setVisibleCount(PAGE_SIZE);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+
+    setVisibleCount(PAGE_SIZE);
   };
 
   const fetchPortfolioGroups = async (opts?: { showLoading?: boolean }) => {
@@ -257,14 +327,19 @@ const SimulationPage = () => {
       await assetPortfolioApi.createPortfolio({ name, iconCode: "ICON_01" });
       await fetchPortfolioGroups({ showLoading: true });
     } catch (e) {
-      setCreatePortfolioGroupError("폴더 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setCreatePortfolioGroupError(
+        "폴더 생성에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
       throw e;
     } finally {
       setIsCreatingPortfolioGroup(false);
     }
   };
 
-  const handleUpdatePortfolioGroupName = async (groupId: number, name: string) => {
+  const handleUpdatePortfolioGroupName = async (
+    groupId: number,
+    name: string,
+  ) => {
     setUpdatePortfolioGroupError(null);
     setIsUpdatingPortfolioGroup(true);
     setUpdatingPortfolioGroupId(groupId);
@@ -277,7 +352,9 @@ const SimulationPage = () => {
       await fetchPortfolioGroups({ showLoading: true });
       setUpdatingPortfolioGroupId(null);
     } catch (e) {
-      setUpdatePortfolioGroupError("폴더명 수정에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setUpdatePortfolioGroupError(
+        "폴더명 수정에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
       throw e;
     } finally {
       setIsUpdatingPortfolioGroup(false);
@@ -293,7 +370,9 @@ const SimulationPage = () => {
       await fetchPortfolioGroups({ showLoading: true });
       setDeletingPortfolioGroupId(null);
     } catch (e) {
-      setDeletePortfolioGroupError("폴더 삭제에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setDeletePortfolioGroupError(
+        "폴더 삭제에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
       throw e;
     } finally {
       setIsDeletingPortfolioGroup(false);
@@ -301,13 +380,16 @@ const SimulationPage = () => {
   };
 
   return (
-    <div className="bg-white ">
-      <main className="flex px-32 py-6 gap-20">
+    <div className="bg-white h-[calc(100vh-64px)] overflow-hidden">
+      <main className="flex px-32 py-6 gap-20 h-full">
         {/* 왼쪽 패널 - 주식 검색 및 리스트 */}
-        <section className="flex-1">
+        <section className="flex-1 flex flex-col min-h-0">
           {/* 마켓 필터 탭 */}
-          <div className="mb-6">
-            <LeftMarketFilterTabs value={leftMarketFilter} onChange={setLeftMarketFilter} />
+          <div className="mb-6 shrink-0">
+            <LeftMarketFilterTabs
+              value={leftMarketFilter}
+              onChange={handleFilterChange}
+            />
           </div>
 
           {/* 검색창 */}
@@ -316,31 +398,46 @@ const SimulationPage = () => {
             size="medium"
             leftIcon={<SearchIcon className="w-5 h-5 text-gray-400" />}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="mb-6"
+            onChange={handleSearchChange}
+            className="mb-6 shrink-0"
             inputClassName="bg-gray-100 rounded-lg"
           />
 
-          {/* 주식 리스트 */}
-          <div className="flex flex-col gap-4">
-            {stocks.map((stock) => (
-              <StockListItem
-                key={stock.id}
-                stockName={stock.stockName}
-                stockCode={stock.stockCode}
-                tradingVolume={stock.tradingVolume}
-                price={stock.price}
-                changeRate={stock.changeRate}
-                isFavorited={stock.isFavorited}
-                onFavoriteToggle={() => handleFavoriteToggle(stock.id)}
-                onClick={() => navigate(`/simulation/${stock.stockCode}`)}
-              />
-            ))}
+          {/* 주식 리스트 - 스크롤 영역 */}
+          <div className="flex flex-col gap-4 overflow-y-auto flex-1 pr-2">
+            {isLoading && (
+              <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
+                로딩중...
+              </div>
+            )}
+            {!isLoading && visibleStocks.length === 0 && (
+              <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
+                {isSearchMode
+                  ? "검색 결과가 없습니다."
+                  : "종목 데이터를 불러올 수 없습니다."}
+              </div>
+            )}
+            {!isLoading &&
+              visibleStocks.map((stock: StockWithPrice) => (
+                <RealTimeStockItem
+                  key={stock.stockId}
+                  stock={stock}
+                  onClick={() => navigate(`/simulation/${stock.stockId}`)}
+                />
+              ))}
+            {!isLoading && hasMore && (
+              <button
+                onClick={handleShowMore}
+                className="w-full py-3 text-sm text-gray-500 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                더 보기
+              </button>
+            )}
           </div>
         </section>
 
         {/* 오른쪽 패널 - 관심 종목 등 */}
-        <aside className="shrink-0">
+        <aside className="shrink-0 flex flex-col min-h-0">
           {/* 상단 탭 */}
           <div className="flex border-b border-gray-200 mb-4">
             {rightTabs.map((tab) => (
@@ -351,7 +448,7 @@ const SimulationPage = () => {
                   "px-4 py-3 text-Subtitle_S_Medium transition-colors whitespace-nowrap",
                   rightTab === tab
                     ? "text-black border-b-2 border-main-1"
-                    : "text-gray-400 hover:text-gray-600"
+                    : "text-gray-400 hover:text-gray-600",
                 )}
               >
                 {tab}
@@ -378,15 +475,15 @@ const SimulationPage = () => {
           ) : (
             <>
               {/* 서브 필터 탭 */}
-              <div className="mb-4">
+              <div className="mb-4 shrink-0">
                 <RightMarketFilterTabs
                   value={rightMarketFilter}
                   onChange={setRightMarketFilter}
                 />
               </div>
 
-              {/* 관심 종목 리스트 */}
-              <div className="flex flex-col gap-3">
+              {/* 관심 종목 리스트 - 스크롤 영역 */}
+              <div className="flex flex-col gap-3 overflow-y-auto flex-1">
                 {MOCK_WATCHLIST.map((item) => (
                   <WatchlistCard
                     key={item.id}
