@@ -5,6 +5,7 @@ import { StockListItem } from "@/components/StockListItem";
 import Chip from "@/components/Chip/Chip";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
+import FavoriteStarIcon from "@/assets/svgs/FavoriteStarIcon";
 import { cn } from "@/utils/cn";
 import {
   formatPriceWithSymbol,
@@ -21,6 +22,8 @@ import { useMarketStatus } from "@/hooks/useMarketQueries";
 import type { StockWithPrice } from "@/api/market";
 import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPortfolioTab";
 import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
+import { memberApi, type FavoriteStockResponse } from "@/api/member";
+import { useAuthStore } from "@/store/useAuthStore";
 
 type MarketFilter = "전체" | "국내";
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
@@ -29,24 +32,6 @@ const PAGE_SIZE = 20;
 
 const DOMESTIC_CATEGORY_IDS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
-const MOCK_WATCHLIST = [
-  {
-    id: 1,
-    stockName: "삼성전자",
-    stockCode: "005930",
-    tradingVolume: "",
-    price: "₩70,542",
-    changeRate: "+2.23%",
-  },
-  {
-    id: 2,
-    stockName: "종목명",
-    stockCode: "종목코드",
-    tradingVolume: "",
-    price: "₩실시간 가격",
-    changeRate: "-변화율",
-  },
-];
 
 // 왼쪽 패널 마켓 필터 (버튼 스타일 - 크고 rounded 작음)
 interface MarketFilterTabsProps {
@@ -108,6 +93,9 @@ interface WatchlistCardProps {
   tradingVolume: string;
   price: string;
   changeRate: string;
+  isFavorited?: boolean;
+  onFavoriteToggle?: () => void;
+  onClick?: () => void;
 }
 
 const WatchlistCard = ({
@@ -116,6 +104,9 @@ const WatchlistCard = ({
   tradingVolume,
   price,
   changeRate,
+  isFavorited = false,
+  onFavoriteToggle,
+  onClick,
 }: WatchlistCardProps) => {
   const isPositive = changeRate.startsWith("+");
   const changeColor = isPositive ? "text-etc-red" : "text-etc-blue";
@@ -123,33 +114,59 @@ const WatchlistCard = ({
   const iconDirection = isPositive ? "up" : "down";
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border border-gray-200 rounded-lg">
-      <div className="flex flex-col gap-1">
+    <div
+      className={cn(
+        "flex items-center justify-between px-4 py-3 rounded-lg",
+        isFavorited ? "bg-sub-blue" : "border border-gray-200",
+        onClick && "cursor-pointer",
+      )}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
+      {onFavoriteToggle && (
+        <div
+          className="mr-3 shrink-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            onFavoriteToggle();
+          }}
+        >
+          <FavoriteStarIcon
+            filled={isFavorited}
+            className="w-5 h-[19px]"
+            ariaLabel={isFavorited ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+          />
+        </div>
+      )}
+      <div className="flex flex-col gap-1 flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-Subtitle_S_Medium text-sub-blue">
+          <span className={cn("text-Subtitle_S_Medium", isFavorited ? "text-white" : "text-sub-blue")}>
             {stockName}
           </span>
-          <span className="text-Caption_L_Light text-gray-400">
+          <span className={cn("text-Caption_L_Light", isFavorited ? "text-gray-100" : "text-gray-400")}>
             {stockCode}
           </span>
         </div>
-        <span className="text-Caption_L_Light text-gray-400">
+        <span className={cn("text-Caption_L_Light", isFavorited ? "text-gray-100" : "text-gray-400")}>
           {tradingVolume ? `거래량: ${tradingVolume}` : "거래량:"}
         </span>
       </div>
       <div className="flex flex-col items-end gap-1">
-        <span className="text-Body_M_Light text-gray-400">{price}</span>
-        <div className="flex items-center gap-1">
-          <ChangeRateIcon
-            className="w-4 h-4"
-            color={iconColor}
-            direction={iconDirection}
-            ariaLabel="등락률"
-          />
-          <span className={cn("text-Body_M_Light", changeColor)}>
-            {changeRate}
-          </span>
-        </div>
+        <span className={cn("text-Body_M_Light", isFavorited ? "text-gray-100" : "text-gray-400")}>{price}</span>
+        {changeRate && (
+          <div className="flex items-center gap-1">
+            <ChangeRateIcon
+              className="w-4 h-4"
+              color={iconColor}
+              direction={iconDirection}
+              ariaLabel="등락률"
+            />
+            <span className={cn("text-Body_M_Light", changeColor)}>
+              {changeRate}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -164,9 +181,11 @@ function toMarketTypeParam(filter: MarketFilter): string | undefined {
 interface RealTimeStockItemProps {
   stock: StockWithPrice;
   onClick: () => void;
+  isFavorited?: boolean;
+  onFavoriteToggle?: () => void;
 }
 
-const RealTimeStockItem = memo(({ stock, onClick }: RealTimeStockItemProps) => {
+const RealTimeStockItem = memo(({ stock, onClick, isFavorited, onFavoriteToggle }: RealTimeStockItemProps) => {
   const quote = useQuote(stock.stockId);
 
   // 실시간 데이터가 있으면 사용, 없으면 REST API 데이터 사용
@@ -182,12 +201,15 @@ const RealTimeStockItem = memo(({ stock, onClick }: RealTimeStockItemProps) => {
       price={formatPriceWithSymbol(price)}
       changeRate={formatChangeRate(changePct)}
       onClick={onClick}
+      isFavorited={isFavorited}
+      onFavoriteToggle={onFavoriteToggle}
     />
   );
 });
 
 const SimulationPage = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const [leftMarketFilter, setLeftMarketFilter] =
     useState<MarketFilter>("전체");
   const [rightMarketFilter, setRightMarketFilter] =
@@ -195,6 +217,39 @@ const SimulationPage = () => {
   const [rightTab, setRightTab] = useState<RightTab>("관심 종목");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // 관심 종목
+  const [favoriteStocks, setFavoriteStocks] = useState<FavoriteStockResponse[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    memberApi.getFavoriteStocks(user.userId).then((data) => {
+      if (!cancelled) setFavoriteStocks(data);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const favoriteStockIds = useMemo(
+    () => new Set(favoriteStocks.map((f) => f.stockId)),
+    [favoriteStocks],
+  );
+
+  const handleFavoriteToggle = async (stockId: number, stockName: string) => {
+    if (!user) return;
+    const isFav = favoriteStockIds.has(stockId);
+    try {
+      if (isFav) {
+        await memberApi.removeFavoriteStock(user.userId, stockId);
+        setFavoriteStocks((prev) => prev.filter((f) => f.stockId !== stockId));
+      } else {
+        const added = await memberApi.addFavoriteStock(user.userId, stockId);
+        setFavoriteStocks((prev) => [...prev, { ...added, name: added.name || stockName }]);
+      }
+    } catch {
+      // 실패 시 무시
+    }
+  };
 
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
   const isSearchMode = debouncedQuery.length >= 1;
@@ -423,6 +478,8 @@ const SimulationPage = () => {
                   key={stock.stockId}
                   stock={stock}
                   onClick={() => navigate(`/simulation/${stock.stockId}`)}
+                  isFavorited={favoriteStockIds.has(stock.stockId)}
+                  onFavoriteToggle={() => handleFavoriteToggle(stock.stockId, stock.name)}
                 />
               ))}
             {!isLoading && hasMore && (
@@ -484,16 +541,25 @@ const SimulationPage = () => {
 
               {/* 관심 종목 리스트 - 스크롤 영역 */}
               <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-                {MOCK_WATCHLIST.map((item) => (
-                  <WatchlistCard
-                    key={item.id}
-                    stockName={item.stockName}
-                    stockCode={item.stockCode}
-                    tradingVolume={item.tradingVolume}
-                    price={item.price}
-                    changeRate={item.changeRate}
-                  />
-                ))}
+                {favoriteStocks.length === 0 ? (
+                  <p className="text-center text-gray-400 py-8 text-Body_M_Light">
+                    관심 종목이 없습니다
+                  </p>
+                ) : (
+                  favoriteStocks.map((item) => (
+                    <WatchlistCard
+                      key={item.stockId}
+                      stockName={item.name}
+                      stockCode={String(item.stockId)}
+                      tradingVolume=""
+                      price=""
+                      changeRate=""
+                      isFavorited
+                      onFavoriteToggle={() => handleFavoriteToggle(item.stockId, item.name)}
+                      onClick={() => navigate(`/simulation/${item.stockId}`)}
+                    />
+                  ))
+                )}
               </div>
             </>
           )}

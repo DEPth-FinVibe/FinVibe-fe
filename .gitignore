@@ -21,5 +21,8 @@ pnpm-debug.log*
 # Local environment variables
 .env
 .env.*.local
+
+# MCP config (local dev tools)
+.mcp.json
 *storybook.log
 storybook-static

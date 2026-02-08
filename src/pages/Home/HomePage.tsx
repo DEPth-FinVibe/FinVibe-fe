@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, memo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   TradingVolumeRank,
   TradingVolumeRankSkeleton,
@@ -7,6 +8,7 @@ import {
 } from "@/components";
 import { cn } from "@/utils/cn";
 import { formatPrice, formatChangeRate, formatTradingValue } from "@/utils/formatStock";
+import { newsApi, type NewsListItem } from "@/api/news";
 import {
   useTopByValue,
   useTopByVolume,
@@ -72,6 +74,7 @@ const RealTimeStockRow = memo(({ stock, rank, isSelected, onSelect }: RealTimeSt
 });
 
 const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"popular" | "personal">("popular");
   const [activeFilter, setActiveFilter] = useState<FilterType>("거래대금");
   const [selectedStock, setSelectedStock] = useState({
@@ -84,6 +87,12 @@ const HomePage: React.FC = () => {
   // 테마 섹션 상태
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined);
   const [showThemeList, setShowThemeList] = useState(false);
+
+  // 오늘의 테마 AI 분석
+  const [themeAnalysis, setThemeAnalysis] = useState<string>("");
+
+  // 관련 뉴스
+  const [latestNews, setLatestNews] = useState<NewsListItem[]>([]);
 
   // 좌측 리스트 쿼리
   const topByValue = useTopByValue();
@@ -127,6 +136,25 @@ const HomePage: React.FC = () => {
       setSelectedCategoryId(categories[0].categoryId);
     }
   }, [categories, selectedCategoryId]);
+
+  // 선택된 카테고리의 오늘의 테마 AI 분석 로드
+  useEffect(() => {
+    if (selectedCategoryId == null) return;
+    let cancelled = false;
+    newsApi.getTodayThemeDetail(selectedCategoryId).then((data) => {
+      if (!cancelled && data.analysis) setThemeAnalysis(data.analysis);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedCategoryId]);
+
+  // 최신 뉴스 로드 (관련뉴스 섹션)
+  useEffect(() => {
+    let cancelled = false;
+    newsApi.getNewsList("LATEST").then((data) => {
+      if (!cancelled) setLatestNews(data.slice(0, 3));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   // 카테고리 종목에서 거래대금 1위 추출
   const topByValueStock = useMemo(() => {
@@ -324,9 +352,11 @@ const HomePage: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <span className="text-[14px] text-gray-400">오늘의 테마 분석</span>
                 <p className="text-[16px] font-medium text-black">
-                  {categoryChangeRate.data && categoryChangeRate.data.changeRate != null
-                    ? `${categoryChangeRate.data.categoryName} 테마 등락률 ${categoryChangeRate.data.changeRate >= 0 ? "+" : ""}${categoryChangeRate.data.changeRate.toFixed(2)}%. ${topStockNames.slice(0, 2).join(", ")} 등 주요 종목 주목`
-                    : "테마 분석 데이터를 불러오는 중입니다..."}
+                  {themeAnalysis
+                    ? themeAnalysis
+                    : categoryChangeRate.data && categoryChangeRate.data.changeRate != null
+                      ? `${categoryChangeRate.data.categoryName} 테마 등락률 ${categoryChangeRate.data.changeRate >= 0 ? "+" : ""}${categoryChangeRate.data.changeRate.toFixed(2)}%. ${topStockNames.slice(0, 2).join(", ")} 등 주요 종목 주목`
+                      : "테마 분석 데이터를 불러오는 중입니다..."}
                 </p>
               </div>
             </div>
@@ -336,21 +366,24 @@ const HomePage: React.FC = () => {
           <div className="flex flex-col gap-4">
             <h3 className="text-[18px] font-bold text-black">관련뉴스</h3>
             <div className="flex flex-col gap-3">
-              <RelatedNews
-                sourceAndTime="매일경제 · 2시간 전"
-                title="엔비디아 신규 AI 칩 공개... 국내 반도체 수혜 전망"
-                className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
-              />
-              <RelatedNews
-                sourceAndTime="한국경제 · 4시간 전"
-                title="SK하이닉스, HBM3E 양산 본격화... 실적 개선 기대"
-                className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
-              />
-              <RelatedNews
-                sourceAndTime="서울경제 · 6시간 전"
-                title="글로벌 AI 반도체 시장 내년 50% 성장 전망"
-                className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
-              />
+              {latestNews.length > 0 ? (
+                latestNews.map((news) => {
+                  const diff = Date.now() - new Date(news.createdAt).getTime();
+                  const hours = Math.floor(diff / 3_600_000);
+                  const timeLabel = hours < 1 ? "방금 전" : hours < 24 ? `${hours}시간 전` : `${Math.floor(hours / 24)}일 전`;
+                  return (
+                    <RelatedNews
+                      key={news.id}
+                      sourceAndTime={timeLabel}
+                      title={news.title}
+                      className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
+                      onClick={() => navigate(`/news/${news.id}`)}
+                    />
+                  );
+                })
+              ) : (
+                <p className="text-sm text-gray-400 py-4">뉴스를 불러오는 중...</p>
+              )}
             </div>
           </div>
         </section>

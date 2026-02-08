@@ -9,6 +9,8 @@ import { cn } from "@/utils/cn";
 import { fetchCandles, fetchClosingPrices, toUtcDateTime, type StockClosingPrice, type CandleWithVolume } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
+import { memberApi } from "@/api/member";
+import { useAuthStore } from "@/store/useAuthStore";
 
 // Mock 호가 데이터
 const MOCK_ASK_ORDERS = [
@@ -28,8 +30,37 @@ const MOCK_BID_ORDERS = [
 const StockDetailPage = () => {
   const navigate = useNavigate();
   const { stockId } = useParams<{ stockId: string }>();
+  const user = useAuthStore((s) => s.user);
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
+
+  // 관심종목 여부 조회
+  useEffect(() => {
+    if (!user || !stockId) return;
+    let cancelled = false;
+    memberApi.getFavoriteStocks(user.userId).then((list) => {
+      if (!cancelled) {
+        setIsFavorited(list.some((f) => f.stockId === Number(stockId)));
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [user, stockId]);
+
+  const handleFavoriteToggle = async () => {
+    if (!user || !stockId) return;
+    const sid = Number(stockId);
+    try {
+      if (isFavorited) {
+        await memberApi.removeFavoriteStock(user.userId, sid);
+        setIsFavorited(false);
+      } else {
+        await memberApi.addFavoriteStock(user.userId, sid);
+        setIsFavorited(true);
+      }
+    } catch {
+      // 실패 시 무시
+    }
+  };
 
   const [chartData, setChartData] = useState<CandleWithVolume[]>([]);
   const [isChartLoading, setIsChartLoading] = useState(false);
@@ -174,7 +205,7 @@ const StockDetailPage = () => {
               price={stockData.price}
               changeRate={stockData.changeRate}
               isFavorited={isFavorited}
-              onFavoriteToggle={() => setIsFavorited(!isFavorited)}
+              onFavoriteToggle={handleFavoriteToggle}
             />
           </div>
 

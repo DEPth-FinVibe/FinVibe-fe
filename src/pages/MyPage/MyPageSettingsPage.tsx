@@ -6,6 +6,7 @@ import WithdrawalModal from "./modals/WithdrawalModal";
 import NicknameChangeModal from "./modals/NicknameChangeModal";
 import LogoutModal from "./modals/LogoutModal";
 import { useAuthStore } from "@/store/useAuthStore";
+import { memberApi } from "@/api/member";
 
 type ToggleProps = {
   checked: boolean;
@@ -73,6 +74,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 const MyPageSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const user = useAuthStore((s) => s.user);
 
   const [allNoti, setAllNoti] = useState(true);
   const [commentNoti, setCommentNoti] = useState(true);
@@ -125,7 +127,7 @@ const MyPageSettingsPage: React.FC = () => {
               left={<p className="text-Subtitle_L_Medium text-black">이메일</p>}
               right={
                 <p className="text-Title_M_Medium text-[#4C4C4C]">
-                  Kakao_user@email.com
+                  {user?.email ?? "-"}
                 </p>
               }
             />
@@ -184,7 +186,17 @@ const MyPageSettingsPage: React.FC = () => {
       <WithdrawalModal
         isOpen={isWithdrawalOpen}
         onClose={() => setIsWithdrawalOpen(false)}
-        onWithdraw={() => setIsWithdrawalOpen(false)}
+        onWithdraw={async () => {
+          if (!user) return;
+          try {
+            await memberApi.withdraw(user.userId);
+            clearAuth();
+            navigate("/login");
+          } catch {
+            alert("회원 탈퇴에 실패했습니다. 다시 시도해주세요.");
+            setIsWithdrawalOpen(false);
+          }
+        }}
       />
 
       {isNicknameChangeOpen && (
