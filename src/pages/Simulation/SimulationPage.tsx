@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField } from "@/components/TextField";
 import { StockListItem } from "@/components/StockListItem";
-import Chip from "@/components/Chip/Chip";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import FavoriteStarIcon from "@/assets/svgs/FavoriteStarIcon";
@@ -25,66 +24,12 @@ import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
 import { memberApi, type FavoriteStockResponse } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
 
-type MarketFilter = "전체" | "국내";
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
 
 const PAGE_SIZE = 20;
 
 const DOMESTIC_CATEGORY_IDS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
-
-// 왼쪽 패널 마켓 필터 (버튼 스타일 - 크고 rounded 작음)
-interface MarketFilterTabsProps {
-  value: MarketFilter;
-  onChange: (filter: MarketFilter) => void;
-}
-
-const LeftMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
-  const filters: MarketFilter[] = ["전체", "국내"];
-
-  return (
-    <div className="flex gap-3">
-      {filters.map((filter) => (
-        <button
-          key={filter}
-          onClick={() => onChange(filter)}
-          className={cn(
-            "px-8 py-2.5 rounded-lg text-Body_L_Regular transition-colors",
-            value === filter
-              ? "bg-main-1 text-white"
-              : "bg-white text-black border border-gray-300",
-          )}
-        >
-          {filter}
-        </button>
-      ))}
-    </div>
-  );
-};
-
-// 오른쪽 패널 마켓 필터 (Chip 스타일 - 작고 rounded 큼)
-const RightMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
-  const filters: MarketFilter[] = ["전체", "국내"];
-
-  return (
-    <div className="flex gap-2">
-      {filters.map((filter) => (
-        <Chip
-          key={filter}
-          label={filter}
-          variant="default"
-          onClick={() => onChange(filter)}
-          className={cn(
-            "px-4 py-1.5 rounded-[20px]",
-            value === filter
-              ? "bg-main-1 text-white border-main-1"
-              : "bg-white text-black border-gray-300",
-          )}
-        />
-      ))}
-    </div>
-  );
-};
 
 // 관심종목 카드 컴포넌트
 interface WatchlistCardProps {
@@ -172,11 +117,6 @@ const WatchlistCard = ({
   );
 };
 
-function toMarketTypeParam(filter: MarketFilter): string | undefined {
-  if (filter === "국내") return "DOMESTIC";
-  return undefined;
-}
-
 // 실시간 가격 업데이트를 위한 래퍼 컴포넌트
 interface RealTimeStockItemProps {
   stock: StockWithPrice;
@@ -210,10 +150,6 @@ const RealTimeStockItem = memo(({ stock, onClick, isFavorited, onFavoriteToggle 
 const SimulationPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const [leftMarketFilter, setLeftMarketFilter] =
-    useState<MarketFilter>("전체");
-  const [rightMarketFilter, setRightMarketFilter] =
-    useState<MarketFilter>("전체");
   const [rightTab, setRightTab] = useState<RightTab>("관심 종목");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -254,9 +190,7 @@ const SimulationPage = () => {
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
   const isSearchMode = debouncedQuery.length >= 1;
 
-  const marketTypeParam = isSearchMode
-    ? toMarketTypeParam(leftMarketFilter)
-    : undefined;
+  const marketTypeParam = "DOMESTIC";
   const topByVolume = useTopByVolumeWithPrices();
   const searchResult = useStockSearchWithPrices(
     debouncedQuery,
@@ -301,14 +235,10 @@ const SimulationPage = () => {
     const sourceData = isSearchMode ? searchResult.data : topByVolume.data;
     if (!sourceData) return [];
 
-    if (!isSearchMode && leftMarketFilter === "국내") {
-      return sourceData.filter((stock: StockWithPrice) =>
-        DOMESTIC_CATEGORY_IDS.includes(stock.categoryId),
-      );
-    }
-
-    return sourceData;
-  }, [isSearchMode, searchResult.data, topByVolume.data, leftMarketFilter]);
+    return sourceData.filter((stock: StockWithPrice) =>
+      DOMESTIC_CATEGORY_IDS.includes(stock.categoryId),
+    );
+  }, [isSearchMode, searchResult.data, topByVolume.data]);
 
   const visibleStocks = useMemo(
     () => filteredStocks.slice(0, visibleCount),
@@ -338,11 +268,6 @@ const SimulationPage = () => {
     setVisibleCount((prev) => prev + PAGE_SIZE);
 
     
-  };
-
-  const handleFilterChange = (filter: MarketFilter) => {
-    setLeftMarketFilter(filter);
-    setVisibleCount(PAGE_SIZE);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -439,14 +364,6 @@ const SimulationPage = () => {
       <main className="flex px-32 py-6 gap-20 h-full">
         {/* 왼쪽 패널 - 주식 검색 및 리스트 */}
         <section className="flex-1 flex flex-col min-h-0">
-          {/* 마켓 필터 탭 */}
-          <div className="mb-6 shrink-0">
-            <LeftMarketFilterTabs
-              value={leftMarketFilter}
-              onChange={handleFilterChange}
-            />
-          </div>
-
           {/* 검색창 */}
           <TextField
             placeholder="종목명 또는 코드 검색"
@@ -531,14 +448,6 @@ const SimulationPage = () => {
             />
           ) : (
             <>
-              {/* 서브 필터 탭 */}
-              <div className="mb-4 shrink-0">
-                <RightMarketFilterTabs
-                  value={rightMarketFilter}
-                  onChange={setRightMarketFilter}
-                />
-              </div>
-
               {/* 관심 종목 리스트 - 스크롤 영역 */}
               <div className="flex flex-col gap-3 overflow-y-auto flex-1">
                 {favoriteStocks.length === 0 ? (
