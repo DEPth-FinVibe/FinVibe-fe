@@ -20,10 +20,12 @@ import {
   useCategoryChangeRate,
   useAllCategoryChangeRates,
   useAllCategoryTopStocks,
+  useDailySparklines,
+  useMarketStatus,
 } from "@/hooks/useMarketQueries";
 import type { StockWithPrice } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
-import { useMarketStatus } from "@/hooks/useMarketQueries";
+import MiniSparkline from "@/components/TradingVolumeRank/MiniSparkline";
 import IndexHeaderItem from "./components/IndexHeaderItem";
 import ThemeHeaderCard from "./components/ThemeHeaderCard";
 import ThemeStockChart, { ThemeStockChartSkeleton } from "./components/ThemeStockChart";
@@ -55,9 +57,10 @@ interface RealTimeStockRowProps {
   rank: number;
   isSelected: boolean;
   onSelect: () => void;
+  sparklineValues?: number[];
 }
 
-const RealTimeStockRow = memo(({ stock, rank, isSelected, onSelect }: RealTimeStockRowProps) => {
+const RealTimeStockRow = memo(({ stock, rank, isSelected, onSelect, sparklineValues }: RealTimeStockRowProps) => {
   const quote = useQuote(stock.stockId);
 
   // 실시간 데이터가 있으면 사용, 없으면 REST API 데이터 사용
@@ -73,6 +76,11 @@ const RealTimeStockRow = memo(({ stock, rank, isSelected, onSelect }: RealTimeSt
       currentPrice={formatPrice(price)}
       changeRate={formatChangeRate(changePct)}
       tradingVolume={formatTradingValue(value)}
+      chart={
+        sparklineValues && sparklineValues.length >= 2
+          ? <MiniSparkline values={sparklineValues} color={changePct >= 0 ? "#FF0000" : "#001AFF"} />
+          : undefined
+      }
       onClick={onSelect}
       className={`border-none ${isSelected ? "bg-gray-50" : ""}`}
     />
@@ -127,6 +135,26 @@ const HomePage: React.FC = () => {
     !isError &&
     (!stockData || stockData.length === 0);
   const showPersonalError = activeTab === "personal" && isError;
+
+  const sparklineStockIds = useMemo(() => {
+    if (!isLoading && !isError && stockData && stockData.length > 0) {
+      return Array.from(new Set(stockData.map((stock) => stock.stockId)));
+    }
+
+    if (showMockFallback) {
+      return Array.from(
+        new Set(
+          MOCK_FALLBACK
+            .map((stock) => Number(stock.ticker))
+            .filter((stockId) => Number.isFinite(stockId))
+        )
+      );
+    }
+
+    return [];
+  }, [isLoading, isError, stockData, showMockFallback]);
+
+  const { dataByStockId: dailySparklineByStockId } = useDailySparklines(sparklineStockIds);
 
   const { subscribe, unsubscribe } = useMarketStore();
   const { isMarketOpen } = useMarketStatus();
@@ -303,24 +331,40 @@ const HomePage: React.FC = () => {
               </>
             )}
             {showMockFallback &&
-              MOCK_FALLBACK.map((stock) => (
-                <TradingVolumeRank
-                  key={stock.ticker}
-                  rank={stock.rank}
-                  stockName={stock.name}
-                  ticker={stock.ticker}
-                  currentPrice={stock.price}
-                  changeRate={stock.change}
-                  tradingVolume={stock.vol}
-                  onClick={() => setSelectedStock({
-                    name: stock.name,
-                    ticker: stock.ticker,
-                    price: stock.price,
-                    change: stock.change
-                  })}
-                  className={`border-none ${selectedStock.ticker === stock.ticker ? "bg-gray-50" : ""}`}
-                />
-              ))
+              MOCK_FALLBACK.map((stock) => {
+                const mockStockId = Number(stock.ticker);
+                return (
+                  <TradingVolumeRank
+                    key={stock.ticker}
+                    rank={stock.rank}
+                    stockName={stock.name}
+                    ticker={stock.ticker}
+                    currentPrice={stock.price}
+                    changeRate={stock.change}
+                    tradingVolume={stock.vol}
+                    chart={
+                      Number.isNaN(mockStockId) || (dailySparklineByStockId.get(mockStockId)?.length ?? 0) < 2
+                        ? undefined
+                        : (
+                          <MiniSparkline
+                            values={dailySparklineByStockId.get(mockStockId) ?? []}
+                            color={stock.change.startsWith("+") ? "#FF0000" : "#001AFF"}
+                          />
+                        )
+                    }
+                    onClick={() => {
+                      setSelectedStock({
+                        name: stock.name,
+                        ticker: stock.ticker,
+                        price: stock.price,
+                        change: stock.change
+                      });
+                      navigate(Number.isNaN(mockStockId) ? "/simulation" : `/simulation/${mockStockId}`);
+                    }}
+                    className={`border-none ${selectedStock.ticker === stock.ticker ? "bg-gray-50" : ""}`}
+                  />
+                );
+              })
             }
             {showPersonalError && (
               <p className="px-6 py-8 text-sm text-gray-400 text-center">
@@ -342,12 +386,16 @@ const HomePage: React.FC = () => {
                   stock={{ ...stock, symbol: tickerText }}
                   rank={index + 1}
                   isSelected={selectedStock.ticker === selectedKey}
-                  onSelect={() => setSelectedStock({
-                    name: stock.name,
-                    ticker: selectedKey,
-                    price: formatPrice(stock.close),
-                    change: formatChangeRate(stock.prevDayChangePct)
-                  })}
+                  sparklineValues={dailySparklineByStockId.get(stock.stockId)}
+                  onSelect={() => {
+                    setSelectedStock({
+                      name: stock.name,
+                      ticker: selectedKey,
+                      price: formatPrice(stock.close),
+                      change: formatChangeRate(stock.prevDayChangePct)
+                    });
+                    navigate(`/simulation/${stock.stockId}`);
+                  }}
                 />
               );
             })}

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import {
   fetchTopRising,
@@ -259,4 +260,35 @@ export function useStockCandles(stockId: number | undefined, period: ChartPeriod
     enabled: stockId != null,
     staleTime: 60_000,
   });
+}
+
+export function useDailySparklines(stockIds: number[], pointLimit = 20) {
+  const queries = useQueries({
+    queries: stockIds.map((stockId) => ({
+      queryKey: ["market", "stock-sparkline", "daily", stockId, pointLimit],
+      queryFn: async () => {
+        const candles = await fetchCandles(stockId, "일봉");
+        return candles
+          .slice(-pointLimit)
+          .map((c) => c.close)
+          .filter((value) => Number.isFinite(value));
+      },
+      enabled: stockId > 0,
+      staleTime: 60_000,
+    })),
+  });
+
+  const dataByStockId = useMemo(() => {
+    const map = new Map<number, number[]>();
+    queries.forEach((query, index) => {
+      if (query.data && query.data.length > 0) {
+        map.set(stockIds[index], query.data);
+      }
+    });
+    return map;
+  }, [queries, stockIds]);
+
+  const isLoading = queries.some((query) => query.isLoading);
+
+  return { dataByStockId, isLoading };
 }
