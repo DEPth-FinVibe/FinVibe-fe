@@ -184,7 +184,12 @@ export function useIndexCandles(indexType: IndexType) {
       const currentValue = last.close;
       const changeAmount = currentValue - prev.close;
       const changeRate = prev.close !== 0 ? (changeAmount / prev.close) * 100 : 0;
-      return { currentValue, changeAmount, changeRate };
+      const sparklineValues = candles
+        .slice(-20)
+        .map((candle) => candle.close)
+        .filter((value) => Number.isFinite(value));
+
+      return { currentValue, changeAmount, changeRate, sparklineValues };
     },
     staleTime: 60_000,
   });

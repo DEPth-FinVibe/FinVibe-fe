@@ -262,10 +262,12 @@ const HomePage: React.FC = () => {
     <div className="bg-white font-noto">
 
       {/* 1. 종합 지수 섹션 (KOSPI + KOSDAQ) */}
-      <section className="border-b border-gray-200">
-        <div className="max-w-full gap-6 mx-auto px-8 py-6 flex items-center justify-center overflow-x-auto no-scrollbar">
-          <IndexHeaderItem indexType="KOSPI" />
-          <IndexHeaderItem indexType="KOSDAQ" />
+      <section className="border-b border-gray-200 bg-white">
+        <div className="mx-auto w-full max-w-[1200px] px-4 py-5 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+            <IndexHeaderItem indexType="KOSPI" />
+            <IndexHeaderItem indexType="KOSDAQ" />
+          </div>
         </div>
       </section>
 

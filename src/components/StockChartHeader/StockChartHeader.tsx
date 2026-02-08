@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "@/utils/cn";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import StockChartLineIcon from "@/assets/svgs/StockChartLineIcon";
@@ -21,6 +22,8 @@ export interface StockChartHeaderProps {
   className?: string;
   /** 클릭 핸들러 */
   onClick?: () => void;
+  /** 좌측 차트 커스텀 노드 */
+  chart?: ReactNode;
 }
 
 export const StockChartHeader = ({
@@ -30,17 +33,19 @@ export const StockChartHeader = ({
   changeRate,
   className,
   onClick,
+  chart,
 }: StockChartHeaderProps) => {
   // 등락률의 부호 확인 (양수면 빨간색, 음수면 파란색)
   const isPositive = changeRate.startsWith("+");
   const changeColor = isPositive ? "text-etc-red" : "text-etc-blue";
+  const changeBgColor = isPositive ? "bg-[rgba(255,0,0,0.08)]" : "bg-[rgba(0,26,255,0.08)]";
   const iconColor = isPositive ? COLORS["etc-red"] : COLORS["etc-blue"];
   const iconDirection = isPositive ? "up" : "down";
 
   return (
     <div
       className={cn(
-        "flex items-center w-full",
+        "flex w-full items-center gap-3",
         onClick && "cursor-pointer",
         className
       )}
@@ -49,30 +54,32 @@ export const StockChartHeader = ({
       tabIndex={onClick ? 0 : undefined}
       aria-label={`${indexName}: ${currentValue}, ${changeAmount}, ${changeRate}`}
     >
-      {/* 차트 라인 */}
-      <div className="flex flex-col h-[71px] pb-[10px] pt-[4px] px-[10px] shrink-0 w-[78px]">
-        <StockChartLineIcon
-          color={iconColor}
-          direction={iconDirection}
-          className="w-[58px] h-[33px]"
-          ariaLabel="지수 차트"
-        />
+      {/* 차트 영역 */}
+      <div className="flex h-[64px] w-[86px] shrink-0 items-center justify-center px-3 py-2">
+        {chart ?? (
+          <StockChartLineIcon
+            color={iconColor}
+            direction={iconDirection}
+            className="w-[58px] h-[33px]"
+            ariaLabel="지수 차트"
+          />
+        )}
       </div>
 
       {/* 정보 영역 */}
-      <div className="flex flex-col gap-[4px] items-start shrink-0 w-[130px]">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 items-start">
         {/* 지수명 */}
-        <p className="text-Body_M_Regular w-full" style={{ color: "#747474" }}>
+        <p className="w-full text-Body_M_Regular" style={{ color: "#6b7280" }}>
           {indexName}
         </p>
 
         {/* 현재 값 */}
-        <p className="text-Subtitle_S_Regular text-black w-full">
+        <p className="w-full text-[28px] leading-none font-semibold tracking-[-0.02em] text-black">
           {currentValue}
         </p>
 
         {/* 등락 정보 */}
-        <div className="flex gap-[4px] items-center">
+        <div className={cn("inline-flex items-center gap-[4px] rounded-full px-2.5 py-1", changeBgColor)}>
           <ChangeRateIcon
             className="h-2 w-4 shrink-0 mx-1 my-2"
             color={iconColor}
@@ -92,4 +99,3 @@ export const StockChartHeader = ({
 };
 
 export default StockChartHeader;
-
