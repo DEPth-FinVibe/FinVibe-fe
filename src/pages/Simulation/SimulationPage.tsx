@@ -22,7 +22,7 @@ import type { StockWithPrice } from "@/api/market";
 import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPortfolioTab";
 import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
 
-type MarketFilter = "전체" | "국내" | "해외";
+type MarketFilter = "전체" | "국내";
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
 
 const PAGE_SIZE = 20;
@@ -55,7 +55,7 @@ interface MarketFilterTabsProps {
 }
 
 const LeftMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
-  const filters: MarketFilter[] = ["전체", "국내", "해외"];
+  const filters: MarketFilter[] = ["전체", "국내"];
 
   return (
     <div className="flex gap-3">
@@ -79,7 +79,7 @@ const LeftMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
 
 // 오른쪽 패널 마켓 필터 (Chip 스타일 - 작고 rounded 큼)
 const RightMarketFilterTabs = ({ value, onChange }: MarketFilterTabsProps) => {
-  const filters: MarketFilter[] = ["전체", "국내", "해외"];
+  const filters: MarketFilter[] = ["전체", "국내"];
 
   return (
     <div className="flex gap-2">
@@ -157,7 +157,6 @@ const WatchlistCard = ({
 
 function toMarketTypeParam(filter: MarketFilter): string | undefined {
   if (filter === "국내") return "DOMESTIC";
-  if (filter === "해외") return "OVERSEAS";
   return undefined;
 }
 
@@ -247,12 +246,9 @@ const SimulationPage = () => {
     const sourceData = isSearchMode ? searchResult.data : topByVolume.data;
     if (!sourceData) return [];
 
-    if (!isSearchMode && leftMarketFilter !== "전체") {
-      const isDomestic = leftMarketFilter === "국내";
+    if (!isSearchMode && leftMarketFilter === "국내") {
       return sourceData.filter((stock: StockWithPrice) =>
-        isDomestic
-          ? DOMESTIC_CATEGORY_IDS.includes(stock.categoryId)
-          : !DOMESTIC_CATEGORY_IDS.includes(stock.categoryId),
+        DOMESTIC_CATEGORY_IDS.includes(stock.categoryId),
       );
     }
 

@@ -25,7 +25,7 @@ marketApi.interceptors.request.use((config) => {
 
 export interface CategoryResponse {
   categoryId: number;
-  name: string;
+  categoryName: string;
 }
 
 export interface CategoryStockListResponse {

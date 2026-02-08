@@ -188,6 +188,16 @@ export function useAllCategoryChangeRates(categoryIds: number[]) {
   });
 }
 
+export function useAllCategoryTopStocks(categoryIds: number[]) {
+  return useQueries({
+    queries: categoryIds.map((id) => ({
+      queryKey: ["market", "category-stocks-light", id],
+      queryFn: () => fetchCategoryStocks(id),
+      staleTime: 5 * 60_000,
+    })),
+  });
+}
+
 // --- 종목 캔들 훅 (에어리어 차트용) ---
 
 export function useStockCandles(stockId: number | undefined, period: ChartPeriod = "일봉") {

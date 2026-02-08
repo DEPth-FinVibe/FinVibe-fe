@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { StockListItem } from "@/components/StockListItem";
-import StockChart, { generateMockCandleData, type ChartPeriod } from "./components/StockChart";
+import StockChart, { type ChartPeriod } from "./components/StockChart";
 import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
@@ -32,7 +32,7 @@ const StockDetailPage = () => {
   const [isFavorited, setIsFavorited] = useState(false);
 
   const [chartData, setChartData] = useState<CandleWithVolume[]>([]);
-  const [, setIsLoading] = useState(false);
+  const [isChartLoading, setIsChartLoading] = useState(false);
   const [stockInfo, setStockInfo] = useState<StockClosingPrice | null>(null);
   const allChartDataRef = useRef<CandleWithVolume[]>([]);
 
@@ -96,23 +96,16 @@ const StockDetailPage = () => {
 
   const loadCandles = useCallback(async () => {
     if (!stockId) return;
-    setIsLoading(true);
+    setIsChartLoading(true);
     try {
       const data = await fetchCandles(stockId, chartPeriod);
-      if (data.length === 0) {
-        const mock = generateMockCandleData(chartPeriod);
-        allChartDataRef.current = mock;
-        setChartData(mock);
-      } else {
-        allChartDataRef.current = data;
-        setChartData(data);
-      }
+      allChartDataRef.current = data;
+      setChartData(data);
     } catch {
-      const mock = generateMockCandleData(chartPeriod);
-      allChartDataRef.current = mock;
-      setChartData(mock);
+      allChartDataRef.current = [];
+      setChartData([]);
     } finally {
-      setIsLoading(false);
+      setIsChartLoading(false);
     }
   }, [stockId, chartPeriod]);
 
@@ -207,8 +200,19 @@ const StockDetailPage = () => {
           </div>
 
           {/* 차트 */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <StockChart data={chartData} onLoadMore={handleLoadMore} />
+          <div className="border border-gray-200 rounded-lg overflow-hidden relative">
+            {isChartLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
+                <span className="text-gray-400 text-sm">차트 로딩중...</span>
+              </div>
+            )}
+            {!isChartLoading && chartData.length === 0 ? (
+              <div className="flex items-center justify-center h-[500px] text-gray-400 text-sm">
+                해당 기간의 차트 데이터가 없습니다.
+              </div>
+            ) : (
+              <StockChart data={chartData} onLoadMore={handleLoadMore} />
+            )}
           </div>
         </section>
 

@@ -4,11 +4,31 @@ import { cn } from "@/utils/cn";
 import type { CategoryResponse, CategoryChangeRateResponse } from "@/api/market";
 import LineChartIcon from "@/assets/svgs/LineChartIcon";
 
+const THEME_NAME_COLORS = [
+  "#6C5CE7", // 보라
+  "#E17055", // 코랄
+  "#0984E3", // 파랑
+  "#F39C12", // 오렌지
+  "#E84393", // 핑크
+  "#00B894", // 민트
+  "#D63031", // 레드
+  "#2D98DA", // 스카이블루
+  "#8854D0", // 진보라
+  "#20BF6B", // 초록
+  "#FA8231", // 주황
+  "#3867D6", // 남색
+];
+
+function getThemeColor(categoryId: number): string {
+  return THEME_NAME_COLORS[categoryId % THEME_NAME_COLORS.length];
+}
+
 type ThemeFilter = "전체" | "산업 테마" | "투자 스타일";
 
 interface ThemeListDropdownProps {
   categories: CategoryResponse[];
   changeRates: (CategoryChangeRateResponse | undefined)[];
+  topStockByCategory: Map<number, string>;
   selectedCategoryId: number;
   onSelectCategory: (id: number) => void;
 }
@@ -16,6 +36,7 @@ interface ThemeListDropdownProps {
 const ThemeListDropdown = ({
   categories,
   changeRates,
+  topStockByCategory,
   selectedCategoryId,
   onSelectCategory,
 }: ThemeListDropdownProps) => {
@@ -57,11 +78,12 @@ const ThemeListDropdown = ({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+      <div className="grid grid-cols-2 gap-3 h-[250px] overflow-y-auto">
         {sorted.map((cat, idx) => {
           const rate = rateMap.get(cat.categoryId) ?? 0;
           const isPositive = rate >= 0;
           const isSelected = cat.categoryId === selectedCategoryId;
+          const topStock = topStockByCategory.get(cat.categoryId);
 
           return (
             <button
@@ -82,13 +104,23 @@ const ThemeListDropdown = ({
                   direction={isPositive ? "up" : "down"}
                 />
               </div>
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[13px] font-medium text-black truncate">
-                  {cat.name}
-                </span>
+              <div className="flex items-center justify-between flex-1 min-w-0">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span
+                    className="text-[13px] font-medium truncate"
+                    style={{ color: getThemeColor(cat.categoryId) }}
+                  >
+                    {cat.categoryName}
+                  </span>
+                  {topStock && (
+                    <span className="text-[11px] text-gray-400 truncate">
+                      {topStock}
+                    </span>
+                  )}
+                </div>
                 <span
                   className={cn(
-                    "text-[12px]",
+                    "text-[12px] font-medium shrink-0 ml-2",
                     isPositive ? "text-etc-red" : "text-etc-blue"
                   )}
                 >

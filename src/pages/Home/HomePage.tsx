@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, memo } from "react";
 import {
   TradingVolumeRank,
   TradingVolumeRankSkeleton,
+  RelatedNews,
   Chip
 } from "@/components";
 import { cn } from "@/utils/cn";
@@ -15,26 +16,27 @@ import {
   useCategoryStocks,
   useCategoryChangeRate,
   useAllCategoryChangeRates,
+  useAllCategoryTopStocks,
 } from "@/hooks/useMarketQueries";
 import type { StockWithPrice } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 import IndexHeaderItem from "./components/IndexHeaderItem";
 import ThemeHeaderCard from "./components/ThemeHeaderCard";
-import ThemeStockChart from "./components/ThemeStockChart";
+import ThemeStockChart, { ThemeStockChartSkeleton } from "./components/ThemeStockChart";
 import ThemeListDropdown from "./components/ThemeListDropdown";
 
 const MOCK_FALLBACK = [
-  { rank: 1, name: "엔비디아", ticker: "NVDA", price: "892,300원", change: "+3.21%", vol: "850억" },
-  { rank: 2, name: "테슬라", ticker: "TSLA", price: "445,600원", change: "+5.67%", vol: "980억" },
-  { rank: 3, name: "삼성전자", ticker: "005930", price: "74,200원", change: "+0.45%", vol: "720억" },
-  { rank: 4, name: "LG에너지솔루션", ticker: "373220", price: "412,000원", change: "-1.45%", vol: "460억" },
-  { rank: 5, name: "NAVER", ticker: "035420", price: "178,000원", change: "+1.23%", vol: "580억" },
-  { rank: 6, name: "애플", ticker: "AAPL", price: "234,500원", change: "+2.34%", vol: "520억" },
-  { rank: 7, name: "SK하이닉스", ticker: "000660", price: "186,500원", change: "+2.67%", vol: "650억" },
-  { rank: 8, name: "마이크로소프트", ticker: "MSFT", price: "412,800원", change: "+1.45%", vol: "490억" },
-  { rank: 9, name: "현대차", ticker: "005380", price: "234,500원", change: "+0.78%", vol: "430억" },
-  { rank: 10, name: "카카오", ticker: "035720", price: "45,600원", change: "-0.34%", vol: "520억" },
+  { rank: 1, name: "삼성전자", ticker: "005930", price: "74,200원", change: "+0.45%", vol: "720억" },
+  { rank: 2, name: "SK하이닉스", ticker: "000660", price: "186,500원", change: "+2.67%", vol: "650억" },
+  { rank: 3, name: "LG에너지솔루션", ticker: "373220", price: "412,000원", change: "-1.45%", vol: "460억" },
+  { rank: 4, name: "NAVER", ticker: "035420", price: "178,000원", change: "+1.23%", vol: "580억" },
+  { rank: 5, name: "카카오", ticker: "035720", price: "45,600원", change: "-0.34%", vol: "520억" },
+  { rank: 6, name: "현대차", ticker: "005380", price: "234,500원", change: "+0.78%", vol: "430억" },
+  { rank: 7, name: "셀트리온", ticker: "068270", price: "178,900원", change: "+1.12%", vol: "410억" },
+  { rank: 8, name: "KB금융", ticker: "105560", price: "82,300원", change: "+0.56%", vol: "380억" },
+  { rank: 9, name: "포스코홀딩스", ticker: "005490", price: "298,000원", change: "-0.89%", vol: "350억" },
+  { rank: 10, name: "삼성SDI", ticker: "006400", price: "385,000원", change: "+1.34%", vol: "320억" },
 ];
 
 type FilterType = "거래대금" | "거래량" | "급상승" | "급하락";
@@ -73,10 +75,10 @@ const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"popular" | "personal">("popular");
   const [activeFilter, setActiveFilter] = useState<FilterType>("거래대금");
   const [selectedStock, setSelectedStock] = useState({
-    name: "엔비디아",
-    ticker: "NVDA",
-    price: "892,300원",
-    change: "+3.21%",
+    name: "삼성전자",
+    ticker: "005930",
+    price: "74,200원",
+    change: "+0.45%",
   });
 
   // 테마 섹션 상태
@@ -156,6 +158,20 @@ const HomePage: React.FC = () => {
     () => allChangeRatesQueries.map((q) => q.data),
     [allChangeRatesQueries],
   );
+
+  // 드롭다운용 카테고리별 거래대금 1위 종목명
+  const allTopStocksQueries = useAllCategoryTopStocks(
+    showThemeList ? categoryIds : [],
+  );
+  const topStockByCategory = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const q of allTopStocksQueries) {
+      if (q.data && q.data.stocks.length > 0) {
+        map.set(q.data.categoryId, q.data.stocks[0].name);
+      }
+    }
+    return map;
+  }, [allTopStocksQueries]);
 
   return (
     <div className="bg-white font-noto">
@@ -265,7 +281,7 @@ const HomePage: React.FC = () => {
         </section>
 
         {/* 3. 테마 섹션 (우측) */}
-        <section className="flex-1 p-8 flex flex-col gap-8">
+        <section className="flex-1 p-8 flex flex-col gap-10 overflow-y-auto">
           {/* 테마 헤더 카드 */}
           <ThemeHeaderCard
             categoryName={categoryChangeRate.data?.categoryName ?? "테마 로딩중..."}
@@ -276,26 +292,67 @@ const HomePage: React.FC = () => {
             onToggleThemeList={() => setShowThemeList((v) => !v)}
           />
 
-          {/* 에어리어 차트 */}
-          {topByValueStock && (
+          {/* 테마 리스트 (열림) OR 에어리어 차트 (닫힘) */}
+          {showThemeList ? (
+            categories && categories.length > 0 && (
+              <ThemeListDropdown
+                categories={categories}
+                changeRates={allChangeRates}
+                topStockByCategory={topStockByCategory}
+                selectedCategoryId={selectedCategoryId!}
+                onSelectCategory={(id) => {
+                  setSelectedCategoryId(id);
+                  setShowThemeList(false);
+                }}
+              />
+            )
+          ) : topByValueStock ? (
             <ThemeStockChart
               stockId={topByValueStock.stockId}
               stockName={topByValueStock.name}
             />
+          ) : (
+            <ThemeStockChartSkeleton />
           )}
 
-          {/* 테마 리스트 드롭다운 */}
-          {showThemeList && categories && categories.length > 0 && (
-            <ThemeListDropdown
-              categories={categories}
-              changeRates={allChangeRates}
-              selectedCategoryId={selectedCategoryId!}
-              onSelectCategory={(id) => {
-                setSelectedCategoryId(id);
-                setShowThemeList(false);
-              }}
-            />
-          )}
+          {/* AI 분석 섹션 */}
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4 items-start">
+              <div className="bg-[#42d6ba] size-[50px] flex justify-center items-center p-4 rounded-lg shrink-0">
+                <span className="text-white text-[20px] font-medium">AI</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[14px] text-gray-400">오늘의 테마 분석</span>
+                <p className="text-[16px] font-medium text-black">
+                  {categoryChangeRate.data && categoryChangeRate.data.changeRate != null
+                    ? `${categoryChangeRate.data.categoryName} 테마 등락률 ${categoryChangeRate.data.changeRate >= 0 ? "+" : ""}${categoryChangeRate.data.changeRate.toFixed(2)}%. ${topStockNames.slice(0, 2).join(", ")} 등 주요 종목 주목`
+                    : "테마 분석 데이터를 불러오는 중입니다..."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 관련 뉴스 섹션 */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-[18px] font-bold text-black">관련뉴스</h3>
+            <div className="flex flex-col gap-3">
+              <RelatedNews
+                sourceAndTime="매일경제 · 2시간 전"
+                title="엔비디아 신규 AI 칩 공개... 국내 반도체 수혜 전망"
+                className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
+              />
+              <RelatedNews
+                sourceAndTime="한국경제 · 4시간 전"
+                title="SK하이닉스, HBM3E 양산 본격화... 실적 개선 기대"
+                className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
+              />
+              <RelatedNews
+                sourceAndTime="서울경제 · 6시간 전"
+                title="글로벌 AI 반도체 시장 내년 50% 성장 전망"
+                className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
+              />
+            </div>
+          </div>
         </section>
       </main>
     </div>
