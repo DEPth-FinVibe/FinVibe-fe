@@ -262,8 +262,8 @@ const HomePage: React.FC = () => {
     <div className="bg-white font-noto">
 
       {/* 1. 종합 지수 섹션 (KOSPI + KOSDAQ) */}
-      <section className="border-b border-gray-200 bg-white">
-        <div className="mx-auto w-full max-w-[1200px] px-4 py-5 sm:px-6 lg:px-8">
+      <section className="border-b border-gray-200 bg-gradient-to-b from-[rgba(148,163,184,0.06)] via-white/90 to-transparent bg-[length:100%_55%] bg-no-repeat">
+        <div className="w-full px-4 py-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-24">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
             <IndexHeaderItem indexType="KOSPI" />
             <IndexHeaderItem indexType="KOSDAQ" />
