@@ -19,6 +19,7 @@ import ServiceRankingUserPage from "@/pages/ServiceRanking/ServiceRankingUserPag
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMarketStore } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
+import { memberApi } from "@/api/member";
 import MainLayout from "@/components/Layout/MainLayout";
 
 // 차트 라이브러리를 사용하는 페이지는 lazy loading
@@ -27,7 +28,7 @@ const StockDetailPage = lazy(() => import("@/pages/Simulation/StockDetailPage"))
 
 // 앱 라우팅 설정
 function App() {
-  const { tokens } = useAuthStore();
+  const { tokens, user, setUser } = useAuthStore();
   const { connect, disconnect } = useMarketStore();
   const { isMarketOpen } = useMarketStatus();
 
@@ -39,6 +40,16 @@ function App() {
       disconnect();
     }
   }, [tokens, isMarketOpen, connect, disconnect]);
+
+  // 로그인 상태에서 유저 정보가 없으면 조회
+  useEffect(() => {
+    if (!tokens || user) return;
+    let cancelled = false;
+    memberApi.getMe().then((data) => {
+      if (!cancelled) setUser(data);
+    }).catch(() => { /* 실패 시 무시 */ });
+    return () => { cancelled = true; };
+  }, [tokens, user, setUser]);
 
   return (
     <BrowserRouter>

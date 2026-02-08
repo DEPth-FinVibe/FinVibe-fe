@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewsCard, Discussion, TrendSection, PopularDiscussionSection, Button, SwitchBar } from "@/components";
 import { NEWS_TABS, type NewsTabType } from "@/components/SwitchBar/SwitchBar";
@@ -6,112 +6,151 @@ import TextField from "@/components/TextField";
 import { cn } from "@/utils/cn";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import UserIcon from "@/assets/svgs/UserIcon";
+import { newsApi, KEYWORD_LABEL_MAP, type NewsListItem, type NewsSortType, discussionApi, type DiscussionResponse, type DiscussionSortType } from "@/api/news";
+import { useAuthStore } from "@/store/useAuthStore";
 
-// Mock 뉴스 데이터
-const MOCK_NEWS = [
-  {
-    id: 1,
-    category: "산업",
-    sentiment: "success" as const,
-    time: "2시간 전",
-    title: "반도체 시장 회복세, 삼성전자와 SK하이닉스 주가 급등",
-    description: "AI 및 데이터센터 수요 증가로 인해 메모리 반도체 가격이 상승하고 있습니다. 전문가들은 이러한 추세가 2025년까지 지속될 것으로 전망하고 있습니다.",
-    aiAnalysis: "긍정적인 시장 전망으로 기술주 투자 기회가 될 수 있습니다.",
-    likeCount: 124,
-    commentCount: 45,
-  },
-  {
-    id: 2,
-    category: "산업",
-    sentiment: "success" as const,
-    time: "2시간 전",
-    title: "반도체 시장 회복세, 삼성전자와 SK하이닉스 주가 급등",
-    description: "AI 및 데이터센터 수요 증가로 인해 메모리 반도체 가격이 상승하고 있습니다. 전문가들은 이러한 추세가 2025년까지 지속될 것으로 전망하고 있습니다.",
-    aiAnalysis: "긍정적인 시장 전망으로 기술주 투자 기회가 될 수 있습니다.",
-    likeCount: 89,
-    commentCount: 67,
-  },
-  {
-    id: 3,
-    category: "산업",
-    sentiment: "success" as const,
-    time: "2시간 전",
-    title: "반도체 시장 회복세, 삼성전자와 SK하이닉스 주가 급등",
-    description: "AI 및 데이터센터 수요 증가로 인해 메모리 반도체 가격이 상승하고 있습니다. 전문가들은 이러한 추세가 2025년까지 지속될 것으로 전망하고 있습니다.",
-    aiAnalysis: "긍정적인 시장 전망으로 기술주 투자 기회가 될 수 있습니다.",
-    likeCount: 56,
-    commentCount: 89,
-  },
-];
+// 상대 시간 표시 유틸
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "방금 전";
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  return `${days}일 전`;
+}
 
-// Mock 토론 데이터
-const MOCK_DISCUSSIONS = [
-  {
-    id: 1,
-    author: "게시자 이름_1",
-    time: "XX시간 전 작성",
-    content: "댓글_1",
-    likeCount: 0,
-    commentCount: 0,
-  },
-  {
-    id: 2,
-    author: "게시자 이름_1",
-    time: "XX시간 전 작성",
-    content: "댓글_1",
-    likeCount: 0,
-    commentCount: 0,
-  },
-  {
-    id: 3,
-    author: "게시자 이름_1",
-    time: "XX시간 전 작성",
-    content: "댓글_1",
-    likeCount: 0,
-    commentCount: 0,
-  },
-  {
-    id: 4,
-    author: "게시자 이름_1",
-    time: "XX시간 전 작성",
-    content: "댓글_1",
-    likeCount: 0,
-    commentCount: 0,
-  },
-];
+// economicSignal → NewsCard sentiment 변환
+function signalToSentiment(signal: string): "success" | "error" | "neutral" {
+  if (signal === "POSITIVE") return "success";
+  if (signal === "NEGATIVE") return "error";
+  return "neutral";
+}
 
-// Mock 실시간 트렌드 데이터
-const MOCK_TRENDS = [
-  { tag: "#반도체", count: 296 },
-  { tag: "#AI투자", count: 574 },
-  { tag: "#금리동결", count: 311 },
-  { tag: "#전기차", count: 539 },
-  { tag: "#배당주", count: 296 },
-];
-
-// Mock 인기 토론 데이터
-const MOCK_POPULAR_DISCUSSIONS = [
-  { title: "2025 투자 전망은?", commentCount: 156 },
-  { title: "초보자 추천 종목", commentCount: 98 },
-  { title: "배당주 vs 성장주", commentCount: 87 },
-];
 
 const NewsPage = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const [activeTab, setActiveTab] = useState<NewsTabType>("news");
   const [sortOrder, setSortOrder] = useState<"인기순" | "최신순">("인기순");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [discussionContent, setDiscussionContent] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  // 뉴스 목록
+  const [newsList, setNewsList] = useState<NewsListItem[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+
+  // 키워드 트렌드
+  const [trends, setTrends] = useState<{ tag: string; count: number }[]>([]);
+
+  // 토론 목록
+  const [discussions, setDiscussions] = useState<DiscussionResponse[]>([]);
+  const [discussionsLoading, setDiscussionsLoading] = useState(false);
+
+  // 인기 토론 (사이드바)
+  const [popularDiscussions, setPopularDiscussions] = useState<{ title: string; commentCount: number }[]>([]);
+
+  // 뉴스 목록 로드 (뉴스 탭 + sortOrder 변경 시)
+  useEffect(() => {
+    if (activeTab !== "news") return;
+    let cancelled = false;
+    setNewsLoading(true);
+    const apiSort: NewsSortType = sortOrder === "인기순" ? "POPULAR" : "LATEST";
+    newsApi.getNewsList(apiSort).then((data) => {
+      if (!cancelled) setNewsList(data);
+    }).catch(() => {
+      if (!cancelled) setNewsList([]);
+    }).finally(() => {
+      if (!cancelled) setNewsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [sortOrder, activeTab]);
+
+  // 토론 목록 로드 (토론 탭 + sortOrder 변경 시)
+  useEffect(() => {
+    if (activeTab !== "discussion") return;
+    let cancelled = false;
+    setDiscussionsLoading(true);
+    const apiSort: DiscussionSortType = sortOrder === "인기순" ? "POPULAR" : "LATEST";
+    discussionApi.getDiscussions(apiSort).then((data) => {
+      if (!cancelled) setDiscussions(data);
+    }).catch(() => {
+      if (!cancelled) setDiscussions([]);
+    }).finally(() => {
+      if (!cancelled) setDiscussionsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [sortOrder, activeTab]);
+
+  // 키워드 트렌드 + 인기 토론 로드 (1회)
+  useEffect(() => {
+    let cancelled = false;
+    newsApi.getKeywordTrends().then((data) => {
+      if (!cancelled) {
+        setTrends(
+          data.map((item) => ({
+            tag: `#${KEYWORD_LABEL_MAP[item.keyword] ?? item.keyword}`,
+            count: item.count,
+          }))
+        );
+      }
+    }).catch(() => {});
+
+    discussionApi.getDiscussions("POPULAR").then((data) => {
+      if (!cancelled) {
+        setPopularDiscussions(
+          data.slice(0, 5).map((d) => ({
+            title: d.content.length > 30 ? d.content.slice(0, 30) + "..." : d.content,
+            commentCount: d.comments.length,
+          }))
+        );
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const handleNewsClick = (newsId: number) => {
     navigate(`/news/${newsId}`);
   };
 
-  const handlePostDiscussion = () => {
-    if (!discussionContent.trim()) return;
-    // TODO: 토론 게시 로직
-    setDiscussionContent("");
+  const handlePostDiscussion = async () => {
+    if (!discussionContent.trim() || posting) return;
+    setPosting(true);
+    try {
+      // newsId 0: 일반 토론 (특정 뉴스와 연결되지 않는 경우)
+      const created = await discussionApi.createDiscussion(0, discussionContent.trim());
+      setDiscussions((prev) => [created, ...prev]);
+      setDiscussionContent("");
+    } catch {
+      // 실패 시 무시
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleDiscussionLike = async (discussionId: number) => {
+    try {
+      await discussionApi.toggleDiscussionLike(discussionId);
+      setDiscussions((prev) =>
+        prev.map((d) =>
+          d.id === discussionId ? { ...d, likeCount: d.likeCount + 1 } : d
+        )
+      );
+    } catch {
+      // 실패 시 무시
+    }
+  };
+
+  const handleDeleteDiscussion = async (discussionId: number) => {
+    try {
+      await discussionApi.deleteDiscussion(discussionId);
+      setDiscussions((prev) => prev.filter((d) => d.id !== discussionId));
+    } catch {
+      // 실패 시 무시
+    }
   };
 
   return (
@@ -160,21 +199,31 @@ const NewsPage = () => {
 
               {/* 뉴스 목록 */}
               <div className="flex flex-col gap-6">
-                {MOCK_NEWS.map((news) => (
+                {newsLoading && (
+                  <div className="flex justify-center items-center py-16 text-gray-400 text-sm">
+                    뉴스를 불러오는 중...
+                  </div>
+                )}
+                {!newsLoading && newsList.length === 0 && (
+                  <div className="flex justify-center items-center py-16 text-gray-400 text-sm">
+                    뉴스가 없습니다
+                  </div>
+                )}
+                {!newsLoading && newsList.map((news) => (
                   <div
                     key={news.id}
                     onClick={() => handleNewsClick(news.id)}
                     className="cursor-pointer"
                   >
                     <NewsCard
-                      category={news.category}
-                      sentiment={news.sentiment}
-                      time={news.time}
+                      category={KEYWORD_LABEL_MAP[news.keyword] ?? news.keyword}
+                      sentiment={signalToSentiment(news.economicSignal)}
+                      time={formatRelativeTime(news.createdAt)}
                       title={news.title}
-                      description={news.description}
-                      aiAnalysis={news.aiAnalysis}
-                      likeCount={news.likeCount}
-                      commentCount={news.commentCount}
+                      description=""
+                      aiAnalysis=""
+                      likeCount={0}
+                      commentCount={0}
                     />
                   </div>
                 ))}
@@ -218,9 +267,10 @@ const NewsPage = () => {
                   <div className="flex justify-end mt-4">
                     <Button
                       onClick={handlePostDiscussion}
+                      disabled={posting || !discussionContent.trim()}
                       className="bg-main-1 text-white px-10 py-2 rounded-lg text-Body_M_Medium hover:bg-main-2 transition-colors border-none"
                     >
-                      게시하기
+                      {posting ? "게시 중..." : "게시하기"}
                     </Button>
                   </div>
                 </div>
@@ -266,15 +316,27 @@ const NewsPage = () => {
 
               {/* 토론 목록 */}
               <div className="flex flex-col bg-white rounded-lg overflow-hidden mt-2">
-                {MOCK_DISCUSSIONS.map((discussion) => (
+                {discussionsLoading && (
+                  <div className="flex justify-center items-center py-12 text-gray-400 text-sm">
+                    토론을 불러오는 중...
+                  </div>
+                )}
+                {!discussionsLoading && discussions.length === 0 && (
+                  <div className="flex justify-center items-center py-12 text-gray-400 text-sm">
+                    토론이 없습니다
+                  </div>
+                )}
+                {!discussionsLoading && discussions.map((discussion) => (
                   <Discussion
                     key={discussion.id}
-                    author={discussion.author}
-                    time={discussion.time}
+                    author={discussion.userId === user?.userId ? (user.nickname || "나") : `사용자`}
+                    time={formatRelativeTime(discussion.createdAt)}
                     content={discussion.content}
                     likeCount={discussion.likeCount}
-                    commentCount={discussion.commentCount}
+                    commentCount={discussion.comments.length}
                     className="border-gray-100"
+                    onLike={() => handleDiscussionLike(discussion.id)}
+                    onComment={() => navigate(`/news/${discussion.newsId}`)}
                   />
                 ))}
               </div>
@@ -296,8 +358,8 @@ const NewsPage = () => {
 
         {/* 오른쪽: 사이드바 */}
         <aside className="w-1/4 shrink-0 flex flex-col gap-8">
-          <TrendSection trends={MOCK_TRENDS} />
-          <PopularDiscussionSection discussions={MOCK_POPULAR_DISCUSSIONS} />
+          <TrendSection trends={trends.length > 0 ? trends : []} />
+          <PopularDiscussionSection discussions={popularDiscussions} />
         </aside>
       </main>
     </div>

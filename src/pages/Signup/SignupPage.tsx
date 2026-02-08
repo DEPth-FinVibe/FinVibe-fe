@@ -9,6 +9,7 @@ import BackIcon from "@/assets/svgs/BackIcon";
 import EmailIcon from "@/assets/svgs/EmailIcon";
 import { authApi } from "@/api/auth";
 import type { SignupRequest } from "@/api/auth";
+import { memberApi } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
 import { cn } from "@/utils/cn";
 
@@ -57,6 +58,11 @@ const SignupPage: React.FC = () => {
   const [schoolError, setSchoolError] = useState<string | undefined>();
   const [selectedStocks, setSelectedStocks] = useState<string[]>([]);
   const [selectedStyle, setSelectedStyle] = useState<StyleType | null>(null);
+
+  // 중복 확인 상태
+  const [loginIdChecked, setLoginIdChecked] = useState(false);
+  const [loginIdDuplicate, setLoginIdDuplicate] = useState(false);
+  const [checkingLoginId, setCheckingLoginId] = useState(false);
 
   // Validation States
   const [errors, setErrors] = useState<Partial<Record<keyof SignupRequest | "passwordConfirm", string>>>({});
@@ -110,6 +116,33 @@ const SignupPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+    if (name === "loginId") {
+      setLoginIdChecked(false);
+      setLoginIdDuplicate(false);
+    }
+  };
+
+  const handleCheckLoginId = async () => {
+    if (!formData.loginId || checkingLoginId) return;
+    if (!/^[a-z0-9]{4,20}$/.test(formData.loginId)) {
+      setErrors(prev => ({ ...prev, loginId: "영문, 숫자 조합 4-20자로 입력해주세요" }));
+      return;
+    }
+    setCheckingLoginId(true);
+    try {
+      const res = await memberApi.checkLoginId(formData.loginId);
+      setLoginIdChecked(true);
+      setLoginIdDuplicate(res.duplicate);
+      if (res.duplicate) {
+        setErrors(prev => ({ ...prev, loginId: "이미 사용 중인 아이디입니다" }));
+      } else {
+        setErrors(prev => ({ ...prev, loginId: undefined }));
+      }
+    } catch {
+      alert("중복 확인에 실패했습니다.");
+    } finally {
+      setCheckingLoginId(false);
     }
   };
 
@@ -203,10 +236,16 @@ const SignupPage: React.FC = () => {
                   onChange={handleChange}
                   leftIcon={<UserIcon className="size-[24px] text-gray-400" />}
                   errorMessage={errors.loginId}
-                  successMessage={formData.loginId && !errors.loginId ? "사용 가능한 아이디입니다" : undefined}
+                  successMessage={loginIdChecked && !loginIdDuplicate ? "사용 가능한 아이디입니다" : undefined}
                   rightAddon={
-                    <Button variant="secondary" size="small" className="h-[46px] min-h-0 px-4">
-                      중복확인
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      className="h-[46px] min-h-0 px-4"
+                      onClick={handleCheckLoginId}
+                      disabled={checkingLoginId}
+                    >
+                      {checkingLoginId ? "확인 중" : "중복확인"}
                     </Button>
                   }
                 />

@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components";
 import { cn } from "@/utils/cn";
 import CloseIcon from "@/assets/svgs/CloseIcon";
+import { memberApi } from "@/api/member";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export interface NicknameChangeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** 초기 닉네임(현재 닉네임) */
-  currentNickname?: string;
   className?: string;
 }
 
@@ -16,10 +16,24 @@ const NICKNAME_REGEX = /^[가-힣a-zA-Z0-9]{1,10}$/;
 const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
   isOpen,
   onClose,
-  currentNickname = "주식왕핀봇",
   className,
 }) => {
-  const [nickname, setNickname] = useState(currentNickname);
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+
+  const [nickname, setNickname] = useState(user?.nickname ?? "");
+  const [duplicateChecked, setDuplicateChecked] = useState(false);
+  const [duplicateResult, setDuplicateResult] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && user?.nickname) {
+      setNickname(user.nickname);
+      setDuplicateChecked(false);
+      setDuplicateResult(null);
+    }
+  }, [isOpen, user?.nickname]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -36,7 +50,43 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
     [nickname]
   );
 
+  const handleNicknameChange = (value: string) => {
+    setNickname(value);
+    setDuplicateChecked(false);
+    setDuplicateResult(null);
+  };
+
+  const handleCheckDuplicate = async () => {
+    if (!isValid || checking) return;
+    setChecking(true);
+    try {
+      const res = await memberApi.checkNickname(nickname.trim());
+      setDuplicateChecked(true);
+      setDuplicateResult(res.duplicate);
+    } catch {
+      alert("중복 확인에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!isValid || !duplicateChecked || duplicateResult || saving || !user) return;
+    setSaving(true);
+    try {
+      const updated = await memberApi.changeNickname(user.userId, nickname.trim());
+      setUser(updated);
+      onClose();
+    } catch {
+      alert("닉네임 변경에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!isOpen) return null;
+
+  const canSave = isValid && duplicateChecked && !duplicateResult && !saving;
 
   return (
     <div
@@ -78,7 +128,7 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
             <div className="bg-gray-100 p-2.5 rounded-lg w-64">
               <input
                 value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
+                onChange={(e) => handleNicknameChange(e.target.value)}
                 className="w-full bg-transparent outline-none text-Body_M_Light text-black"
                 aria-label="닉네임"
               />
@@ -91,21 +141,25 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
                 "!px-5 !py-3 !min-h-0 rounded-lg !bg-white !border-gray-1 !text-[#4C4C4C]",
                 "whitespace-nowrap"
               )}
-              onClick={() => {
-                // TODO: 닉네임 중복 확인 API 연동
-                console.log("닉네임 중복확인:", nickname);
-              }}
+              disabled={!isValid || checking}
+              onClick={handleCheckDuplicate}
             >
-              중복확인
+              {checking ? "확인 중..." : "중복확인"}
             </Button>
           </div>
         </div>
 
         {/* 안내 문구 */}
         <div className="px-12 pb-5 w-full">
-          <p className="text-Caption_L_Light text-black">
-            {helperText}
-          </p>
+          {duplicateChecked ? (
+            duplicateResult ? (
+              <p className="text-Caption_L_Light text-red-500">이미 사용 중인 닉네임입니다.</p>
+            ) : (
+              <p className="text-Caption_L_Light text-main-1">사용 가능한 닉네임입니다.</p>
+            )
+          ) : (
+            <p className="text-Caption_L_Light text-black">{helperText}</p>
+          )}
         </div>
 
         {/* 하단 버튼 */}
@@ -113,15 +167,11 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
           <Button
             variant="primary"
             size="large"
-            disabled={!isValid}
+            disabled={!canSave}
             className="!w-full !bg-main-1 !border-main-1 !text-white !py-2 !min-h-0 rounded"
-            onClick={() => {
-              // TODO: 닉네임 변경 저장 API 연동
-              console.log("닉네임 저장:", nickname);
-              onClose();
-            }}
+            onClick={handleSave}
           >
-            저장
+            {saving ? "저장 중..." : "저장"}
           </Button>
         </div>
       </div>
@@ -130,5 +180,3 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
 };
 
 export default NicknameChangeModal;
-
-

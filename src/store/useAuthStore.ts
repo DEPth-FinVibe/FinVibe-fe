@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { UserResponse } from "@/api/member";
 
 export type Tokens = {
   accessToken: string;
@@ -10,7 +11,9 @@ export type Tokens = {
 
 interface AuthState {
   tokens: Tokens | null;
+  user: UserResponse | null;
   setTokens: (tokens: Tokens | null) => void;
+  setUser: (user: UserResponse | null) => void;
   clearAuth: () => void;
 }
 
@@ -28,8 +31,10 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       tokens: DEV_MOCK_TOKENS,
+      user: null,
       setTokens: (tokens) => set({ tokens }),
-      clearAuth: () => set({ tokens: null }),
+      setUser: (user) => set({ user }),
+      clearAuth: () => set({ tokens: null, user: null }),
     }),
     {
       name: "auth-storage",
