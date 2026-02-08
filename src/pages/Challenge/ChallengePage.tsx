@@ -143,7 +143,7 @@ const ChallengePage = () => {
   // 스쿼드 탭 상태
   const [squadRanking, setSquadRanking] = useState<SquadRankingItem[]>([]);
   const [squadContributions, setSquadContributions] = useState<SquadContributionItem[]>([]);
-  const [myXp, setMyXp] = useState<MyXpInfo | null>(null);
+  const [_myXp, setMyXp] = useState<MyXpInfo | null>(null);
   const [mySquadInfo, setMySquadInfo] = useState<MySquadInfo | null>(null);
   const [squadLoading, setSquadLoading] = useState(false);
   const [squadLoaded, setSquadLoaded] = useState(false);

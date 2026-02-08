@@ -144,14 +144,6 @@ const NewsPage = () => {
     }
   };
 
-  const handleDeleteDiscussion = async (discussionId: number) => {
-    try {
-      await discussionApi.deleteDiscussion(discussionId);
-      setDiscussions((prev) => prev.filter((d) => d.id !== discussionId));
-    } catch {
-      // 실패 시 무시
-    }
-  };
 
   return (
     <div className="bg-gray-100 min-h-screen">

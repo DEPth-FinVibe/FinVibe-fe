@@ -7,7 +7,7 @@ import LikeIcon from "@/assets/svgs/LikeIcon";
 import CommentIcon from "@/assets/svgs/CommentIcon";
 import ShareIcon from "@/assets/svgs/ShareIcon";
 import { cn } from "@/utils/cn";
-import { newsApi, KEYWORD_LABEL_MAP, type NewsDetailResponse, discussionApi, type DiscussionResponse, type CommentResponse } from "@/api/news";
+import { newsApi, KEYWORD_LABEL_MAP, type NewsDetailResponse, discussionApi, type DiscussionResponse } from "@/api/news";
 import { useAuthStore } from "@/store/useAuthStore";
 
 // 상대 시간 표시

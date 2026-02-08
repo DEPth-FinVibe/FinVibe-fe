@@ -8,7 +8,7 @@ import {
 } from "@/components";
 import { cn } from "@/utils/cn";
 import { formatPrice, formatChangeRate, formatTradingValue } from "@/utils/formatStock";
-import { newsApi, type NewsListItem, type NewsDetailResponse } from "@/api/news";
+import { newsApi, type NewsListItem } from "@/api/news";
 import {
   useTopByValue,
   useTopByVolume,
