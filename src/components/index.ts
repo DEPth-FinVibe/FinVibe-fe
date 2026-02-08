@@ -22,7 +22,7 @@ export { default as TrendSection, type TrendItem, type TrendSectionProps } from 
 export { default as PopularDiscussionSection, type PopularDiscussionItem, type PopularDiscussionSectionProps } from "./PopularDiscussionSection";
 export { default as Leaderboard, type LeaderboardItem, type LeaderboardProps } from "./Leaderboard";
 export { default as MyStats, type MyStatsProps } from "./MyStats";
-export { TradingVolumeRank, type TradingVolumeRankProps } from "./TradingVolumeRank";
+export { TradingVolumeRank, TradingVolumeRankSkeleton, type TradingVolumeRankProps } from "./TradingVolumeRank";
 export { StockChartHeader, type StockChartHeaderProps } from "./StockChartHeader";
 export { StockListItem, type StockListItemProps } from "./StockListItem";
 export { RelatedNews, type RelatedNewsProps } from "./RelatedNews";

@@ -1,17 +1,17 @@
 import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
 
-// 지갑 서비스 전용 baseURL
-const WALLET_BASE =
-  import.meta.env.VITE_API_WALLET_BASE ??
-  (import.meta.env.DEV ? "/api/wallet" : "https://finvibe.space/api/wallet");
+// 자산(Asset) 서비스 전용 baseURL
+const ASSET_BASE =
+  import.meta.env.VITE_API_ASSET_BASE ??
+  (import.meta.env.DEV ? "/api/asset" : "https://finvibe.space/api/asset");
 
-export const walletApiClient = axios.create({
-  baseURL: WALLET_BASE,
+export const assetApiClient = axios.create({
+  baseURL: ASSET_BASE,
 });
 
 // Request: Add Access Token
-walletApiClient.interceptors.request.use((config) => {
+assetApiClient.interceptors.request.use((config) => {
   const tokens = useAuthStore.getState().tokens;
   if (tokens?.accessToken) {
     config.headers.Authorization = `Bearer ${tokens.accessToken}`;
@@ -28,16 +28,14 @@ async function refreshTokens() {
   }
 
   try {
-    // NOTE: refresh는 user 서비스에서 수행
-    const res = await axios.post(
-      `${
-        import.meta.env.VITE_API_BASE ??
-        (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user")
-      }/auth/refresh`,
-      {
-        refreshToken: tokens.refreshToken,
-      },
-    );
+    const userBase =
+      import.meta.env.VITE_API_BASE ??
+      (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user");
+
+    const res = await axios.post(`${userBase}/auth/refresh`, {
+      refreshToken: tokens.refreshToken,
+    });
+
     setTokens(res.data);
     return res.data.accessToken as string;
   } catch (error) {
@@ -47,7 +45,7 @@ async function refreshTokens() {
 }
 
 // Response: Handle token refresh
-walletApiClient.interceptors.response.use(
+assetApiClient.interceptors.response.use(
   (res) => res,
   async (err: AxiosError<{ code?: string }>) => {
     const status = err.response?.status;
@@ -66,7 +64,7 @@ walletApiClient.interceptors.response.use(
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }
-        return walletApiClient.request(originalRequest);
+        return assetApiClient.request(originalRequest);
       } catch (refreshError) {
         return Promise.reject(refreshError);
       }

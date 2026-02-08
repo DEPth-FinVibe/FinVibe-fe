@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "@/pages/Login/LoginPage";
 import SignupPage from "@/pages/Signup/SignupPage";
@@ -14,7 +14,11 @@ import TermsPage from "@/pages/MyPage/TermsPage";
 import PrivacyPolicyPage from "@/pages/MyPage/PrivacyPolicyPage";
 import MyAssetsPage from "@/pages/MyPage/MyAssetsPage";
 import MyPortfolioManagementPage from "@/pages/MyPage/MyPortfolioManagementPage";
+import ServiceRankingPage from "@/pages/ServiceRanking/ServiceRankingPage";
+import ServiceRankingUserPage from "@/pages/ServiceRanking/ServiceRankingUserPage";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useMarketStore } from "@/store/useMarketStore";
+import { useMarketStatus } from "@/hooks/useMarketQueries";
 import MainLayout from "@/components/Layout/MainLayout";
 
 // 차트 라이브러리를 사용하는 페이지는 lazy loading
@@ -24,6 +28,17 @@ const StockDetailPage = lazy(() => import("@/pages/Simulation/StockDetailPage"))
 // 앱 라우팅 설정
 function App() {
   const { tokens } = useAuthStore();
+  const { connect, disconnect } = useMarketStore();
+  const { isMarketOpen } = useMarketStatus();
+
+  // 장 열림 + 로그인 시 웹소켓 연결, 장 닫힘 or 로그아웃 시 연결 해제
+  useEffect(() => {
+    if (tokens && isMarketOpen) {
+      connect();
+    } else {
+      disconnect();
+    }
+  }, [tokens, isMarketOpen, connect, disconnect]);
 
   return (
     <BrowserRouter>
@@ -34,7 +49,7 @@ function App() {
             element={tokens ? <HomePage /> : <Navigate to="/login" replace />}
           />
           <Route path="/simulation" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><SimulationPage /></Suspense>} />
-          <Route path="/simulation/:stockCode" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><StockDetailPage /></Suspense>} />
+          <Route path="/simulation/:stockId" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><StockDetailPage /></Suspense>} />
           <Route path="/ai-learning" element={<AILearningPage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/news/:newsId" element={<NewsDetailPage />} />
@@ -45,6 +60,8 @@ function App() {
           <Route path="/mypage/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/mypage/assets" element={<MyAssetsPage />} />
           <Route path="/mypage/portfolio" element={<MyPortfolioManagementPage />} />
+          <Route path="/mypage/service-ranking" element={<ServiceRankingPage />} />
+          <Route path="/mypage/service-ranking/user" element={<ServiceRankingUserPage />} />
         </Route>
         
         <Route path="/login" element={<LoginPage />} />
