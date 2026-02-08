@@ -23,9 +23,32 @@ export const LessonStudyModal: React.FC<LessonStudyModalProps> = ({
   onClose,
   onComplete,
 }) => {
-  if (!isOpen) return null;
-
   const normalizedContent = lesson?.content?.replace(/\\n/g, "\n") ?? "";
+  const tableOfContents = React.useMemo(() => {
+    if (!normalizedContent) return [] as Array<{ level: 1 | 2 | 3; text: string; id: string }>;
+
+    const headings: Array<{ level: 1 | 2 | 3; text: string; id: string }> = [];
+    const lines = normalizedContent.split("\n");
+
+    lines.forEach((line, index) => {
+      const matched = line.match(/^(#{1,3})\s+(.+)$/);
+      if (!matched) return;
+
+      const level = matched[1].length as 1 | 2 | 3;
+      const text = matched[2].trim();
+      if (!text) return;
+
+      headings.push({
+        level,
+        text,
+        id: `lesson-heading-${index + 1}`,
+      });
+    });
+
+    return headings;
+  }, [normalizedContent]);
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -72,6 +95,27 @@ export const LessonStudyModal: React.FC<LessonStudyModalProps> = ({
             </div>
           ) : (
             <article className="bg-white border border-gray-300 rounded-lg p-6">
+              {tableOfContents.length > 0 && (
+                <nav className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4" aria-label="문서 목차">
+                  <p className="mb-2 text-Body_S_Regular text-black">목차</p>
+                  <ol className="space-y-1">
+                    {tableOfContents.map((heading) => (
+                      <li
+                        key={heading.id}
+                        className={heading.level === 1 ? "pl-0" : heading.level === 2 ? "pl-3" : "pl-6"}
+                      >
+                        <a
+                          href={`#${heading.id}`}
+                          className="text-Body_S_Light text-sub-blue hover:underline"
+                        >
+                          {heading.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
+              )}
+
               <div className="prose prose-sm max-w-none text-[#4C4C4C] whitespace-pre-wrap leading-7">
                 <ReactMarkdown
                   components={{
@@ -79,9 +123,30 @@ export const LessonStudyModal: React.FC<LessonStudyModalProps> = ({
                     ul: ({ children }) => <ul className="list-disc pl-5 mb-3">{children}</ul>,
                     ol: ({ children }) => <ol className="list-decimal pl-5 mb-3">{children}</ol>,
                     li: ({ children }) => <li className="mb-1">{children}</li>,
-                    h1: ({ children }) => <h4 className="text-Subtitle_S_Regular text-black mb-3">{children}</h4>,
-                    h2: ({ children }) => <h4 className="text-Subtitle_S_Regular text-black mb-3">{children}</h4>,
-                    h3: ({ children }) => <h4 className="text-Subtitle_S_Regular text-black mb-3">{children}</h4>,
+                    h1: ({ children, node }) => {
+                      const id = `lesson-heading-${node?.position?.start.line ?? ""}`;
+                      return (
+                        <h1 id={id} className="scroll-mt-4 text-Title_M_Medium text-black mb-3">
+                          {children}
+                        </h1>
+                      );
+                    },
+                    h2: ({ children, node }) => {
+                      const id = `lesson-heading-${node?.position?.start.line ?? ""}`;
+                      return (
+                        <h2 id={id} className="scroll-mt-4 text-Subtitle_L_Medium text-black mb-3">
+                          {children}
+                        </h2>
+                      );
+                    },
+                    h3: ({ children, node }) => {
+                      const id = `lesson-heading-${node?.position?.start.line ?? ""}`;
+                      return (
+                        <h3 id={id} className="scroll-mt-4 text-Subtitle_M_Medium text-black mb-3">
+                          {children}
+                        </h3>
+                      );
+                    },
                     strong: ({ children }) => <strong className="font-medium text-black">{children}</strong>,
                   }}
                 >
