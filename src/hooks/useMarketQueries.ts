@@ -18,6 +18,7 @@ import {
 import type { IndexType, AreaDataPoint } from "@/api/market";
 import type { ChartPeriod } from "@/pages/Simulation/components/StockChart";
 import { useAuthStore } from "@/store/useAuthStore";
+import { fetchTopHoldingStocks } from "@/api/asset";
 
 // --- 장 상태 훅 ---
 
@@ -82,6 +83,50 @@ export function useTopFalling() {
   return useQuery({
     queryKey: ["market", "top-falling"],
     queryFn: () => fetchTop10WithPrices(fetchTopFalling),
+    staleTime: 30_000,
+  });
+}
+
+export function useTopHoldingTop10WithPrices() {
+  return useQuery({
+    queryKey: ["asset", "top-holding-top10-with-prices"],
+    queryFn: async () => {
+      const holdings = await fetchTopHoldingStocks();
+      const top10 = holdings.slice(0, 10);
+      if (top10.length === 0) return [];
+
+      const stockIds = top10.map((item) => item.stockId);
+
+      try {
+        const prices = await fetchClosingPrices(stockIds);
+        const priceMap = new Map(prices.map((p) => [p.stockId, p]));
+
+        return top10.map((item) => {
+          const price = priceMap.get(item.stockId);
+          return {
+            stockId: item.stockId,
+            symbol: "",
+            name: item.name,
+            categoryId: 0,
+            close: price?.close ?? 0,
+            prevDayChangePct: price?.prevDayChangePct ?? 0,
+            volume: price?.volume ?? 0,
+            value: price?.value ?? 0,
+          };
+        });
+      } catch {
+        return top10.map((item) => ({
+          stockId: item.stockId,
+          symbol: "",
+          name: item.name,
+          categoryId: 0,
+          close: 0,
+          prevDayChangePct: 0,
+          volume: 0,
+          value: 0,
+        }));
+      }
+    },
     staleTime: 30_000,
   });
 }

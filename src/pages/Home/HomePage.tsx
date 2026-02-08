@@ -14,6 +14,7 @@ import {
   useTopByVolume,
   useTopRising,
   useTopFalling,
+  useTopHoldingTop10WithPrices,
   useCategories,
   useCategoryStocks,
   useCategoryChangeRate,
@@ -99,6 +100,7 @@ const HomePage: React.FC = () => {
   const topByVolume = useTopByVolume();
   const topRising = useTopRising();
   const topFalling = useTopFalling();
+  const topHoldingTop10 = useTopHoldingTop10WithPrices();
 
   const queryMap: Record<FilterType, typeof topByValue> = {
     "거래대금": topByValue,
@@ -107,10 +109,19 @@ const HomePage: React.FC = () => {
     "급하락": topFalling,
   };
 
-  const activeQuery = queryMap[activeFilter];
+  const activeQuery = activeTab === "personal" ? topHoldingTop10 : queryMap[activeFilter];
   const isLoading = activeQuery.isLoading;
   const isError = activeQuery.isError;
   const stockData = activeQuery.data;
+  const showMockFallback =
+    activeTab === "popular" &&
+    (isError || (!isLoading && (!stockData || stockData.length === 0)));
+  const showPersonalEmpty =
+    activeTab === "personal" &&
+    !isLoading &&
+    !isError &&
+    (!stockData || stockData.length === 0);
+  const showPersonalError = activeTab === "personal" && isError;
 
   const { subscribe, unsubscribe } = useMarketStore();
   const { isMarketOpen } = useMarketStatus();
@@ -235,21 +246,23 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* 필터 버튼 */}
-            <div className="flex gap-2">
-              {(["거래대금", "거래량", "급상승", "급하락"] as FilterType[]).map((filter) => (
-                <Chip
-                  key={filter}
-                  label={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-Caption_L_Light border transition-colors",
-                    activeFilter === filter
-                      ? "bg-sub-blue text-white border-sub-blue"
-                      : "bg-white text-gray-400 border-gray-200"
-                  )}
-                />
-              ))}
-            </div>
+            {activeTab === "popular" && (
+              <div className="flex gap-2">
+                {(["거래대금", "거래량", "급상승", "급하락"] as FilterType[]).map((filter) => (
+                  <Chip
+                    key={filter}
+                    label={filter}
+                    onClick={() => setActiveFilter(filter)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-Caption_L_Light border transition-colors",
+                      activeFilter === filter
+                        ? "bg-sub-blue text-white border-sub-blue"
+                        : "bg-white text-gray-400 border-gray-200"
+                    )}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 종목 리스트 테이블 헤더 (TradingVolumeRank 너비에 맞춰 조정) */}
@@ -271,7 +284,7 @@ const HomePage: React.FC = () => {
                 ))}
               </>
             )}
-            {(isError || (!isLoading && (!stockData || stockData.length === 0))) &&
+            {showMockFallback &&
               MOCK_FALLBACK.map((stock) => (
                 <TradingVolumeRank
                   key={stock.ticker}
@@ -291,20 +304,35 @@ const HomePage: React.FC = () => {
                 />
               ))
             }
-            {!isLoading && !isError && stockData && stockData.length > 0 && stockData.map((stock: StockWithPrice, index: number) => (
-              <RealTimeStockRow
-                key={stock.stockId}
-                stock={stock}
-                rank={index + 1}
-                isSelected={selectedStock.ticker === stock.symbol}
-                onSelect={() => setSelectedStock({
-                  name: stock.name,
-                  ticker: stock.symbol,
-                  price: formatPrice(stock.close),
-                  change: formatChangeRate(stock.prevDayChangePct)
-                })}
-              />
-            ))}
+            {showPersonalError && (
+              <p className="px-6 py-8 text-sm text-gray-400 text-center">
+                개인 소유 TOP 10 데이터를 불러오지 못했습니다.
+              </p>
+            )}
+            {showPersonalEmpty && (
+              <p className="px-6 py-8 text-sm text-gray-400 text-center">
+                개인 소유 종목 데이터가 없습니다.
+              </p>
+            )}
+            {!isLoading && !isError && stockData && stockData.length > 0 && stockData.map((stock: StockWithPrice, index: number) => {
+              const tickerText = stock.symbol || "-";
+              const selectedKey = stock.symbol || String(stock.stockId);
+
+              return (
+                <RealTimeStockRow
+                  key={stock.stockId}
+                  stock={{ ...stock, symbol: tickerText }}
+                  rank={index + 1}
+                  isSelected={selectedStock.ticker === selectedKey}
+                  onSelect={() => setSelectedStock({
+                    name: stock.name,
+                    ticker: selectedKey,
+                    price: formatPrice(stock.close),
+                    change: formatChangeRate(stock.prevDayChangePct)
+                  })}
+                />
+              );
+            })}
           </div>
         </section>
 

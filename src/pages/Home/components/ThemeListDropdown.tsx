@@ -1,5 +1,4 @@
-import { useState, useMemo } from "react";
-import { Chip } from "@/components";
+import { useMemo } from "react";
 import { cn } from "@/utils/cn";
 import type { CategoryResponse, CategoryChangeRateResponse } from "@/api/market";
 import LineChartIcon from "@/assets/svgs/LineChartIcon";
@@ -23,8 +22,6 @@ function getThemeColor(categoryId: number): string {
   return THEME_NAME_COLORS[categoryId % THEME_NAME_COLORS.length];
 }
 
-type ThemeFilter = "전체" | "산업 테마" | "투자 스타일";
-
 interface ThemeListDropdownProps {
   categories: CategoryResponse[];
   changeRates: (CategoryChangeRateResponse | undefined)[];
@@ -40,8 +37,6 @@ const ThemeListDropdown = ({
   selectedCategoryId,
   onSelectCategory,
 }: ThemeListDropdownProps) => {
-  const [filter, setFilter] = useState<ThemeFilter>("전체");
-
   const rateMap = useMemo(() => {
     const map = new Map<number, number>();
     for (const cr of changeRates) {
@@ -58,26 +53,8 @@ const ThemeListDropdown = ({
     });
   }, [categories, rateMap]);
 
-  const filters: ThemeFilter[] = ["전체", "산업 테마", "투자 스타일"];
-
   return (
     <div className="flex flex-col gap-4 border border-gray-200 rounded-lg p-4 bg-white">
-      <div className="flex gap-2">
-        {filters.map((f) => (
-          <Chip
-            key={f}
-            label={f}
-            onClick={() => setFilter(f)}
-            className={cn(
-              "px-3 py-1 rounded-full text-Caption_L_Light border transition-colors",
-              filter === f
-                ? "bg-sub-blue text-white border-sub-blue"
-                : "bg-white text-gray-400 border-gray-200"
-            )}
-          />
-        ))}
-      </div>
-
       <div className="grid grid-cols-2 gap-3 h-[250px] overflow-y-auto">
         {sorted.map((cat, idx) => {
           const rate = rateMap.get(cat.categoryId) ?? 0;

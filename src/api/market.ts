@@ -38,6 +38,22 @@ export interface CategoryChangeRateResponse {
   categoryId: number;
   categoryName: string;
   changeRate: number;
+  averageChangePct?: number;
+  stockCount?: number;
+  positiveCount?: number;
+  negativeCount?: number;
+  updatedAt?: string;
+}
+
+interface RawCategoryChangeRateResponse {
+  categoryId: number;
+  categoryName: string;
+  changeRate?: number;
+  averageChangePct?: number;
+  stockCount?: number;
+  positiveCount?: number;
+  negativeCount?: number;
+  updatedAt?: string;
 }
 
 // --- Stock List / Closing Price Types ---
@@ -273,10 +289,21 @@ export async function fetchCategoryStocks(
 export async function fetchCategoryChangeRate(
   categoryId: number,
 ): Promise<CategoryChangeRateResponse> {
-  const res = await marketApi.get<CategoryChangeRateResponse>(
+  const res = await marketApi.get<RawCategoryChangeRateResponse>(
     `/market/categories/${categoryId}/change-rate`,
   );
-  return res.data;
+  const data = res.data;
+
+  return {
+    categoryId: data.categoryId,
+    categoryName: data.categoryName,
+    changeRate: data.changeRate ?? data.averageChangePct ?? 0,
+    averageChangePct: data.averageChangePct,
+    stockCount: data.stockCount,
+    positiveCount: data.positiveCount,
+    negativeCount: data.negativeCount,
+    updatedAt: data.updatedAt,
+  };
 }
 
 // --- Index Candle API ---
