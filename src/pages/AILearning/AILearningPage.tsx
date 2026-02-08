@@ -4,8 +4,15 @@ import { AILearningInsight } from "@/components/AILearningInsight";
 import { LearningStats } from "@/components/LearningStats";
 import { BadgeCard } from "@/components/BadgeCard";
 import { AICourseCreateModal } from "@/components/AICourseCreateModal";
+import { LessonStudyModal } from "@/components/LessonStudyModal";
 import type { CourseLevel } from "@/components/Progress/CourseItem";
-import { studyApi, type MyCourseResponse, type CourseDifficulty } from "@/api/study";
+import {
+  studyApi,
+  type MyCourseResponse,
+  type CourseDifficulty,
+  type LessonDetailResponse,
+  type MyStudyMetricResponse,
+} from "@/api/study";
 
 const DIFFICULTY_MAP: Record<CourseDifficulty, CourseLevel> = {
   BEGINNER: "초급",
@@ -45,23 +52,61 @@ const AILearningPage: React.FC = () => {
 
   // API 상태
   const [courses, setCourses] = useState<MyCourseResponse[]>([]);
+  const [studyMetric, setStudyMetric] = useState<MyStudyMetricResponse | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 레슨 학습 모달 상태
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<LessonDetailResponse | null>(null);
+  const [lessonLoading, setLessonLoading] = useState(false);
+  const [lessonCompleting, setLessonCompleting] = useState(false);
+  const [lessonErrorMessage, setLessonErrorMessage] = useState<string | null>(null);
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    try {
-      const data = await studyApi.getMyCourses();
-      setCourses(data);
-    } catch {
-      // 실패 시 빈 배열 유지
-    } finally {
-      setLoading(false);
+    const [coursesResult, metricResult] = await Promise.allSettled([
+      studyApi.getMyCourses(),
+      studyApi.getMyStudyMetric(),
+    ]);
+
+    if (coursesResult.status === "fulfilled") {
+      setCourses(coursesResult.value);
     }
+
+    if (metricResult.status === "fulfilled") {
+      setStudyMetric(metricResult.value);
+    }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     fetchCourses();
   }, [fetchCourses]);
+
+  useEffect(() => {
+    if (!isLessonModalOpen || !selectedLessonId) return;
+
+    const sendTenMinutePing = async () => {
+      try {
+        await studyApi.tenMinutePing(selectedLessonId);
+      } catch {
+        // 지표 전송 실패는 학습 흐름을 막지 않음
+      }
+    };
+
+    // 모달 오픈 시 1회 즉시 전송
+    sendTenMinutePing();
+
+    const intervalId = window.setInterval(() => {
+      sendTenMinutePing();
+    }, 10 * 60 * 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isLessonModalOpen, selectedLessonId]);
 
   const toggleCourse = (courseId: number) => {
     const newExpanded = new Set(expandedCourses);
@@ -71,6 +116,64 @@ const AILearningPage: React.FC = () => {
       newExpanded.add(courseId);
     }
     setExpandedCourses(newExpanded);
+  };
+
+  const openLessonModal = async (lessonId: number) => {
+    setIsLessonModalOpen(true);
+    setSelectedLessonId(lessonId);
+    setLessonLoading(true);
+    setLessonErrorMessage(null);
+
+    try {
+      const lesson = await studyApi.getLessonDetail(lessonId);
+      setSelectedLesson(lesson);
+    } catch {
+      setSelectedLesson(null);
+      setLessonErrorMessage("레슨 내용을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setLessonLoading(false);
+    }
+  };
+
+  const closeLessonModal = () => {
+    setIsLessonModalOpen(false);
+    setSelectedLessonId(null);
+    setSelectedLesson(null);
+    setLessonErrorMessage(null);
+  };
+
+  const handleCompleteLesson = async () => {
+    if (!selectedLesson || lessonCompleting || selectedLesson.completed) return;
+
+    setLessonCompleting(true);
+
+    try {
+      await studyApi.completeLesson(selectedLesson.id);
+
+      setSelectedLesson((prev) => (prev ? { ...prev, completed: true } : prev));
+
+      setCourses((prevCourses) =>
+        prevCourses.map((course) => ({
+          ...course,
+          lessons: course.lessons.map((lesson) =>
+            lesson.id === selectedLesson.id
+              ? { ...lesson, completed: true }
+              : lesson
+          ),
+        }))
+      );
+
+      try {
+        const latestMetric = await studyApi.getMyStudyMetric();
+        setStudyMetric(latestMetric);
+      } catch {
+        // 지표 갱신 실패는 학습 완료 흐름을 막지 않음
+      }
+    } catch {
+      setLessonErrorMessage("레슨 완료 처리에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setLessonCompleting(false);
+    }
   };
 
   // 학습 통계 파생
@@ -126,6 +229,7 @@ const AILearningPage: React.FC = () => {
                         isExpanded={expandedCourses.has(course.id)}
                         onToggle={() => toggleCourse(course.id)}
                         onExpand={() => toggleCourse(course.id)}
+                        onLessonClick={openLessonModal}
                       />
                     ))}
                   </div>
@@ -140,6 +244,8 @@ const AILearningPage: React.FC = () => {
             <LearningStats
               completedLectures={completedLessons}
               totalLectures={totalLessons}
+              totalMinutes={studyMetric?.timeSpentMinutes}
+              experiencePoints={studyMetric?.xpEarned}
             />
 
             {/* 획득 배지 */}
@@ -163,6 +269,16 @@ const AILearningPage: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreated={fetchCourses}
+      />
+
+      <LessonStudyModal
+        isOpen={isLessonModalOpen}
+        lesson={selectedLesson}
+        loading={lessonLoading}
+        completing={lessonCompleting}
+        errorMessage={lessonErrorMessage}
+        onClose={closeLessonModal}
+        onComplete={handleCompleteLesson}
       />
     </div>
   );

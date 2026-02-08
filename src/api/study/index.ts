@@ -8,4 +8,5 @@ export type {
   LessonDetailResponse,
   LessonCompletionItem,
   MonthlyLessonCompletionResponse,
+  MyStudyMetricResponse,
 } from "./study";

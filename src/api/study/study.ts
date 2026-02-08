@@ -48,6 +48,12 @@ export type MonthlyLessonCompletionResponse = {
   items: LessonCompletionItem[];
 };
 
+export type MyStudyMetricResponse = {
+  xpEarned: number;
+  timeSpentMinutes: number;
+  lastPingAt: string;
+};
+
 // 백엔드가 배열을 래핑해서 반환할 수 있으므로 안전하게 추출
 function unwrapArray<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data;
@@ -114,5 +120,11 @@ export const studyApi = {
   /** 10분 학습 핑: POST /study/lessons/{lessonId}/metrics/ten-minute */
   tenMinutePing: async (lessonId: number): Promise<void> => {
     await studyApiClient.post(`/study/lessons/${lessonId}/metrics/ten-minute`);
+  },
+
+  /** 내 학습 지표 조회: GET /study/metrics/me */
+  getMyStudyMetric: async (): Promise<MyStudyMetricResponse> => {
+    const res = await studyApiClient.get<MyStudyMetricResponse>("/study/metrics/me");
+    return res.data;
   },
 };

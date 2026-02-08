@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { cn } from "@/utils/cn";
 import { Button } from "@/components/Button";
 import BrainIcon from "@/assets/svgs/BrainIcon";
@@ -55,6 +56,8 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  const previewMarkdown = previewContent?.replace(/\\n/g, "\n") ?? "";
 
   // 모달 열릴 때 추천 키워드 조회
   useEffect(() => {
@@ -360,9 +363,22 @@ export const AICourseCreateModal: React.FC<AICourseCreateModalProps> = ({
             </div>
             <div className="flex flex-col gap-2 pl-5">
               {previewContent ? (
-                <p className="text-Body_S_Regular text-[#4C4C4C] whitespace-pre-wrap">
-                  {previewContent}
-                </p>
+                <div className="text-Body_S_Regular text-[#4C4C4C] whitespace-pre-wrap">
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc pl-5 mb-2 last:mb-0">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 last:mb-0">{children}</ol>,
+                      li: ({ children }) => <li className="mb-1 last:mb-0">{children}</li>,
+                      h1: ({ children }) => <h4 className="text-Subtitle_S_Regular mb-2">{children}</h4>,
+                      h2: ({ children }) => <h4 className="text-Subtitle_S_Regular mb-2">{children}</h4>,
+                      h3: ({ children }) => <h4 className="text-Subtitle_S_Regular mb-2">{children}</h4>,
+                      strong: ({ children }) => <strong className="font-medium">{children}</strong>,
+                    }}
+                  >
+                    {previewMarkdown}
+                  </ReactMarkdown>
+                </div>
               ) : (
                 <p className="text-Body_S_Regular text-[#4C4C4C]">
                   "미리보기 생성" 버튼을 클릭하면 AI가 코스 소개를 생성합니다.

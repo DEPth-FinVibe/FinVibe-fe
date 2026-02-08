@@ -24,6 +24,8 @@ export interface CourseItemProps {
   onToggle?: () => void;
   /** 확장/접기 핸들러 */
   onExpand?: () => void;
+  /** 레슨 클릭 핸들러 */
+  onLessonClick?: (lessonId: number) => void;
 }
 
 export const CourseItem = ({
@@ -36,8 +38,13 @@ export const CourseItem = ({
   className,
   onToggle,
   onExpand,
+  onLessonClick,
 }: CourseItemProps) => {
   const isCompleted = progress >= 100;
+
+  const handleExpandToggle = () => {
+    onExpand?.();
+  };
 
   // 레벨별 스타일 정의 (Figma 디자인 기반)
   const levelStyles: Record<CourseLevel, { bg: string; border: string; text: string }> = {
@@ -67,12 +74,27 @@ export const CourseItem = ({
         className
       )}
     >
-      <div className="flex items-start gap-[23px] w-full">
+      <div
+        className="flex items-start gap-[23px] w-full cursor-pointer"
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        onClick={handleExpandToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleExpandToggle();
+          }
+        }}
+      >
         <button
           className="relative w-6 h-[26px] flex items-center justify-center"
           aria-label="Toggle course section"
           type="button"
-          onClick={onToggle}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle?.();
+          }}
         >
           <div
             className={cn(
@@ -119,7 +141,10 @@ export const CourseItem = ({
                   className="relative w-3.5 h-2 flex items-center justify-center"
                   aria-label={isExpanded ? "접기" : "확장"}
                   type="button"
-                  onClick={onExpand}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onExpand?.();
+                  }}
                 >
                   <ChevronIcon
                     isExpanded={isExpanded}
@@ -164,7 +189,16 @@ export const CourseItem = ({
           {lessons.map((lesson) => (
             <div
               key={lesson.id}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              role="button"
+              tabIndex={0}
+              onClick={() => onLessonClick?.(lesson.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onLessonClick?.(lesson.id);
+                }
+              }}
             >
               <div
                 className={cn(
