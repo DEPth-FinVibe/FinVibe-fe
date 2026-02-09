@@ -1,5 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
+import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
 // 지갑 서비스 전용 baseURL
 const WALLET_BASE =
@@ -10,9 +11,25 @@ export const walletApiClient = axios.create({
   baseURL: WALLET_BASE,
 });
 
+let refreshPromise: Promise<string> | null = null;
+
 // Request: Add Access Token
-walletApiClient.interceptors.request.use((config) => {
+walletApiClient.interceptors.request.use(async (config) => {
   const tokens = useAuthStore.getState().tokens;
+  if (!tokens) {
+    return config;
+  }
+
+  if (isTokenExpiredOrExpiring(tokens.accessExpiresAt)) {
+    try {
+      const newAccessToken = await refreshTokensOnce();
+      config.headers.Authorization = `Bearer ${newAccessToken}`;
+      return config;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
   if (tokens?.accessToken) {
     config.headers.Authorization = `Bearer ${tokens.accessToken}`;
   }
@@ -46,6 +63,16 @@ async function refreshTokens() {
   }
 }
 
+function refreshTokensOnce(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = refreshTokens().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
 // Response: Handle token refresh
 walletApiClient.interceptors.response.use(
   (res) => res,
@@ -62,7 +89,7 @@ walletApiClient.interceptors.response.use(
     ) {
       (originalRequest as { _retry?: boolean })._retry = true;
       try {
-        const newAccessToken = await refreshTokens();
+        const newAccessToken = await refreshTokensOnce();
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }

@@ -1,5 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
+import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
 const STUDY_BASE =
   import.meta.env.VITE_API_STUDY_BASE ??
@@ -9,9 +10,25 @@ export const studyApiClient = axios.create({
   baseURL: STUDY_BASE,
 });
 
+let refreshPromise: Promise<string> | null = null;
+
 // Request: Add Access Token
-studyApiClient.interceptors.request.use((config) => {
+studyApiClient.interceptors.request.use(async (config) => {
   const tokens = useAuthStore.getState().tokens;
+  if (!tokens) {
+    return config;
+  }
+
+  if (isTokenExpiredOrExpiring(tokens.accessExpiresAt)) {
+    try {
+      const newAccessToken = await refreshTokensOnce();
+      config.headers.Authorization = `Bearer ${newAccessToken}`;
+      return config;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
   if (tokens?.accessToken) {
     config.headers.Authorization = `Bearer ${tokens.accessToken}`;
   }
@@ -38,6 +55,16 @@ async function refreshTokens() {
   }
 }
 
+function refreshTokensOnce(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = refreshTokens().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
 // Response: Handle token refresh
 studyApiClient.interceptors.response.use(
   (res) => res,
@@ -49,7 +76,7 @@ studyApiClient.interceptors.response.use(
     if (status === 401 && code === "INVALID_REFRESH_TOKEN" && originalRequest && !(originalRequest as any)._retry) {
       (originalRequest as any)._retry = true;
       try {
-        const newAccessToken = await refreshTokens();
+        const newAccessToken = await refreshTokensOnce();
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useAuthStore } from "./useAuthStore";
+import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
 // --- Types ---
 
@@ -41,6 +42,8 @@ let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempt = 0;
 let intentionalClose = false;
+let authStoreUnsubscribe: (() => void) | null = null;
+let lastAuthToken: string | null = null;
 
 function readNumberField(
   source: Record<string, unknown>,
@@ -135,6 +138,39 @@ function send(data: object) {
   }
 }
 
+function ensureAuthTokenSubscription() {
+  if (authStoreUnsubscribe) return;
+
+  authStoreUnsubscribe = useAuthStore.subscribe((state, prevState) => {
+    const nextTokens = state.tokens;
+    const prevAccessToken = prevState.tokens?.accessToken;
+    const nextAccessToken = nextTokens?.accessToken;
+
+    if (!nextAccessToken) {
+      lastAuthToken = null;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        useMarketStore.getState().disconnect();
+      }
+      return;
+    }
+
+    if (nextAccessToken === prevAccessToken || nextAccessToken === lastAuthToken) {
+      return;
+    }
+
+    if (isTokenExpiredOrExpiring(nextTokens?.accessExpiresAt, 0)) {
+      console.warn("[MarketStore] Skipping re-auth with expired token");
+      return;
+    }
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      console.log("[MarketStore] Access token updated, re-authenticating");
+      send({ type: "auth", token: nextAccessToken });
+      lastAuthToken = nextAccessToken;
+    }
+  });
+}
+
 // --- Store ---
 
 export const useMarketStore = create<MarketState>((set, get) => ({
@@ -144,6 +180,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   subscribedStockIds: new Set(),
 
   connect: () => {
+    ensureAuthTokenSubscription();
+
     if (ws && ws.readyState === WebSocket.OPEN) return;
 
     // Close existing connection
@@ -166,8 +204,13 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       // Authenticate
       const tokens = useAuthStore.getState().tokens;
       if (tokens?.accessToken) {
+        if (isTokenExpiredOrExpiring(tokens.accessExpiresAt, 0)) {
+          console.warn("[MarketStore] Access token is expired, waiting for refresh");
+          return;
+        }
         console.log("[MarketStore] Sending auth");
         send({ type: "auth", token: tokens.accessToken });
+        lastAuthToken = tokens.accessToken;
       }
     };
 
@@ -276,6 +319,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
   disconnect: () => {
     intentionalClose = true;
+    lastAuthToken = null;
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
