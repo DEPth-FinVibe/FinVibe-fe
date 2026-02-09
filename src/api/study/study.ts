@@ -54,6 +54,10 @@ export type MyStudyMetricResponse = {
   lastPingAt: string;
 };
 
+export type TodayAiStudyRecommendResponse = {
+  content: string;
+};
+
 // 백엔드가 배열을 래핑해서 반환할 수 있으므로 안전하게 추출
 function unwrapArray<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data;
@@ -92,6 +96,12 @@ export const studyApi = {
   getRecommendedKeywords: async (): Promise<string[]> => {
     const res = await studyApiClient.get("/study/keywords/recommended");
     return unwrapArray<string>(res.data);
+  },
+
+  /** 오늘의 AI 학습 추천 조회: GET /study/ai-recommends/today */
+  getTodayAiStudyRecommend: async (): Promise<TodayAiStudyRecommendResponse> => {
+    const res = await studyApiClient.get<TodayAiStudyRecommendResponse>("/study/ai-recommends/today");
+    return res.data;
   },
 
   // ── 학습 레슨 ──
