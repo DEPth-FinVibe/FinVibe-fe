@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import SearchIcon from "@/assets/search.svg?react";
 
@@ -90,6 +91,7 @@ const NOTICES: Notice[] = [
 ];
 
 const NoticePage: React.FC = () => {
+  const navigate = useNavigate();
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -214,10 +216,17 @@ const NoticePage: React.FC = () => {
                         key={n.id}
                         className={cn(
                           "w-full flex items-center p-[20px]",
-                          isPinned ? "bg-[#EAEBED]" : "bg-white"
+                          isPinned ? "bg-[#EAEBED]" : "bg-white",
+                          "cursor-pointer hover:bg-gray-50 transition-colors"
                         )}
                         role="button"
                         tabIndex={0}
+                        onClick={() => navigate(`/notice/${n.id}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            navigate(`/notice/${n.id}`);
+                          }
+                        }}
                       >
                         {/* 번호 */}
                         <div className="w-[117px] shrink-0 h-[45px] flex items-center justify-center px-[40px] py-[10px]">

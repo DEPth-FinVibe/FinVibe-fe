@@ -128,7 +128,7 @@ const InquiryPage: React.FC = () => {
 
             {tab === "history" ? (
               <div className="px-2 sm:px-5 py-10 text-center text-Body_L_Light text-gray-500">
-                나의 문의 내역 기능은 준비 중입니다.
+                문의 내역이 없습니다.
               </div>
             ) : (
               <form onSubmit={onSubmit} className="w-full flex flex-col gap-6">

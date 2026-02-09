@@ -19,6 +19,7 @@ import ServiceRankingUserPage from "@/pages/ServiceRanking/ServiceRankingUserPag
 import InquiryPage from "@/pages/Inquiry/InquiryPage";
 import FAQPage from "@/pages/FAQ/FAQPage";
 import NoticePage from "@/pages/Notice/NoticePage";
+import NoticeDetailPage from "@/pages/Notice/NoticeDetailPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMarketStore } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
@@ -79,6 +80,7 @@ function App() {
           <Route path="/inquiry" element={<InquiryPage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/notice" element={<NoticePage />} />
+          <Route path="/notice/:noticeId" element={<NoticeDetailPage />} />
         </Route>
         
         <Route path="/login" element={<LoginPage />} />
