@@ -6,6 +6,7 @@ import BagIcon from "@/assets/svgs/BagIcon";
 import CalendarIcon from "@/assets/svgs/CalendarIcon";
 import { cn } from "@/utils/cn";
 import { walletApi } from "@/api/wallet";
+import { assetPortfolioApi, type AssetAllocationResponse } from "@/api/asset";
 
 const formatWon = (value: number) => `₩${value.toLocaleString()}`;
 
@@ -21,28 +22,43 @@ type TxItem = {
 const MyAssetsPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // TODO: API 연동 시 교체
-  const changeRate = 4.5;
-  const stock = 8_000_000;
+  const [allocation, setAllocation] = useState<AssetAllocationResponse | null>(null);
   const [cash, setCash] = useState<number | null>(null);
-  const cashValue = cash ?? 0;
-  const total = cashValue + stock;
+  const [loading, setLoading] = useState(true);
 
+  // 자산 배분 데이터 조회
   useEffect(() => {
     let alive = true;
+    setLoading(true);
     (async () => {
       try {
-        const data = await walletApi.getBalance();
+        const [allocationData, balanceData] = await Promise.all([
+          assetPortfolioApi.getAssetAllocation(),
+          walletApi.getBalance(),
+        ]);
         if (!alive) return;
-        setCash(Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0);
+        setAllocation(allocationData);
+        setCash(Number.isFinite(balanceData.balance) ? Math.max(0, balanceData.balance) : 0);
       } catch {
-        // 실패 시 로딩 표시 유지
+        // 실패 시 기본값 유지
+        if (!alive) return;
+        setAllocation(null);
+        setCash(null);
+      } finally {
+        if (!alive) return;
+        setLoading(false);
       }
     })();
     return () => {
       alive = false;
     };
   }, []);
+
+  // API 데이터 또는 기본값
+  const stock = allocation?.stockAmount ?? 0;
+  const changeRate = allocation?.changeRate ?? 0;
+  const cashValue = cash ?? (allocation?.cashAmount ?? 0);
+  const total = allocation?.totalAmount ?? (cashValue + stock);
 
   const [filter, setFilter] = useState<"전체" | "매수/매도" | "리워드">("전체");
 
@@ -115,7 +131,12 @@ const MyAssetsPage: React.FC = () => {
 
                 <div className="flex flex-col gap-1 w-full">
                   <p className="text-Title_L_Medium text-black">{formatWon(total)}</p>
-                  <p className="text-Subtitle_S_Regular text-etc-red">+{changeRate}%</p>
+                  <p className={cn(
+                    "text-Subtitle_S_Regular",
+                    changeRate > 0 ? "text-etc-red" : changeRate < 0 ? "text-etc-blue" : "text-gray-400"
+                  )}>
+                    {changeRate > 0 ? "+" : ""}{changeRate}%
+                  </p>
                 </div>
               </div>
 
