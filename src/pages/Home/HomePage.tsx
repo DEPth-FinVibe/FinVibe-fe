@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, memo } from "react";
+import React, { useState, useMemo, useEffect, useRef, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TradingVolumeRank,
@@ -56,17 +56,71 @@ interface RealTimeStockRowProps {
   stock: StockWithPrice;
   rank: number;
   isSelected: boolean;
+  isMarketOpen: boolean;
   onSelect: () => void;
   sparklineValues?: number[];
 }
 
-const RealTimeStockRow = memo(({ stock, rank, isSelected, onSelect, sparklineValues }: RealTimeStockRowProps) => {
+const RealTimeStockRow = memo(({ stock, rank, isSelected, isMarketOpen, onSelect, sparklineValues }: RealTimeStockRowProps) => {
   const quote = useQuote(stock.stockId);
+  const isQuotePending = isMarketOpen && !quote;
+  const prevChangePctRef = useRef<number | null>(null);
+  const [changeFlashToken, setChangeFlashToken] = useState(0);
 
-  // 실시간 데이터가 있으면 사용, 없으면 REST API 데이터 사용
-  const price = quote?.close ?? stock.close;
-  const changePct = quote?.prevDayChangePct ?? stock.prevDayChangePct;
-  const value = quote?.value ?? stock.value;
+  useEffect(() => {
+    if (!isMarketOpen || !quote) {
+      prevChangePctRef.current = null;
+      return;
+    }
+
+    const prevChangePct = prevChangePctRef.current;
+    if (prevChangePct != null && prevChangePct !== quote.prevDayChangePct) {
+      setChangeFlashToken((token) => token + 1);
+    }
+    prevChangePctRef.current = quote.prevDayChangePct;
+  }, [isMarketOpen, quote]);
+
+  if (isQuotePending) {
+    return (
+      <div
+        className={`flex items-start w-full py-[10px] border-b border-gray-300 border-solid animate-pulse ${isSelected ? "bg-gray-50" : ""}`}
+        onClick={onSelect}
+        role="button"
+        tabIndex={0}
+        aria-label={`${rank}위: ${stock.name} (${stock.symbol}) - 실시간 시세 수신 중`}
+      >
+        <div className="flex flex-col h-[47px] items-center justify-center pl-[40px] shrink-0 w-[87px]">
+          <p className="flex-1 text-Body_M_Light text-black w-full">{rank}</p>
+        </div>
+
+        <div className="flex flex-col items-start shrink-0 w-[120px]">
+          <p className="text-Body_M_Light text-black w-full">{stock.name}</p>
+          <p className="text-Caption_M_Light w-full" style={{ color: "#747474" }}>{stock.symbol}</p>
+        </div>
+
+        <div className="flex flex-col items-center justify-center shrink-0 w-[62px]">
+          <div className="h-4 w-14 bg-gray-200 rounded" />
+        </div>
+
+        <div className="flex items-start pl-[45px] pr-[20px] shrink-0 w-[120px]">
+          <div className="h-4 w-12 bg-gray-200 rounded" />
+        </div>
+
+        <div className="flex items-center justify-center pl-[36px] shrink-0 w-[104px]">
+          <div className="h-4 w-12 bg-gray-200 rounded" />
+        </div>
+
+        <div className="h-[47px] shrink-0 w-[78px] py-[10px]">
+          <div className="w-full h-full bg-gray-200 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  // 장 열림: 실시간 데이터 우선, 장 닫힘: 종가 API 데이터만 사용
+  const price = isMarketOpen ? (quote?.close ?? stock.close) : stock.close;
+  const changePct = isMarketOpen ? (quote?.prevDayChangePct ?? stock.prevDayChangePct) : stock.prevDayChangePct;
+  const value = isMarketOpen ? (quote?.value ?? stock.value) : stock.value;
 
   return (
     <TradingVolumeRank
@@ -76,6 +130,7 @@ const RealTimeStockRow = memo(({ stock, rank, isSelected, onSelect, sparklineVal
       currentPrice={formatPrice(price)}
       changeRate={formatChangeRate(changePct)}
       tradingVolume={formatTradingValue(value)}
+      changeFlashToken={changeFlashToken}
       chart={
         sparklineValues && sparklineValues.length >= 2
           ? <MiniSparkline values={sparklineValues} color={changePct >= 0 ? "#FF0000" : "#001AFF"} />
@@ -109,11 +164,12 @@ const HomePage: React.FC = () => {
   const [latestNews, setLatestNews] = useState<NewsListItem[]>([]);
 
   // 좌측 리스트 쿼리
-  const topByValue = useTopByValue();
-  const topByVolume = useTopByVolume();
-  const topRising = useTopRising();
-  const topFalling = useTopFalling();
-  const topHoldingTop10 = useTopHoldingTop10WithPrices();
+  const { isMarketOpen } = useMarketStatus();
+  const topByValue = useTopByValue(isMarketOpen);
+  const topByVolume = useTopByVolume(isMarketOpen);
+  const topRising = useTopRising(isMarketOpen);
+  const topFalling = useTopFalling(isMarketOpen);
+  const topHoldingTop10 = useTopHoldingTop10WithPrices(isMarketOpen);
 
   const queryMap: Record<FilterType, typeof topByValue> = {
     "거래대금": topByValue,
@@ -157,7 +213,6 @@ const HomePage: React.FC = () => {
   const { dataByStockId: dailySparklineByStockId } = useDailySparklines(sparklineStockIds);
 
   const { subscribe, unsubscribe } = useMarketStore();
-  const { isMarketOpen } = useMarketStatus();
 
   // 장 열림 시에만 화면에 표시되는 종목들 웹소켓 구독
   useEffect(() => {
@@ -388,6 +443,7 @@ const HomePage: React.FC = () => {
                   stock={{ ...stock, symbol: tickerText }}
                   rank={index + 1}
                   isSelected={selectedStock.ticker === selectedKey}
+                  isMarketOpen={isMarketOpen}
                   sparklineValues={dailySparklineByStockId.get(stock.stockId)}
                   onSelect={() => {
                     setSelectedStock({

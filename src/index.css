@@ -14,3 +14,12 @@
     font-family: "Noto Sans KR", sans-serif;
   }
 }
+
+@keyframes tv-rank-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

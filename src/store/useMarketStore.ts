@@ -42,6 +42,80 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempt = 0;
 let intentionalClose = false;
 
+function readNumberField(
+  source: Record<string, unknown>,
+  keys: string[],
+): number | undefined {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return undefined;
+}
+
+function normalizeQuoteData(
+  raw: unknown,
+  fallbackStockId?: number,
+): QuoteData | null {
+  if (!raw || typeof raw !== "object") return null;
+  const source = raw as Record<string, unknown>;
+
+  const stockId =
+    readNumberField(source, ["stockId"]) ??
+    fallbackStockId;
+
+  if (!stockId) return null;
+
+  const close = readNumberField(source, [
+    "close",
+    "currentPrice",
+    "price",
+    "tradePrice",
+    "lastPrice",
+  ]) ?? 0;
+  const prevDayChangePct = readNumberField(source, [
+    "prevDayChangePct",
+    "changeRate",
+    "changePct",
+    "signedChangeRate",
+  ]) ?? 0;
+  const volume = readNumberField(source, [
+    "volume",
+    "accTradeVolume",
+    "tradeVolume",
+  ]) ?? 0;
+  const value = readNumberField(source, [
+    "value",
+    "accTradeValue",
+    "tradeValue",
+  ]) ?? 0;
+
+  const open = readNumberField(source, ["open"]) ?? close;
+  const high = readNumberField(source, ["high"]) ?? close;
+  const low = readNumberField(source, ["low"]) ?? close;
+
+  return {
+    stockId,
+    timeframe: typeof source.timeframe === "string" ? source.timeframe : "MINUTE",
+    at: typeof source.at === "string" ? source.at : new Date().toISOString(),
+    open,
+    high,
+    low,
+    close,
+    prevDayChangePct,
+    volume,
+    value,
+  };
+}
+
 function buildWsUrl(): string {
   const envUrl = import.meta.env.VITE_WS_MARKET_URL;
   if (envUrl) return envUrl;
@@ -98,22 +172,33 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     };
 
     ws.onmessage = (event) => {
-      let msg: any;
+      let msg: unknown;
       try {
         msg = JSON.parse(event.data);
       } catch {
         return;
       }
 
-      console.log("[MarketStore] Message received:", msg.type, msg);
+      if (!msg || typeof msg !== "object") return;
+      const message = msg as {
+        type?: string;
+        ok?: boolean;
+        payload?: unknown;
+        topic?: string;
+        data?: unknown;
+        code?: string;
+        message?: string;
+      };
 
-      switch (msg.type) {
+      console.log("[MarketStore] Message received:", message.type, message);
+
+      switch (message.type) {
         case "ping":
           send({ type: "pong" });
           break;
 
         case "auth":
-          if (msg.ok) {
+          if (message.ok) {
             console.log("[MarketStore] Authenticated");
             set({ isAuthenticated: true });
 
@@ -134,8 +219,9 @@ export const useMarketStore = create<MarketState>((set, get) => ({
           }
           break;
 
-        case "quote":
-          const quotePayload = msg.payload as QuoteData;
+        case "quote": {
+          const quotePayload = normalizeQuoteData(message.payload);
+          if (!quotePayload) break;
           set((state) => ({
             quotes: {
               ...state.quotes,
@@ -143,24 +229,27 @@ export const useMarketStore = create<MarketState>((set, get) => ({
             },
           }));
           break;
+        }
 
-        case "event":
+        case "event": {
           // topic이 "quote:stockId" 형식인 경우 처리
-          if (msg.topic?.startsWith("quote:")) {
-            const stockId = parseInt(msg.topic.split(":")[1], 10);
-            const eventData = msg.data;
-            console.log("[MarketStore] Quote data:", stockId, eventData);
+          if (message.topic?.startsWith("quote:")) {
+            const stockId = parseInt(message.topic.split(":")[1], 10);
+            const quotePayload = normalizeQuoteData(message.data, stockId);
+            if (!quotePayload) break;
+            console.log("[MarketStore] Quote data:", stockId, quotePayload);
             set((state) => ({
               quotes: {
                 ...state.quotes,
-                [stockId]: { ...eventData, stockId },
+                [stockId]: quotePayload,
               },
             }));
           }
           break;
+        }
 
         case "error":
-          console.warn("[MarketStore] Error:", msg.code, msg.message);
+          console.warn("[MarketStore] Error:", message.code, message.message);
           break;
       }
     };
@@ -198,6 +287,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     set({
       isConnected: false,
       isAuthenticated: false,
+      quotes: {},
       subscribedStockIds: new Set(),
     });
   },

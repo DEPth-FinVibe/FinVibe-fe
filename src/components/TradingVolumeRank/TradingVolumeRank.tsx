@@ -27,6 +27,8 @@ export interface TradingVolumeRankProps {
   className?: string;
   /** 클릭 핸들러 */
   onClick?: () => void;
+  /** 등락률 업데이트 플래시 토큰 */
+  changeFlashToken?: number;
 }
 
 export const TradingVolumeRank = ({
@@ -39,12 +41,14 @@ export const TradingVolumeRank = ({
   chart,
   className,
   onClick,
+  changeFlashToken,
 }: TradingVolumeRankProps) => {
   // 등락률의 부호 확인 (양수면 빨간색, 음수면 파란색)
   const isPositive = changeRate.startsWith("+");
   const changeColor = isPositive ? "text-etc-red" : "text-etc-blue";
   const iconColor = isPositive ? COLORS["etc-red"] : COLORS["etc-blue"];
   const iconDirection = isPositive ? "up" : "down";
+  const flashColorClass = isPositive ? "bg-etc-red/20" : "bg-etc-blue/20";
 
   return (
     <div
@@ -84,16 +88,27 @@ export const TradingVolumeRank = ({
       </div>
 
       {/* 등락률 */}
-      <div className="flex gap-[4px] items-start pl-[45px] pr-[20px] shrink-0 w-[120px]">
-        <ChangeRateIcon
-          className="h-[26px] w-6 shrink-0"
-          color={iconColor}
-          direction={iconDirection}
-          ariaLabel="등락률 차트"
-        />
-        <p className={cn("text-Body_M_Light text-right whitespace-nowrap", changeColor)}>
-          {changeRate}
-        </p>
+      <div className="flex items-start pl-[45px] pr-[20px] shrink-0 w-[120px]">
+        <div className="relative inline-flex items-start gap-[4px] rounded-md px-1 py-[1px]">
+          {changeFlashToken != null && changeFlashToken > 0 && (
+            <div
+              key={`change-${changeFlashToken}`}
+              className={cn(
+                "pointer-events-none absolute inset-0 rounded-md animate-[tv-rank-flash_900ms_ease-out_forwards]",
+                flashColorClass,
+              )}
+            />
+          )}
+          <ChangeRateIcon
+            className="relative z-10 h-[26px] w-6 shrink-0"
+            color={iconColor}
+            direction={iconDirection}
+            ariaLabel="등락률 차트"
+          />
+          <p className={cn("relative z-10 text-Body_M_Light text-right whitespace-nowrap", changeColor)}>
+            {changeRate}
+          </p>
+        </div>
       </div>
 
       {/* 거래대금 */}
@@ -163,4 +178,3 @@ export const TradingVolumeRankSkeleton = ({ className }: { className?: string })
 };
 
 export default TradingVolumeRank;
-

@@ -41,12 +41,31 @@ export function useMarketStatus() {
 
 // --- 홈페이지용 훅 (상위 10개만 closing-prices 호출) ---
 
+function toStocksWithEmptyPrice(
+  stocks: import("@/api/market").StockListItem[],
+) {
+  return stocks.map((stock) => ({
+    stockId: stock.stockId,
+    symbol: stock.symbol,
+    name: stock.name,
+    categoryId: stock.categoryId,
+    close: 0,
+    prevDayChangePct: 0,
+    volume: 0,
+    value: 0,
+  }));
+}
+
 async function fetchTop10WithPrices(
   fetcher: () => Promise<import("@/api/market").StockListItem[]>,
+  isMarketOpen: boolean,
 ) {
   const stocks = await fetcher();
   const top10 = stocks.slice(0, 10);
   if (top10.length === 0) return [];
+  if (isMarketOpen) {
+    return toStocksWithEmptyPrice(top10);
+  }
   const stockIds = top10.map((s) => s.stockId);
   try {
     const prices = await fetchClosingPrices(stockIds);
@@ -56,45 +75,58 @@ async function fetchTop10WithPrices(
   }
 }
 
-export function useTopByValue() {
+export function useTopByValue(isMarketOpen: boolean) {
   return useQuery({
-    queryKey: ["market", "top-by-value"],
-    queryFn: () => fetchTop10WithPrices(fetchTopByValue),
+    queryKey: ["market", "top-by-value", isMarketOpen],
+    queryFn: () => fetchTop10WithPrices(fetchTopByValue, isMarketOpen),
     staleTime: 30_000,
   });
 }
 
-export function useTopByVolume() {
+export function useTopByVolume(isMarketOpen: boolean) {
   return useQuery({
-    queryKey: ["market", "top-by-volume"],
-    queryFn: () => fetchTop10WithPrices(fetchTopByVolume),
+    queryKey: ["market", "top-by-volume", isMarketOpen],
+    queryFn: () => fetchTop10WithPrices(fetchTopByVolume, isMarketOpen),
     staleTime: 30_000,
   });
 }
 
-export function useTopRising() {
+export function useTopRising(isMarketOpen: boolean) {
   return useQuery({
-    queryKey: ["market", "top-rising"],
-    queryFn: () => fetchTop10WithPrices(fetchTopRising),
+    queryKey: ["market", "top-rising", isMarketOpen],
+    queryFn: () => fetchTop10WithPrices(fetchTopRising, isMarketOpen),
     staleTime: 30_000,
   });
 }
 
-export function useTopFalling() {
+export function useTopFalling(isMarketOpen: boolean) {
   return useQuery({
-    queryKey: ["market", "top-falling"],
-    queryFn: () => fetchTop10WithPrices(fetchTopFalling),
+    queryKey: ["market", "top-falling", isMarketOpen],
+    queryFn: () => fetchTop10WithPrices(fetchTopFalling, isMarketOpen),
     staleTime: 30_000,
   });
 }
 
-export function useTopHoldingTop10WithPrices() {
+export function useTopHoldingTop10WithPrices(isMarketOpen: boolean) {
   return useQuery({
-    queryKey: ["asset", "top-holding-top10-with-prices"],
+    queryKey: ["asset", "top-holding-top10-with-prices", isMarketOpen],
     queryFn: async () => {
       const holdings = await fetchTopHoldingStocks();
       const top10 = holdings.slice(0, 10);
       if (top10.length === 0) return [];
+
+      if (isMarketOpen) {
+        return top10.map((item) => ({
+          stockId: item.stockId,
+          symbol: "",
+          name: item.name,
+          categoryId: 0,
+          close: 0,
+          prevDayChangePct: 0,
+          volume: 0,
+          value: 0,
+        }));
+      }
 
       const stockIds = top10.map((item) => item.stockId);
 
