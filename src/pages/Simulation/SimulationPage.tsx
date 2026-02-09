@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, memo } from "react";
+import { useState, useMemo, useEffect, useRef, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField } from "@/components/TextField";
 import { StockListItem } from "@/components/StockListItem";
@@ -209,13 +209,14 @@ const SimulationPage = () => {
   };
 
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
-  const isSearchMode = debouncedQuery.length >= 1;
+  const normalizedQuery = debouncedQuery.trim();
+  const isSearchMode = normalizedQuery.length >= 1;
   const { isMarketOpen } = useMarketStatus();
 
   const marketTypeParam = "DOMESTIC";
   const topByVolume = useTopByVolumeWithPrices(isMarketOpen);
   const searchResult = useStockSearchWithPrices(
-    debouncedQuery,
+    normalizedQuery,
     isMarketOpen,
     marketTypeParam,
   );
@@ -257,6 +258,10 @@ const SimulationPage = () => {
     const sourceData = isSearchMode ? searchResult.data : topByVolume.data;
     if (!sourceData) return [];
 
+    if (isSearchMode) {
+      return sourceData;
+    }
+
     return sourceData.filter((stock: StockWithPrice) =>
       DOMESTIC_CATEGORY_IDS.includes(stock.categoryId),
     );
@@ -272,19 +277,103 @@ const SimulationPage = () => {
     ? searchResult.isLoading
     : topByVolume.isLoading;
 
-  // 장 열림 시에만 화면에 보이는 종목들 웹소켓 구독
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+  const subscribedStockIdsRef = useRef<Set<number>>(new Set());
+  const [inViewStockIds, setInViewStockIds] = useState<number[]>([]);
+
   useEffect(() => {
-    if (!isMarketOpen) return;
-    const stockIds = visibleStocks.map((s) => s.stockId);
-    if (stockIds.length > 0) {
-      subscribe(stockIds);
+    if (!isMarketOpen) {
+      setInViewStockIds([]);
+      return;
     }
+
+    const root = listContainerRef.current;
+    if (!root) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setInViewStockIds((prev) => {
+          const next = new Set(prev);
+
+          entries.forEach((entry) => {
+            const target = entry.target as HTMLElement;
+            const stockIdRaw = target.dataset.stockId;
+            if (!stockIdRaw) return;
+
+            const stockId = Number(stockIdRaw);
+            if (!Number.isFinite(stockId)) return;
+
+            if (entry.isIntersecting && entry.intersectionRatio > 0) {
+              next.add(stockId);
+            } else {
+              next.delete(stockId);
+            }
+          });
+
+          return Array.from(next);
+        });
+      },
+      {
+        root,
+        threshold: 0,
+      },
+    );
+
+    const targets = root.querySelectorAll<HTMLElement>("[data-stock-id]");
+    targets.forEach((target) => observer.observe(target));
+
     return () => {
-      if (stockIds.length > 0) {
-        unsubscribe(stockIds);
-      }
+      observer.disconnect();
     };
-  }, [visibleStocks, isMarketOpen, subscribe, unsubscribe]);
+  }, [isMarketOpen, visibleStocks]);
+
+  // 장 열림 시 IntersectionObserver로 화면에 보이는 종목만 웹소켓 구독
+  useEffect(() => {
+    const currentSubscribed = subscribedStockIdsRef.current;
+
+    if (!isMarketOpen) {
+      const allSubscribed = Array.from(currentSubscribed);
+      if (allSubscribed.length > 0) {
+        unsubscribe(allSubscribed);
+      }
+      currentSubscribed.clear();
+      return;
+    }
+
+    const renderedStockIdSet = new Set(visibleStocks.map((stock) => stock.stockId));
+    const nextSubscribed = new Set(
+      inViewStockIds.filter((stockId) => renderedStockIdSet.has(stockId)),
+    );
+
+    const toSubscribe = Array.from(nextSubscribed).filter(
+      (stockId) => !currentSubscribed.has(stockId),
+    );
+    const toUnsubscribe = Array.from(currentSubscribed).filter(
+      (stockId) => !nextSubscribed.has(stockId),
+    );
+
+    if (toSubscribe.length > 0) {
+      subscribe(toSubscribe);
+      toSubscribe.forEach((stockId) => currentSubscribed.add(stockId));
+    }
+
+    if (toUnsubscribe.length > 0) {
+      unsubscribe(toUnsubscribe);
+      toUnsubscribe.forEach((stockId) => currentSubscribed.delete(stockId));
+    }
+  }, [inViewStockIds, isMarketOpen, subscribe, unsubscribe, visibleStocks]);
+
+  useEffect(() => {
+    const subscribedStockIds = subscribedStockIdsRef.current;
+
+    return () => {
+      const allSubscribed = Array.from(subscribedStockIds);
+      if (allSubscribed.length > 0) {
+        unsubscribe(allSubscribed);
+      }
+      subscribedStockIds.clear();
+    };
+  }, [unsubscribe]);
 
   const handleShowMore = () => {
     setVisibleCount((prev) => prev + PAGE_SIZE);
@@ -398,7 +487,7 @@ const SimulationPage = () => {
           />
 
           {/* 주식 리스트 - 스크롤 영역 */}
-          <div className="flex flex-col gap-4 overflow-y-auto flex-1 pr-2">
+          <div ref={listContainerRef} className="flex flex-col gap-4 overflow-y-auto flex-1 pr-2">
             {!isMarketOpen &&
               Array.from({ length: 10 }).map((_, index) => (
                 <StockListItemSkeleton key={`stock-list-skeleton-${index}`} />
@@ -417,18 +506,19 @@ const SimulationPage = () => {
             )}
             {isMarketOpen && !isLoading &&
               visibleStocks.map((stock: StockWithPrice) => (
-                <RealTimeStockItem
-                  key={stock.stockId}
-                  stock={stock}
-                  onClick={() => navigate(`/simulation/${stock.stockId}`, {
-                    state: {
-                      stockName: stock.name,
-                      stockCode: stock.symbol,
-                    },
-                  })}
-                  isFavorited={favoriteStockIds.has(stock.stockId)}
-                  onFavoriteToggle={() => handleFavoriteToggle(stock.stockId, stock.name)}
-                />
+                <div key={stock.stockId} data-stock-id={stock.stockId}>
+                  <RealTimeStockItem
+                    stock={stock}
+                    onClick={() => navigate(`/simulation/${stock.stockId}`, {
+                      state: {
+                        stockName: stock.name,
+                        stockCode: stock.symbol,
+                      },
+                    })}
+                    isFavorited={favoriteStockIds.has(stock.stockId)}
+                    onFavoriteToggle={() => handleFavoriteToggle(stock.stockId, stock.name)}
+                  />
+                </div>
               ))}
             {isMarketOpen && !isLoading && hasMore && (
               <button
