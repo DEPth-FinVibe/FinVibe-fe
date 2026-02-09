@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { CandlestickData, Time } from "lightweight-charts";
+import { DateTime } from "luxon";
 import type { ChartPeriod } from "@/pages/Simulation/components/StockChart";
 
 const API_BASE = import.meta.env.VITE_API_BASE
@@ -113,39 +114,43 @@ const PERIOD_TO_TIMEFRAME: Record<ChartPeriod, Timeframe> = {
   "년봉": "YEAR",
 };
 
-// 서버가 UTC 기준으로 시간을 검증하므로 UTC로 변환하여 전송
-export function toUtcDateTime(date: Date): string {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+const KST_ZONE = "Asia/Seoul";
+
+export function toKstDateTime(date: Date): string {
+  return DateTime.fromJSDate(date).setZone(KST_ZONE).toFormat("yyyy-LL-dd'T'HH:mm:ss");
+}
+
+function getKstNowDateTime(): string {
+  return DateTime.now().setZone(KST_ZONE).toFormat("yyyy-LL-dd'T'HH:mm:ss");
 }
 
 export function getDefaultTimeRange(period: ChartPeriod): { startTime: string; endTime: string } {
-  const now = new Date();
-  const end = toUtcDateTime(now);
+  const end = DateTime.now().setZone(KST_ZONE);
+  const start = end;
 
-  const start = new Date(now);
+  let startDateTime = start;
   switch (period) {
     case "분봉":
       // 주말/공휴일 대비 3거래일 분량 조회
-      start.setDate(start.getDate() - 3);
+      startDateTime = start.minus({ days: 3 });
       break;
     case "일봉":
-      start.setMonth(start.getMonth() - 3);
+      startDateTime = start.minus({ months: 3 });
       break;
     case "주봉":
-      start.setFullYear(start.getFullYear() - 1);
+      startDateTime = start.minus({ years: 1 });
       break;
     case "월봉":
-      start.setFullYear(start.getFullYear() - 3);
+      startDateTime = start.minus({ years: 3 });
       break;
     case "년봉":
-      start.setFullYear(start.getFullYear() - 10);
+      startDateTime = start.minus({ years: 10 });
       break;
   }
 
   return {
-    startTime: toUtcDateTime(start),
-    endTime: end,
+    startTime: startDateTime.toFormat("yyyy-LL-dd'T'HH:mm:ss"),
+    endTime: end.toFormat("yyyy-LL-dd'T'HH:mm:ss"),
   };
 }
 
@@ -153,12 +158,27 @@ export interface CandleWithVolume extends CandlestickData<Time> {
   volume: number;
 }
 
+function toIntradayTimestamp(at: string): Time {
+  if (!at) return 0 as Time;
+
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/.test(at);
+  const parsed = hasTimezone
+    ? DateTime.fromISO(at, { setZone: true })
+    : DateTime.fromISO(at, { zone: "Asia/Seoul" });
+
+  if (!parsed.isValid) {
+    return 0 as Time;
+  }
+
+  return Math.floor(parsed.toSeconds()) as Time;
+}
+
 function toChartData(candles: CandleResponse[]): CandleWithVolume[] {
   return candles
     .map((c) => {
       const isIntraday = c.timeframe === "MINUTE" || c.timeframe === "HOUR";
       const time = isIntraday
-        ? (Math.floor(new Date(c.at).getTime() / 1000) as Time)
+        ? toIntradayTimestamp(c.at)
         : (c.at.split("T")[0] as Time);
 
       return { time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume ?? 0 };
@@ -180,13 +200,22 @@ export async function fetchCandles(
   range?: { startTime: string; endTime: string },
 ): Promise<CandleWithVolume[]> {
   const { startTime, endTime } = range ?? getDefaultTimeRange(period);
+  const normalizedEndTime = period === "분봉" && !range
+    ? getKstNowDateTime()
+    : endTime;
   const timeframe = PERIOD_TO_TIMEFRAME[period];
 
-  console.log("[fetchCandles] request:", { stockId, period, timeframe, startTime, endTime });
+  console.log("[fetchCandles] request:", {
+    stockId,
+    period,
+    timeframe,
+    startTime,
+    endTime: normalizedEndTime,
+  });
 
   const res = await marketApi.get<CandleResponse[]>(
     `/market/stocks/${stockId}/candles`,
-    { params: { startTime, endTime, timeframe } },
+    { params: { startTime, endTime: normalizedEndTime, timeframe } },
   );
 
   console.log("[fetchCandles] response:", { stockId, period, count: res.data?.length });
@@ -340,7 +369,7 @@ export async function fetchIndexCandles(
     .map((c) => {
       const isIntraday = c.timeframe === "MINUTE" || c.timeframe === "HOUR";
       const time = isIntraday
-        ? (Math.floor(new Date(c.at).getTime() / 1000) as Time)
+        ? toIntradayTimestamp(c.at)
         : (c.at.split("T")[0] as Time);
       return { time, open: c.open, high: c.high, low: c.low, close: c.close };
     })

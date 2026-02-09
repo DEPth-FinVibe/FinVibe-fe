@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { DateTime } from "luxon";
 import {
   createChart,
   CandlestickSeries,
@@ -6,6 +7,7 @@ import {
   CrosshairMode,
 } from "lightweight-charts";
 import type {
+  BusinessDay,
   IChartApi,
   ISeriesApi,
   CandlestickData,
@@ -16,11 +18,40 @@ import type { CandleWithVolume } from "@/api/market";
 
 interface StockChartProps {
   data: CandleWithVolume[];
+  period: ChartPeriod;
   className?: string;
   onLoadMore?: (endTime: string) => void;
 }
 
 export type ChartPeriod = "분봉" | "일봉" | "주봉" | "월봉" | "년봉";
+
+const KST_ZONE = "Asia/Seoul";
+
+function formatKstTickLabel(time: Time): string {
+  if (typeof time === "number") {
+    const dt = DateTime.fromSeconds(time, { zone: "utc" }).setZone(KST_ZONE);
+    return dt.isValid ? dt.toFormat("MM-dd HH:mm") : "";
+  }
+
+  const isoDate = typeof time === "string"
+    ? time
+    : `${(time as BusinessDay).year}-${String((time as BusinessDay).month).padStart(2, "0")}-${String((time as BusinessDay).day).padStart(2, "0")}`;
+  const dt = DateTime.fromISO(isoDate, { zone: KST_ZONE });
+  return dt.isValid ? dt.toFormat("MM-dd") : String(time);
+}
+
+function formatKstCrosshairTime(time: Time): string {
+  if (typeof time === "number") {
+    const dt = DateTime.fromSeconds(time, { zone: "utc" }).setZone(KST_ZONE);
+    return dt.isValid ? dt.toFormat("yyyy-LL-dd HH:mm") : "";
+  }
+
+  const isoDate = typeof time === "string"
+    ? time
+    : `${(time as BusinessDay).year}-${String((time as BusinessDay).month).padStart(2, "0")}-${String((time as BusinessDay).day).padStart(2, "0")}`;
+  const dt = DateTime.fromISO(isoDate, { zone: KST_ZONE });
+  return dt.isValid ? dt.toFormat("yyyy-LL-dd") : String(time);
+}
 
 // 기간별 Mock 캔들스틱 데이터 생성
 export const generateMockCandleData = (period: ChartPeriod = "일봉"): CandleWithVolume[] => {
@@ -80,12 +111,13 @@ export const generateMockCandleData = (period: ChartPeriod = "일봉"): CandleWi
   return data;
 };
 
-const StockChart = ({ data, className, onLoadMore }: StockChartProps) => {
+const StockChart = ({ data, period, className, onLoadMore }: StockChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const isLoadingMoreRef = useRef(false);
+  const shouldFitContentRef = useRef(true);
 
   // 차트 초기 생성 (한 번만)
   useEffect(() => {
@@ -130,6 +162,11 @@ const StockChart = ({ data, className, onLoadMore }: StockChartProps) => {
         rightOffset: 5,
         barSpacing: 8,
         minBarSpacing: 3,
+        tickMarkFormatter: formatKstTickLabel,
+      },
+      localization: {
+        locale: "ko-KR",
+        timeFormatter: formatKstCrosshairTime,
       },
     });
 
@@ -187,8 +224,15 @@ const StockChart = ({ data, className, onLoadMore }: StockChartProps) => {
     }));
     volumeSeriesRef.current.setData(volumeData);
 
-    chartRef.current.timeScale().fitContent();
+    if (shouldFitContentRef.current && data.length > 0) {
+      chartRef.current.timeScale().fitContent();
+      shouldFitContentRef.current = false;
+    }
   }, [data]);
+
+  useEffect(() => {
+    shouldFitContentRef.current = true;
+  }, [period]);
 
   // 스크롤 시 과거 데이터 로드
   const handleVisibleRangeChange = useCallback(() => {
@@ -202,7 +246,7 @@ const StockChart = ({ data, className, onLoadMore }: StockChartProps) => {
       isLoadingMoreRef.current = true;
       const oldestTime = data[0].time;
       const endTimeStr = typeof oldestTime === "number"
-        ? new Date(oldestTime * 1000).toISOString().replace("Z", "").split(".")[0]
+        ? DateTime.fromSeconds(oldestTime).setZone("Asia/Seoul").toFormat("yyyy-LL-dd'T'HH:mm:ss")
         : `${oldestTime}T00:00:00`;
       onLoadMore(endTimeStr);
       // 3초 후 다시 로딩 가능

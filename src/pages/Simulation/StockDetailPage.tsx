@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { DateTime } from "luxon";
 import { StockListItem } from "@/components/StockListItem";
 import StockChart, { type ChartPeriod } from "./components/StockChart";
 import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
-import { fetchCandles, fetchClosingPrices, toUtcDateTime, type StockClosingPrice, type CandleWithVolume } from "@/api/market";
+import { fetchCandles, fetchClosingPrices, toKstDateTime, type StockClosingPrice, type CandleWithVolume } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 import { memberApi } from "@/api/member";
@@ -27,9 +28,35 @@ const MOCK_BID_ORDERS = [
   { price: 70704, volume: "3.9K" },
 ];
 
+function parseKstDateTime(dateTime: string): number {
+  if (!dateTime) return NaN;
+
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/.test(dateTime);
+  const parsed = hasTimezone
+    ? DateTime.fromISO(dateTime, { setZone: true })
+    : DateTime.fromISO(dateTime, { zone: "Asia/Seoul" });
+
+  if (!parsed.isValid) return NaN;
+  return parsed.toMillis();
+}
+
+function parseKstDateTimeWithoutZone(dateTime: string): number {
+  if (!dateTime) return NaN;
+
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/.test(dateTime);
+  const parsed = hasTimezone
+    ? DateTime.fromISO(dateTime, { setZone: true })
+    : DateTime.fromISO(dateTime, { zone: "Asia/Seoul" });
+
+  if (!parsed.isValid) return NaN;
+  return parsed.toMillis();
+}
+
 const StockDetailPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { stockId } = useParams<{ stockId: string }>();
+  const navigationState = location.state as { stockName?: string; stockCode?: string } | null;
   const user = useAuthStore((s) => s.user);
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
@@ -104,6 +131,65 @@ const StockDetailPage = () => {
   const changePct = isMarketOpen ? (quote?.prevDayChangePct ?? stockInfo?.prevDayChangePct) : stockInfo?.prevDayChangePct;
   const volume = isMarketOpen ? (quote?.volume ?? stockInfo?.volume) : stockInfo?.volume;
 
+  // 장중 분봉 차트는 WebSocket 현재가를 반영해 마지막 캔들을 실시간 업데이트
+  useEffect(() => {
+    if (!isMarketOpen || chartPeriod !== "분봉" || !quote || !Number.isFinite(quote.close) || quote.close <= 0) {
+      return;
+    }
+
+    const quoteTime = parseKstDateTime(quote.at);
+    if (!Number.isFinite(quoteTime)) return;
+
+    const minuteTime = Math.floor(quoteTime / 60_000) * 60;
+
+    setChartData((prev) => {
+      if (prev.length === 0) {
+        const initial = {
+          time: minuteTime as CandleWithVolume["time"],
+          open: quote.close,
+          high: quote.close,
+          low: quote.close,
+          close: quote.close,
+          volume: Number.isFinite(quote.volume) ? quote.volume : 0,
+        } as CandleWithVolume;
+        allChartDataRef.current = [initial];
+        return [initial];
+      }
+
+      const next = [...prev];
+      const last = next[next.length - 1];
+      if (typeof last.time !== "number") {
+        return prev;
+      }
+
+      if (last.time === minuteTime) {
+        const updatedLast: CandleWithVolume = {
+          ...last,
+          high: Math.max(last.high, quote.close),
+          low: Math.min(last.low, quote.close),
+          close: quote.close,
+          volume: Number.isFinite(quote.volume) ? Math.max(last.volume, quote.volume) : last.volume,
+        };
+        next[next.length - 1] = updatedLast;
+      } else if (last.time < minuteTime) {
+        const newCandle: CandleWithVolume = {
+          time: minuteTime as CandleWithVolume["time"],
+          open: last.close,
+          high: Math.max(last.close, quote.close),
+          low: Math.min(last.close, quote.close),
+          close: quote.close,
+          volume: Number.isFinite(quote.volume) ? quote.volume : 0,
+        };
+        next.push(newCandle);
+      } else {
+        return prev;
+      }
+
+      allChartDataRef.current = next;
+      return next;
+    });
+  }, [quote, isMarketOpen, chartPeriod]);
+
   // Derive display values
   const displayPrice =
     price != null
@@ -118,8 +204,8 @@ const StockDetailPage = () => {
   const currentPrice = price ?? 0;
 
   const stockData = {
-    stockName: stockInfo?.stockName ?? "로딩 중...",
-    stockCode: stockId || "종목 코드",
+    stockName: stockInfo?.stockName ?? navigationState?.stockName ?? "로딩 중...",
+    stockCode: navigationState?.stockCode ?? (stockId || "종목 코드"),
     tradingVolume: displayVolume,
     price: displayPrice,
     changeRate: displayChangeRate,
@@ -148,7 +234,7 @@ const StockDetailPage = () => {
   const handleLoadMore = useCallback(async (endTime: string) => {
     if (!stockId) return;
     try {
-      const startDate = new Date(endTime);
+      const startDate = new Date(parseKstDateTimeWithoutZone(endTime));
       // 기간별로 추가 로딩할 범위 결정
       switch (chartPeriod) {
         case "분봉": startDate.setDate(startDate.getDate() - 3); break;
@@ -158,7 +244,7 @@ const StockDetailPage = () => {
         case "년봉": startDate.setFullYear(startDate.getFullYear() - 10); break;
       }
       const olderData = await fetchCandles(stockId, chartPeriod, {
-        startTime: toUtcDateTime(startDate),
+        startTime: toKstDateTime(startDate),
         endTime: endTime,
       });
       if (olderData.length > 0) {
@@ -242,7 +328,7 @@ const StockDetailPage = () => {
                 해당 기간의 차트 데이터가 없습니다.
               </div>
             ) : (
-              <StockChart data={chartData} onLoadMore={handleLoadMore} />
+              <StockChart data={chartData} period={chartPeriod} onLoadMore={handleLoadMore} />
             )}
           </div>
         </section>
