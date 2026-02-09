@@ -177,7 +177,7 @@ const TradeHistoryCard = ({ trade, onClick }: TradeHistoryCardProps) => {
           )}>
             {isBuy ? "매수" : "매도"}
           </span>
-          <span className="text-Subtitle_S_Medium">종목 #{trade.stockId}</span>
+          <span className="text-Subtitle_S_Medium">{trade.stockName ?? `종목 #${trade.stockId}`}</span>
         </div>
         <span className="text-Caption_L_Light text-gray-400">{dateStr}</span>
       </div>
@@ -222,7 +222,7 @@ const ReservedOrderCard = ({ trade, onCancel, onClick, isCancelling }: ReservedO
           )}>
             예약 {isBuy ? "매수" : "매도"}
           </span>
-          <span className="text-Subtitle_S_Medium">종목 #{trade.stockId}</span>
+          <span className="text-Subtitle_S_Medium">{trade.stockName ?? `종목 #${trade.stockId}`}</span>
         </div>
         <span className="text-Caption_L_Light text-gray-400">{dateStr}</span>
       </div>
@@ -266,7 +266,7 @@ const SimulationPage = () => {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    memberApi.getFavoriteStocks(user.userId).then((data) => {
+    memberApi.getFavoriteStocks().then((data) => {
       if (!cancelled) setFavoriteStocks(data);
     }).catch(() => {});
     return () => { cancelled = true; };
@@ -307,10 +307,10 @@ const SimulationPage = () => {
     const isFav = favoriteStockIds.has(stockId);
     try {
       if (isFav) {
-        await memberApi.removeFavoriteStock(user.userId, stockId);
+        await memberApi.removeFavoriteStock(stockId);
         setFavoriteStocks((prev) => prev.filter((f) => f.stockId !== stockId));
       } else {
-        const added = await memberApi.addFavoriteStock(user.userId, stockId);
+        const added = await memberApi.addFavoriteStock(stockId);
         setFavoriteStocks((prev) => [...prev, { ...added, name: added.name || stockName }]);
       }
     } catch {
@@ -715,7 +715,12 @@ const SimulationPage = () => {
                   <TradeHistoryCard
                     key={trade.tradeId}
                     trade={trade}
-                    onClick={() => navigate(`/simulation/${trade.stockId}`)}
+                    onClick={() => navigate(`/simulation/${trade.stockId}`, {
+                      state: {
+                        stockName: trade.stockName,
+                        stockCode: String(trade.stockId),
+                      },
+                    })}
                   />
                 ))
               )}

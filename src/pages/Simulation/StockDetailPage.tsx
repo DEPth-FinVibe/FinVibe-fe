@@ -84,7 +84,7 @@ const StockDetailPage = () => {
   useEffect(() => {
     if (!user || !stockId) return;
     let cancelled = false;
-    memberApi.getFavoriteStocks(user.userId).then((list) => {
+    memberApi.getFavoriteStocks().then((list) => {
       if (!cancelled) {
         setIsFavorited(list.some((f) => f.stockId === Number(stockId)));
       }
@@ -97,10 +97,10 @@ const StockDetailPage = () => {
     const sid = Number(stockId);
     try {
       if (isFavorited) {
-        await memberApi.removeFavoriteStock(user.userId, sid);
+        await memberApi.removeFavoriteStock(sid);
         setIsFavorited(false);
       } else {
-        await memberApi.addFavoriteStock(user.userId, sid);
+        await memberApi.addFavoriteStock(sid);
         setIsFavorited(true);
       }
     } catch {
