@@ -219,8 +219,8 @@ const NewsPage = () => {
                       title={news.title}
                       description=""
                       aiAnalysis={news.analysis ?? ""}
-                      likeCount={0}
-                      commentCount={0}
+                      likeCount={news.likeCount ?? 0}
+                      commentCount={news.discussionCount ?? 0}
                     />
                   </div>
                 ))}

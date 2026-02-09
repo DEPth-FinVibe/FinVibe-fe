@@ -26,6 +26,8 @@ export type NewsListItem = {
   keyword: NewsKeyword;
   createdAt: string | null;
   analysis?: string;
+  likeCount?: number;
+  discussionCount?: number;
 };
 
 /** 뉴스 요약 (테마 상세/뉴스 상세 내부) */
@@ -37,10 +39,22 @@ export type NewsSummary = {
 
 /** 뉴스/테마 상세 응답 */
 export type NewsDetailResponse = {
-  categoryId: number;
-  categoryName: string;
-  analysis: string;
-  news: NewsSummary[];
+  id?: number;
+  title?: string;
+  content?: string;
+  provider?: string;
+  createdAt?: string | null;
+  publishedAt?: string | null;
+  keyword?: NewsKeyword;
+  economicSignal?: EconomicSignal;
+  likeCount?: number;
+  discussionCount?: number;
+  isLiked?: boolean;
+  likedByMe?: boolean;
+  categoryId?: number;
+  categoryName?: string;
+  analysis?: string;
+  news?: NewsSummary[];
 };
 
 /** 오늘의 테마 요약 */
@@ -125,8 +139,14 @@ export const newsApi = {
 
   /** 뉴스 상세 조회: GET /news/{id} */
   getNewsDetail: async (id: number): Promise<NewsDetailResponse> => {
-    const res = await insightApiClient.get<NewsDetailResponse>(`/news/${id}`);
-    return res.data;
+    const res = await insightApiClient.get<NewsDetailResponse | { data?: NewsDetailResponse; result?: NewsDetailResponse }>(`/news/${id}`);
+    const data = res.data;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      const obj = data as { data?: NewsDetailResponse; result?: NewsDetailResponse };
+      if (obj.data && typeof obj.data === "object") return obj.data;
+      if (obj.result && typeof obj.result === "object") return obj.result;
+    }
+    return data as NewsDetailResponse;
   },
 
   /** 뉴스 좋아요 토글: POST /news/{id}/like */

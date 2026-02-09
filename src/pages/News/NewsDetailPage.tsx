@@ -12,7 +12,10 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 // 상대 시간 표시
 function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const time = new Date(dateStr).getTime();
+  if (Number.isNaN(time)) return "생성일 없음";
+
+  const diff = Date.now() - time;
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 1) return "방금 전";
   if (minutes < 60) return `${minutes}분 전`;
@@ -35,6 +38,7 @@ const NewsDetailPage = () => {
   const [detail, setDetail] = useState<NewsDetailResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(true);
   const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
 
   // 키워드 트렌드
   const [trends, setTrends] = useState<{ tag: string; count: number }[]>([]);
@@ -52,7 +56,11 @@ const NewsDetailPage = () => {
     let cancelled = false;
     setDetailLoading(true);
     newsApi.getNewsDetail(Number(newsId)).then((data) => {
-      if (!cancelled) setDetail(data);
+      if (!cancelled) {
+        setDetail(data);
+        setLiked(Boolean(data.isLiked ?? data.likedByMe));
+        setLikeCount(data.likeCount ?? 0);
+      }
     }).catch(() => {
       if (!cancelled) setDetail(null);
     }).finally(() => {
@@ -114,7 +122,10 @@ const NewsDetailPage = () => {
     if (!newsId) return;
     try {
       await newsApi.toggleNewsLike(Number(newsId));
-      setLiked((prev) => !prev);
+      setLiked((prev) => {
+        setLikeCount((countPrev) => Math.max(0, countPrev + (prev ? -1 : 1)));
+        return !prev;
+      });
     } catch {
       // 실패 시 무시
     }
@@ -188,6 +199,13 @@ const NewsDetailPage = () => {
     return { date: `${year}.${month}.${day}`, time: `${hours}:${mins}` };
   };
 
+  const detailTitle = detail?.title ?? detail?.categoryName ?? "제목 없음";
+  const detailContent = detail?.content ?? "뉴스 본문이 없습니다.";
+  const detailProvider = detail?.provider ?? "출처 정보 없음";
+  const detailPublishedAt = detail?.publishedAt ?? detail?.createdAt;
+  const detailTimeLabel = detailPublishedAt ? formatRelativeTime(detailPublishedAt) : "생성일 없음";
+  const detailDiscussionCount = detail?.discussionCount ?? discussions.length;
+
   return (
     <div className="bg-gray-100 min-h-screen">
       <main className="flex px-32 py-10 gap-8">
@@ -218,14 +236,22 @@ const NewsDetailPage = () => {
             <>
               {/* 뉴스 상세 카드 */}
               <article className="rounded-lg p-7 bg-white">
-                {/* 카테고리명 + 제목 */}
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-Body_M_Light text-gray-500">
-                    ({detail.categoryName})
+                <div className="flex flex-col gap-2 mb-4">
+                  <div className="flex items-center gap-2">
+                    {detail.categoryName && (
+                      <span className="text-Body_M_Light text-gray-500">
+                        ({detail.categoryName})
+                      </span>
+                    )}
+                    <span className="text-Subtitle_L_Medium text-black">{detailTitle}</span>
+                  </div>
+                  <span className="text-Body_S_Light text-gray-400">
+                    {detailProvider} · {detailTimeLabel}
                   </span>
-                  <span className="text-Subtitle_L_Medium text-black">
-                    {detail.categoryName}
-                  </span>
+                </div>
+
+                <div className="mb-6 whitespace-pre-wrap text-Body_L_Light text-black">
+                  {detailContent}
                 </div>
 
                 {/* AI 분석 */}
@@ -263,13 +289,13 @@ const NewsDetailPage = () => {
                   >
                     <LikeIcon className={cn("w-6 h-6", liked && "text-red-500")} />
                     <span className="text-Subtitle_S_Regular text-black">
-                      {liked ? "좋아요 취소" : "좋아요"}
+                      {likeCount}
                     </span>
                   </button>
                   <div className="flex items-center gap-5">
                     <CommentIcon className="w-6 h-6" color="#1D1E20" />
                     <span className="text-Subtitle_S_Regular text-black">
-                      {discussions.reduce((sum, d) => sum + d.comments.length, 0) + discussions.length}
+                      {detailDiscussionCount}
                     </span>
                   </div>
                   <div className="flex items-center gap-5">
