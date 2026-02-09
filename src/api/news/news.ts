@@ -24,7 +24,8 @@ export type NewsListItem = {
   title: string;
   economicSignal: EconomicSignal;
   keyword: NewsKeyword;
-  createdAt: string;
+  createdAt: string | null;
+  analysis?: string;
 };
 
 /** 뉴스 요약 (테마 상세/뉴스 상세 내부) */

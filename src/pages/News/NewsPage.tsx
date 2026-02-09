@@ -10,8 +10,13 @@ import { newsApi, KEYWORD_LABEL_MAP, type NewsListItem, type NewsSortType, discu
 import { useAuthStore } from "@/store/useAuthStore";
 
 // 상대 시간 표시 유틸
-function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+function formatRelativeTime(dateStr?: string | null): string {
+  if (!dateStr) return "생성일 없음";
+
+  const time = new Date(dateStr).getTime();
+  if (Number.isNaN(time)) return "생성일 없음";
+
+  const diff = Date.now() - time;
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 1) return "방금 전";
   if (minutes < 60) return `${minutes}분 전`;
@@ -213,7 +218,7 @@ const NewsPage = () => {
                       time={formatRelativeTime(news.createdAt)}
                       title={news.title}
                       description=""
-                      aiAnalysis=""
+                      aiAnalysis={news.analysis ?? ""}
                       likeCount={0}
                       commentCount={0}
                     />
