@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const MENU_ROUTES: Record<string, string> = {
@@ -42,6 +43,7 @@ const MainLayout: React.FC = () => {
         onProfileClick={handleProfileClick}
       />
       <Outlet />
+      <Footer />
     </div>
   );
 };
