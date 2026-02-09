@@ -8,7 +8,7 @@ import {
 } from "@/components";
 import { cn } from "@/utils/cn";
 import { formatPrice, formatChangeRate, formatTradingValue } from "@/utils/formatStock";
-import { newsApi, type NewsListItem } from "@/api/news";
+import { newsApi, type NewsSummary } from "@/api/news";
 import {
   useTopByValue,
   useTopByVolume,
@@ -45,6 +45,17 @@ const MOCK_FALLBACK = [
 ];
 
 type FilterType = "거래대금" | "거래량" | "급상승" | "급하락";
+
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "방금 전";
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  return `${days}일 전`;
+}
 
 function isExcludedThemeCategory(categoryName: string): boolean {
   const name = categoryName.replace(/\s+/g, "");
@@ -161,7 +172,8 @@ const HomePage: React.FC = () => {
   const [themeAnalysis, setThemeAnalysis] = useState<string>("");
 
   // 관련 뉴스
-  const [latestNews, setLatestNews] = useState<NewsListItem[]>([]);
+  const [latestNews, setLatestNews] = useState<NewsSummary[]>([]);
+  const [latestNewsLoading, setLatestNewsLoading] = useState(false);
 
   // 좌측 리스트 쿼리
   const { isMarketOpen } = useMarketStatus();
@@ -253,20 +265,21 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     if (selectedCategoryId == null) return;
     let cancelled = false;
+    setLatestNewsLoading(true);
     newsApi.getTodayThemeDetail(selectedCategoryId).then((data) => {
-      if (!cancelled && data.analysis) setThemeAnalysis(data.analysis);
-    }).catch(() => {});
+      if (!cancelled) {
+        setThemeAnalysis(data.analysis ?? "");
+        setLatestNews(Array.isArray(data.news) ? data.news.slice(0, 3) : []);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setLatestNews([]);
+      }
+    }).finally(() => {
+      if (!cancelled) setLatestNewsLoading(false);
+    });
     return () => { cancelled = true; };
   }, [selectedCategoryId]);
-
-  // 최신 뉴스 로드 (관련뉴스 섹션)
-  useEffect(() => {
-    let cancelled = false;
-    newsApi.getNewsList("LATEST").then((data) => {
-      if (!cancelled) setLatestNews(data.slice(0, 3));
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
 
   // 카테고리 종목에서 거래대금 1위 추출
   const topByValueStock = useMemo(() => {
@@ -531,23 +544,22 @@ const HomePage: React.FC = () => {
           <div className="flex flex-col gap-4">
             <h3 className="text-[18px] font-bold text-black">관련뉴스</h3>
             <div className="flex flex-col gap-3">
-              {latestNews.length > 0 ? (
+              {latestNewsLoading ? (
+                <p className="text-sm text-gray-400 py-4">뉴스를 불러오는 중...</p>
+              ) : latestNews.length > 0 ? (
                 latestNews.map((news) => {
-                  const diff = Date.now() - new Date(news.createdAt).getTime();
-                  const hours = Math.floor(diff / 3_600_000);
-                  const timeLabel = hours < 1 ? "방금 전" : hours < 24 ? `${hours}시간 전` : `${Math.floor(hours / 24)}일 전`;
+                  const timeLabel = `${news.provider} · ${formatRelativeTime(news.publishedAt)}`;
                   return (
                     <RelatedNews
-                      key={news.id}
+                      key={`${news.provider}-${news.publishedAt}-${news.title}`}
                       sourceAndTime={timeLabel}
                       title={news.title}
                       className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
-                      onClick={() => navigate(`/news/${news.id}`)}
                     />
                   );
                 })
               ) : (
-                <p className="text-sm text-gray-400 py-4">뉴스를 불러오는 중...</p>
+                <p className="text-sm text-gray-400 py-4">표시할 뉴스가 없습니다.</p>
               )}
             </div>
           </div>

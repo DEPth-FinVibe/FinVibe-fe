@@ -55,6 +55,26 @@ export type KeywordTrendItem = {
   count: number;
 };
 
+function unwrapArray<T>(data: unknown, depth = 0): T[] {
+  if (Array.isArray(data)) return data;
+  if (depth > 3) return [];
+
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+
+    for (const key of ["data", "content", "items", "result", "news", "list"]) {
+      if (Array.isArray(obj[key])) return obj[key] as T[];
+    }
+
+    for (const value of Object.values(obj)) {
+      const nested = unwrapArray<T>(value, depth + 1);
+      if (nested.length > 0) return nested;
+    }
+  }
+
+  return [];
+}
+
 // ─── 키워드 한글 매핑 ───
 
 export const KEYWORD_LABEL_MAP: Record<NewsKeyword, string> = {
@@ -96,10 +116,10 @@ export const KEYWORD_LABEL_MAP: Record<NewsKeyword, string> = {
 export const newsApi = {
   /** 뉴스 목록 조회: GET /news */
   getNewsList: async (sort: NewsSortType = "LATEST"): Promise<NewsListItem[]> => {
-    const res = await insightApiClient.get<NewsListItem[]>("/news", {
+    const res = await insightApiClient.get("/news", {
       params: { sort },
     });
-    return Array.isArray(res.data) ? res.data : [];
+    return unwrapArray<NewsListItem>(res.data);
   },
 
   /** 뉴스 상세 조회: GET /news/{id} */
@@ -115,14 +135,14 @@ export const newsApi = {
 
   /** 일간 키워드 트렌드 조회: GET /news/keywords/trending */
   getKeywordTrends: async (): Promise<KeywordTrendItem[]> => {
-    const res = await insightApiClient.get<KeywordTrendItem[]>("/news/keywords/trending");
-    return Array.isArray(res.data) ? res.data : [];
+    const res = await insightApiClient.get("/news/keywords/trending");
+    return unwrapArray<KeywordTrendItem>(res.data);
   },
 
   /** 오늘의 테마 목록 조회: GET /themes/today */
   getTodayThemes: async (): Promise<ThemeSummary[]> => {
-    const res = await insightApiClient.get<ThemeSummary[]>("/themes/today");
-    return Array.isArray(res.data) ? res.data : [];
+    const res = await insightApiClient.get("/themes/today");
+    return unwrapArray<ThemeSummary>(res.data);
   },
 
   /** 오늘의 테마 상세 조회: GET /themes/today/{categoryId} */
