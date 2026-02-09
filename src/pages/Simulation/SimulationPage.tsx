@@ -23,12 +23,12 @@ import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPort
 import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
 import { memberApi, type FavoriteStockResponse } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useTradeHistory, useCancelTrade } from "@/hooks/useTradeQueries";
+import type { TradeHistoryResponse } from "@/api/trade";
 
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
 
 const PAGE_SIZE = 20;
-
-const DOMESTIC_CATEGORY_IDS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
 
 // 관심종목 카드 컴포넌트
@@ -147,6 +147,112 @@ const RealTimeStockItem = memo(({ stock, onClick, isFavorited, onFavoriteToggle 
   );
 });
 
+// 거래 내역 카드 컴포넌트
+interface TradeHistoryCardProps {
+  trade: TradeHistoryResponse;
+  onClick?: () => void;
+}
+
+const TradeHistoryCard = ({ trade, onClick }: TradeHistoryCardProps) => {
+  const isBuy = trade.transactionType === "BUY";
+  const totalAmount = trade.price * trade.amount;
+  const date = new Date(trade.createdAt);
+  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between px-4 py-3 rounded-lg border",
+        isBuy ? "border-etc-red/30 bg-red-50" : "border-etc-blue/30 bg-blue-50",
+        onClick && "cursor-pointer hover:bg-opacity-70"
+      )}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+    >
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "text-xs px-2 py-0.5 rounded font-medium",
+            isBuy ? "bg-etc-red text-white" : "bg-etc-blue text-white"
+          )}>
+            {isBuy ? "매수" : "매도"}
+          </span>
+          <span className="text-Subtitle_S_Medium">종목 #{trade.stockId}</span>
+        </div>
+        <span className="text-Caption_L_Light text-gray-400">{dateStr}</span>
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <span className="text-Body_M_Light">{trade.amount}주 × {trade.price.toLocaleString()}원</span>
+        <span className={cn("text-Subtitle_S_Medium", isBuy ? "text-etc-red" : "text-etc-blue")}>
+          {totalAmount.toLocaleString()}원
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// 예약 주문 카드 컴포넌트
+interface ReservedOrderCardProps {
+  trade: TradeHistoryResponse;
+  onCancel?: () => void;
+  onClick?: () => void;
+  isCancelling?: boolean;
+}
+
+const ReservedOrderCard = ({ trade, onCancel, onClick, isCancelling }: ReservedOrderCardProps) => {
+  const isBuy = trade.transactionType === "BUY";
+  const totalAmount = trade.price * trade.amount;
+  const date = new Date(trade.createdAt);
+  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between px-4 py-3 rounded-lg border border-yellow-300 bg-yellow-50",
+        onClick && "cursor-pointer"
+      )}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+    >
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "text-xs px-2 py-0.5 rounded font-medium",
+            isBuy ? "bg-etc-red text-white" : "bg-etc-blue text-white"
+          )}>
+            예약 {isBuy ? "매수" : "매도"}
+          </span>
+          <span className="text-Subtitle_S_Medium">종목 #{trade.stockId}</span>
+        </div>
+        <span className="text-Caption_L_Light text-gray-400">{dateStr}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-Body_M_Light">{trade.amount}주 × {trade.price.toLocaleString()}원</span>
+          <span className="text-Subtitle_S_Medium">{totalAmount.toLocaleString()}원</span>
+        </div>
+        {onCancel && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onCancel();
+            }}
+            disabled={isCancelling}
+            className={cn(
+              "text-sm px-3 py-1.5 rounded",
+              isCancelling
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-red-100 text-red-600 hover:bg-red-200"
+            )}
+          >
+            {isCancelling ? "취소 중..." : "취소"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const SimulationPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
@@ -165,6 +271,31 @@ const SimulationPage = () => {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [user]);
+
+  // 거래 내역 (현재 월 기준)
+  const now = new Date();
+  const tradeHistory = useTradeHistory(now.getFullYear(), now.getMonth() + 1);
+
+  // 예약 주문 취소
+  const cancelTrade = useCancelTrade();
+  const [cancellingTradeId, setCancellingTradeId] = useState<number | null>(null);
+
+  // 예약 주문 필터링 (tradeType === "RESERVED")
+  const reservedOrders = useMemo(() => {
+    if (!tradeHistory.data) return [];
+    return tradeHistory.data.filter((trade) => trade.tradeType === "RESERVED");
+  }, [tradeHistory.data]);
+
+  const handleCancelReservedOrder = async (tradeId: number) => {
+    setCancellingTradeId(tradeId);
+    try {
+      await cancelTrade.mutateAsync(tradeId);
+    } catch {
+      // 에러 처리
+    } finally {
+      setCancellingTradeId(null);
+    }
+  };
 
   const favoriteStockIds = useMemo(
     () => new Set(favoriteStocks.map((f) => f.stockId)),
@@ -236,14 +367,7 @@ const SimulationPage = () => {
   const filteredStocks = useMemo(() => {
     const sourceData = isSearchMode ? searchResult.data : topByVolume.data;
     if (!sourceData) return [];
-
-    if (isSearchMode) {
-      return sourceData;
-    }
-
-    return sourceData.filter((stock: StockWithPrice) =>
-      DOMESTIC_CATEGORY_IDS.includes(stock.categoryId),
-    );
+    return sourceData;
   }, [isSearchMode, searchResult.data, topByVolume.data]);
 
   const visibleStocks = useMemo(
@@ -526,7 +650,8 @@ const SimulationPage = () => {
             ))}
           </div>
 
-          {rightTab === "포트폴리오" ? (
+          {/* 포트폴리오 탭 */}
+          {rightTab === "포트폴리오" && (
             <SimulationPortfolioTab
               groups={portfolioGroups ?? []}
               isLoading={portfolioGroups === null}
@@ -542,36 +667,84 @@ const SimulationPage = () => {
               deleteErrorMessage={deletePortfolioGroupError}
               onDeleteGroup={handleDeletePortfolioGroup}
             />
-          ) : (
-            <>
-              {/* 관심 종목 리스트 - 스크롤 영역 */}
-              <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-                {favoriteStocks.length === 0 ? (
-                  <p className="text-center text-gray-400 py-8 text-Body_M_Light">
-                    관심 종목이 없습니다
-                  </p>
-                ) : (
-                  favoriteStocks.map((item) => (
-                    <WatchlistCard
-                      key={item.stockId}
-                      stockName={item.name}
-                      stockCode={String(item.stockId)}
-                      tradingVolume=""
-                      price=""
-                      changeRate=""
-                      isFavorited
-                      onFavoriteToggle={() => handleFavoriteToggle(item.stockId, item.name)}
-                      onClick={() => navigate(`/simulation/${item.stockId}`, {
-                        state: {
-                          stockName: item.name,
-                          stockCode: String(item.stockId),
-                        },
-                      })}
-                    />
-                  ))
-                )}
-              </div>
-            </>
+          )}
+
+          {/* 관심 종목 탭 */}
+          {rightTab === "관심 종목" && (
+            <div className="flex flex-col gap-3 overflow-y-auto flex-1">
+              {favoriteStocks.length === 0 ? (
+                <p className="text-center text-gray-400 py-8 text-Body_M_Light">
+                  관심 종목이 없습니다
+                </p>
+              ) : (
+                favoriteStocks.map((item) => (
+                  <WatchlistCard
+                    key={item.stockId}
+                    stockName={item.name}
+                    stockCode={String(item.stockId)}
+                    tradingVolume=""
+                    price=""
+                    changeRate=""
+                    isFavorited
+                    onFavoriteToggle={() => handleFavoriteToggle(item.stockId, item.name)}
+                    onClick={() => navigate(`/simulation/${item.stockId}`, {
+                      state: {
+                        stockName: item.name,
+                        stockCode: String(item.stockId),
+                      },
+                    })}
+                  />
+                ))
+              )}
+            </div>
+          )}
+
+          {/* 거래 종목 탭 */}
+          {rightTab === "거래 종목" && (
+            <div className="flex flex-col gap-3 overflow-y-auto flex-1">
+              {tradeHistory.isLoading ? (
+                <p className="text-center text-gray-400 py-8 text-Body_M_Light">
+                  로딩 중...
+                </p>
+              ) : !tradeHistory.data || tradeHistory.data.length === 0 ? (
+                <p className="text-center text-gray-400 py-8 text-Body_M_Light">
+                  이번 달 거래 내역이 없습니다
+                </p>
+              ) : (
+                tradeHistory.data.map((trade) => (
+                  <TradeHistoryCard
+                    key={trade.tradeId}
+                    trade={trade}
+                    onClick={() => navigate(`/simulation/${trade.stockId}`)}
+                  />
+                ))
+              )}
+            </div>
+          )}
+
+          {/* 예약/자동 주문 탭 */}
+          {rightTab === "예약/자동 주문" && (
+            <div className="flex flex-col gap-3 overflow-y-auto flex-1">
+              {tradeHistory.isLoading ? (
+                <p className="text-center text-gray-400 py-8 text-Body_M_Light">
+                  로딩 중...
+                </p>
+              ) : reservedOrders.length === 0 ? (
+                <p className="text-center text-gray-400 py-8 text-Body_M_Light">
+                  예약된 주문이 없습니다
+                </p>
+              ) : (
+                reservedOrders.map((trade) => (
+                  <ReservedOrderCard
+                    key={trade.tradeId}
+                    trade={trade}
+                    onClick={() => navigate(`/simulation/${trade.stockId}`)}
+                    onCancel={() => handleCancelReservedOrder(trade.tradeId)}
+                    isCancelling={cancellingTradeId === trade.tradeId}
+                  />
+                ))
+              )}
+            </div>
           )}
         </aside>
       </main>

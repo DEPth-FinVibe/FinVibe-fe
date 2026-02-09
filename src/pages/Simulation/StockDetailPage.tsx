@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { DateTime } from "luxon";
 import { StockListItem } from "@/components/StockListItem";
@@ -13,41 +13,6 @@ import { useMarketStatus } from "@/hooks/useMarketQueries";
 import { memberApi } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
 import { assetPortfolioApi } from "@/api/asset/portfolio";
-
-// 현재가 기준 호가 데이터 생성 함수
-function generateOrderBook(currentPrice: number) {
-  if (!currentPrice || currentPrice <= 0) {
-    return { askOrders: [], bidOrders: [] };
-  }
-
-  // 호가 단위 계산 (가격대별)
-  const getTickSize = (price: number) => {
-    if (price < 2000) return 1;
-    if (price < 5000) return 5;
-    if (price < 20000) return 10;
-    if (price < 50000) return 50;
-    if (price < 200000) return 100;
-    if (price < 500000) return 500;
-    return 1000;
-  };
-
-  const tickSize = getTickSize(currentPrice);
-  const basePrice = Math.round(currentPrice / tickSize) * tickSize;
-
-  // 매도 호가 (현재가 위쪽, 높은 가격부터)
-  const askOrders = Array.from({ length: 3 }, (_, i) => ({
-    price: basePrice + tickSize * (3 - i),
-    volume: `${(Math.random() * 5 + 1).toFixed(1)}K`,
-  }));
-
-  // 매수 호가 (현재가 아래쪽)
-  const bidOrders = Array.from({ length: 5 }, (_, i) => ({
-    price: basePrice - tickSize * (i + 1),
-    volume: `${(Math.random() * 5 + 1).toFixed(1)}K`,
-  }));
-
-  return { askOrders, bidOrders };
-}
 
 const StockDetailSkeleton = () => {
   return (
@@ -278,12 +243,6 @@ const StockDetailPage = () => {
     volume != null ? volume.toLocaleString() : "";
   const currentPrice = price ?? 0;
 
-  // 현재가 기준 호가 데이터 생성
-  const { askOrders, bidOrders } = useMemo(
-    () => generateOrderBook(currentPrice),
-    [currentPrice]
-  );
-
   const stockData = {
     stockName: navigationState?.stockName ?? "로딩 중...",
     stockCode: navigationState?.stockCode ?? (stockId || "종목 코드"),
@@ -422,8 +381,6 @@ const StockDetailPage = () => {
         <aside className="w-[320px] shrink-0">
           <OrderPanel
             currentPrice={currentPrice}
-            askOrders={askOrders}
-            bidOrders={bidOrders}
             stockId={stockIdNum}
             portfolioId={portfolioId}
           />

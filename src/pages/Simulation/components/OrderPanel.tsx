@@ -4,15 +4,8 @@ import { walletApi } from "@/api/wallet";
 import { useCreateTrade } from "@/hooks/useTradeQueries";
 import type { TransactionRequest } from "@/api/trade";
 
-interface OrderBookItem {
-  price: number;
-  volume: string;
-}
-
 interface OrderPanelProps {
   currentPrice: number;
-  askOrders: OrderBookItem[]; // 매도 호가 (위쪽)
-  bidOrders: OrderBookItem[]; // 매수 호가 (아래쪽)
   stockId: number;
   portfolioId: number | null;
   onTradeSuccess?: () => void;
@@ -23,8 +16,6 @@ type TradeType = "buy" | "sell";
 
 const OrderPanel = ({
   currentPrice,
-  askOrders,
-  bidOrders,
   stockId,
   portfolioId,
   onTradeSuccess,
@@ -167,59 +158,12 @@ const OrderPanel = ({
         </button>
       </div>
 
-      {/* 호가 테이블 */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <p className="text-Subtitle_S_Medium mb-3">호가</p>
-
-        {/* 매도 호가 (위쪽 - 파란색) */}
-        <div className="flex flex-col gap-1 mb-2">
-          {askOrders.map((order, idx) => (
-            <div key={`ask-${idx}`} className="flex justify-between text-Body_M_Light">
-              <span className="text-gray-500">{order.volume}</span>
-              <span className="text-etc-blue">{order.price.toLocaleString()}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* 매수/매도 버튼 + 현재가 */}
-        <div className="flex items-center gap-2 py-2 border-y border-gray-200 my-2">
-          <button
-            className={cn(
-              "flex-1 py-2 rounded text-Body_M_Light",
-              "bg-etc-red text-white"
-            )}
-          >
-            매수
-          </button>
-          <span className="text-Subtitle_S_Medium px-2">
-            {currentPrice.toLocaleString()}
-          </span>
-          <button
-            className={cn(
-              "flex-1 py-2 rounded text-Body_M_Light",
-              "bg-gray-200 text-gray-600"
-            )}
-          >
-            매도
-          </button>
-          <button className="p-1 text-gray-400">✕</button>
-        </div>
-
-        {/* 현재가 표시 */}
-        <div className="flex justify-between text-Body_M_Light mb-2">
-          <span className="text-gray-500">현재가</span>
-          <span className="text-etc-red">{currentPrice.toLocaleString()}</span>
-        </div>
-
-        {/* 매수 호가 (아래쪽 - 빨간색) */}
-        <div className="flex flex-col gap-1">
-          {bidOrders.map((order, idx) => (
-            <div key={`bid-${idx}`} className="flex justify-between text-Body_M_Light">
-              <span className="text-etc-red">{order.price.toLocaleString()}</span>
-              <span className="text-gray-500">{order.volume}</span>
-            </div>
-          ))}
-        </div>
+      {/* 현재가 표시 */}
+      <div className="flex justify-between items-center bg-gray-50 rounded-lg p-4">
+        <span className="text-Body_M_Light text-gray-500">현재가</span>
+        <span className="text-Subtitle_S_Medium text-etc-red">
+          {currentPrice.toLocaleString()} 원
+        </span>
       </div>
 
       {/* 주문 유형 선택 */}

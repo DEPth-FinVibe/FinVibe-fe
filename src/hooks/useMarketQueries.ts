@@ -133,12 +133,31 @@ export function useTopHoldingTop10WithPrices(isMarketOpen: boolean) {
 
 // --- SimulationPage용 훅 (전체 목록 기본값 + 장중 WebSocket 반영) ---
 
+const DOMESTIC_CATEGORY_IDS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
 export function useTopByVolumeWithPrices(isMarketOpen: boolean) {
   return useQuery({
-    queryKey: ["market", "top-by-volume-with-prices", isMarketOpen],
+    queryKey: ["market", "domestic-stocks-with-prices", isMarketOpen],
     queryFn: async () => {
-      const stocks = await fetchTopByVolume();
+      // 모든 국내 카테고리에서 종목 가져오기
+      const categoryPromises = DOMESTIC_CATEGORY_IDS.map((categoryId) =>
+        fetchCategoryStocks(categoryId).catch(() => ({ stocks: [] }))
+      );
+      const categoryResults = await Promise.all(categoryPromises);
+
+      // 중복 제거하며 종목 합치기
+      const stockMap = new Map<number, import("@/api/market").StockListItem>();
+      categoryResults.forEach((result) => {
+        result.stocks.forEach((stock) => {
+          if (!stockMap.has(stock.stockId)) {
+            stockMap.set(stock.stockId, stock);
+          }
+        });
+      });
+
+      const stocks = Array.from(stockMap.values());
       if (stocks.length === 0) return [];
+
       if (isMarketOpen) {
         return mergeStockData(stocks, []);
       }
