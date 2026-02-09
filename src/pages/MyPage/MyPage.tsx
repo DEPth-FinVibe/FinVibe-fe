@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TotalAssets, MyPortfolio } from "@/components";
-import { PortfolioPerformance } from "@/components/PortfolioPerformance";
 import SettingsIcon from "@/assets/svgs/SettingsIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import ShieldIcon from "@/assets/svgs/ShieldIcon";

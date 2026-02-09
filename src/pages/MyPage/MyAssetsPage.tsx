@@ -24,12 +24,10 @@ const MyAssetsPage: React.FC = () => {
 
   const [allocation, setAllocation] = useState<AssetAllocationResponse | null>(null);
   const [cash, setCash] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // 자산 배분 데이터 조회
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     (async () => {
       try {
         const [allocationData, balanceData] = await Promise.all([
@@ -44,9 +42,6 @@ const MyAssetsPage: React.FC = () => {
         if (!alive) return;
         setAllocation(null);
         setCash(null);
-      } finally {
-        if (!alive) return;
-        setLoading(false);
       }
     })();
     return () => {
