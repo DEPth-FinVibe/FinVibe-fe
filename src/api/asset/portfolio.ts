@@ -6,6 +6,9 @@ export type PortfolioGroup = {
   id: number;
   name: string;
   iconCode: string;
+  totalPurchaseAmount: number;
+  totalCurrentValue: number;
+  totalReturnRate: number;
 };
 
 export type CreatePortfolioGroupBody = {
@@ -40,6 +43,37 @@ export type DeletePortfolioAssetBody = {
   amount: number;
   stockPrice: number;
   currency?: string; // 문서상 optional
+};
+
+export type PortfolioComparisonResponse = {
+  name: string;
+  totalAssetAmount: number;
+  returnRate: number;
+  realizedProfit: number;
+};
+
+export type AssetAllocationResponse = {
+  cashAmount: number;
+  stockAmount: number;
+  totalAmount: number;
+  changeAmount: number;
+  changeRate: number;
+};
+
+export type UserProfitRankingItem = {
+  rank: number;
+  userId: string;
+  returnRate: number;
+  profitLoss: number;
+};
+
+export type UserProfitRankingPageResponse = {
+  rankType: string;
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  items: UserProfitRankingItem[];
 };
 
 export const assetPortfolioApi = {
@@ -150,6 +184,30 @@ export const assetPortfolioApi = {
       }
       throw error;
     }
+  },
+
+  /** 포트폴리오 비교: GET /api/asset/portfolios/comparison */
+  getPortfolioComparison: async (): Promise<PortfolioComparisonResponse[]> => {
+    const res = await assetApiClient.get<PortfolioComparisonResponse[]>("/portfolios/comparison");
+    return Array.isArray(res.data) ? res.data : [];
+  },
+
+  /** 자산 배분 현황: GET /api/asset/assets/allocation */
+  getAssetAllocation: async (): Promise<AssetAllocationResponse> => {
+    const res = await assetApiClient.get<AssetAllocationResponse>("/assets/allocation");
+    return res.data;
+  },
+
+  /** 수익률 랭킹: GET /api/asset/rankings/user-profit */
+  getUserProfitRanking: async (
+    type: "DAILY" | "WEEKLY" | "MONTHLY",
+    page = 0,
+    size = 50,
+  ): Promise<UserProfitRankingPageResponse> => {
+    const res = await assetApiClient.get<UserProfitRankingPageResponse>("/rankings/user-profit", {
+      params: { type, page, size },
+    });
+    return res.data;
   },
 };
 

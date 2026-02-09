@@ -8,7 +8,7 @@ import CloseIcon from "@/assets/svgs/CloseIcon";
 import FolderReturnComparisonSection from "@/pages/MyPage/components/FolderReturnComparisonSection";
 import CreateFolderPopover from "@/pages/MyPage/components/CreateFolderPopover";
 import MoveToFolderPopover from "@/pages/MyPage/components/MoveToFolderPopover";
-import { assetPortfolioApi, type PortfolioAsset, type PortfolioGroup } from "@/api/asset";
+import { assetPortfolioApi, type PortfolioAsset, type PortfolioGroup, type PortfolioComparisonResponse } from "@/api/asset";
 
 type FolderMeta = {
   id: number;
@@ -109,16 +109,20 @@ const MyPortfolioManagementPage: React.FC = () => {
   const [movePendingFolderId, setMovePendingFolderId] = useState<number | null>(null);
 
   const [rows, setRows] = useState<StockRow[]>([]);
+  const [comparison, setComparison] = useState<PortfolioComparisonResponse[]>([]);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const groups = await assetPortfolioApi.getPortfolios();
+        const [groups, comp] = await Promise.all([
+          assetPortfolioApi.getPortfolios(),
+          assetPortfolioApi.getPortfolioComparison().catch(() => [] as PortfolioComparisonResponse[]),
+        ]);
         if (!alive) return;
         setPortfolioGroups(Array.isArray(groups) ? groups : []);
+        setComparison(comp);
       } catch {
-        // 실패 시 더미 대신 비어있게
         if (!alive) return;
         setPortfolioGroups([]);
       }
@@ -164,8 +168,12 @@ const MyPortfolioManagementPage: React.FC = () => {
   }, [portfolioGroups]);
 
   const refetchGroups = async () => {
-    const groups = await assetPortfolioApi.getPortfolios();
+    const [groups, comp] = await Promise.all([
+      assetPortfolioApi.getPortfolios(),
+      assetPortfolioApi.getPortfolioComparison().catch(() => [] as PortfolioComparisonResponse[]),
+    ]);
     setPortfolioGroups(Array.isArray(groups) ? groups : []);
+    setComparison(comp);
   };
 
   // 제한 없이 그대로 사용 (비어있으면 빈 상태 유지)
@@ -182,14 +190,20 @@ const MyPortfolioManagementPage: React.FC = () => {
     return new Map(folderOptions.map((f) => [f.id, f]));
   }, [folderOptions]);
 
+  const comparisonByName = useMemo(() => {
+    return new Map(comparison.map((c) => [c.name, c]));
+  }, [comparison]);
+
   const barData = useMemo(() => {
-    // NOTE: 그룹 조회 API에는 수익률이 없으므로 임시로 0으로 표시 (후속 API에서 교체)
-    return folderOptions.map((f) => ({
-      label: f.label,
-      value: 0,
-      tone: f.tone,
-    }));
-  }, [folderOptions]);
+    return folderOptions.map((f) => {
+      const comp = comparisonByName.get(f.label);
+      return {
+        label: f.label,
+        value: comp?.returnRate ?? 0,
+        tone: f.tone,
+      };
+    });
+  }, [folderOptions, comparisonByName]);
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
@@ -250,10 +264,22 @@ const MyPortfolioManagementPage: React.FC = () => {
                         <p className="text-Subtitle_L_Medium text-black">{f.label}</p>
                       </div>
 
-                      {/* NOTE: 금액/수익률 API 미연동 - 후속 API에서 교체 */}
-                      <p className="text-Subtitle_L_Regular text-[#364153]">-</p>
-                      <p className="text-Subtitle_M_Medium text-[#364153]">-</p>
-                      <p className="text-right text-Subtitle_S_Regular text-[#101828]">-</p>
+                      {(() => {
+                        const comp = comparisonByName.get(f.label);
+                        return (
+                          <>
+                            <p className="text-Subtitle_L_Regular text-[#364153]">
+                              {comp ? `₩${comp.totalAssetAmount.toLocaleString()}` : "-"}
+                            </p>
+                            <p className={`text-Subtitle_M_Medium ${comp && comp.returnRate >= 0 ? "text-etc-red" : "text-sub-blue"}`}>
+                              {comp ? `${comp.returnRate >= 0 ? "+" : ""}${comp.returnRate.toFixed(2)}%` : "-"}
+                            </p>
+                            <p className={`text-right text-Subtitle_S_Regular ${comp && comp.realizedProfit >= 0 ? "text-[#101828]" : "text-sub-blue"}`}>
+                              {comp ? `₩${comp.realizedProfit.toLocaleString()}` : "-"}
+                            </p>
+                          </>
+                        );
+                      })()}
                     </div>
                   ))
                 )}

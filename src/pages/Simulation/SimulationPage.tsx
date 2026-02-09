@@ -266,7 +266,7 @@ const SimulationPage = () => {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    memberApi.getFavoriteStocks(user.userId).then((data) => {
+    memberApi.getFavoriteStocks().then((data) => {
       if (!cancelled) setFavoriteStocks(data);
     }).catch(() => {});
     return () => { cancelled = true; };
@@ -307,10 +307,10 @@ const SimulationPage = () => {
     const isFav = favoriteStockIds.has(stockId);
     try {
       if (isFav) {
-        await memberApi.removeFavoriteStock(user.userId, stockId);
+        await memberApi.removeFavoriteStock(stockId);
         setFavoriteStocks((prev) => prev.filter((f) => f.stockId !== stockId));
       } else {
-        const added = await memberApi.addFavoriteStock(user.userId, stockId);
+        const added = await memberApi.addFavoriteStock(stockId);
         setFavoriteStocks((prev) => [...prev, { ...added, name: added.name || stockName }]);
       }
     } catch {

@@ -9,7 +9,6 @@ import BookIcon from "@/assets/svgs/BookIcon";
 import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
-import { walletApi } from "@/api/wallet";
 import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
 import GraphIcon from "@/assets/svgs/GraphIcon";
 
@@ -24,25 +23,28 @@ const MyPage: React.FC = () => {
   const communityTopPercent = 15;
   const communityXp = 11_230;
 
-  // TODO: 주식 평가금/변화율 API 연동 시 교체
-  const stock = 8_000_000;
-  const changeRate = 4.5;
-  const [cash, setCash] = useState<number | null>(null);
+  const [allocation, setAllocation] = useState<{
+    totalAmount: number;
+    changeRate: number;
+  } | null>(null);
 
   // 포트폴리오 그룹(폴더) 목록
   // - null: 로딩/미시도
   // - []: 실패 또는 데이터 없음 (요청: 더미 대신 비어있게)
   const [portfolioGroups, setPortfolioGroups] = useState<PortfolioGroup[] | null>(null);
-  const totalAssets = cash === null ? null : cash + stock;
-  const totalChangeRate = totalAssets === null ? null : changeRate;
+  const totalAssets = allocation?.totalAmount ?? null;
+  const totalChangeRate = allocation?.changeRate ?? null;
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const data = await walletApi.getBalance();
+        const data = await assetPortfolioApi.getAssetAllocation();
         if (!alive) return;
-        setCash(Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0);
+        setAllocation({
+          totalAmount: data.totalAmount,
+          changeRate: data.changeRate,
+        });
       } catch {
         // 실패 시 로딩 표시 유지
       }
@@ -85,7 +87,7 @@ const MyPage: React.FC = () => {
     }
   };
 
-  // NOTE: 그룹 조회 API에는 수익률/차트 데이터가 없어서 임시로 0/undefined 처리
+  // 그룹 조회 API에서 수익률(totalReturnRate) 제공
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
@@ -112,7 +114,12 @@ const MyPage: React.FC = () => {
             </button>
 
             {/* 학습 진행률 (Figma: 2123:33997) */}
-            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5">
+            <button
+              type="button"
+              className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 text-left"
+              onClick={() => navigate("/ai-learning")}
+              aria-label="학습 진행률 상세 보기"
+            >
               <p className="text-[18px] leading-[17px] font-normal text-black">학습 진행률</p>
               <div className="flex flex-col gap-[25px] w-full">
                 <p className="text-Title_L_Medium text-main-1">{learningProgress}%</p>
@@ -125,10 +132,15 @@ const MyPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
 
             {/* 달성 챌린지 (Figma: 2123:34002) */}
-            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap">
+            <button
+              type="button"
+              className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap text-left"
+              onClick={() => navigate("/mypage/challenges")}
+              aria-label="달성 챌린지 상세 보기"
+            >
               <p className="text-[18px] leading-[17px] font-normal text-black">달성 챌린지</p>
               <div className="flex flex-col gap-2.5 w-full">
                 <p className="text-Title_L_Medium text-main-1">
@@ -138,10 +150,15 @@ const MyPage: React.FC = () => {
                   다음 배지까지 {nextBadgeCount}개
                 </p>
               </div>
-            </div>
+            </button>
 
             {/* 커뮤니티 랭킹 (Figma: 2123:34007) */}
-            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap">
+            <button
+              type="button"
+              className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap text-left"
+              onClick={() => navigate("/mypage/service-ranking")}
+              aria-label="커뮤니티 랭킹 상세 보기"
+            >
               <p className="text-[18px] leading-[17px] font-normal text-black">커뮤니티 랭킹</p>
               <div className="flex flex-col gap-2.5 w-full">
                 <p className="text-Title_L_Medium text-main-1">#{communityRank}</p>
@@ -150,7 +167,7 @@ const MyPage: React.FC = () => {
                   <p>{communityXp.toLocaleString()} XP</p>
                 </div>
               </div>
-            </div>
+            </button>
           </div>
 
           {/* 포트폴리오 성과(라인 차트) */}
@@ -205,7 +222,7 @@ const MyPage: React.FC = () => {
                   <MyPortfolio
                     key={g.id}
                     title={g.name}
-                    changeRate={0}
+                    changeRate={g.totalReturnRate ?? 0}
                     icon={getPortfolioIcon(g.iconCode)}
                     iconClassName="text-sub-blue"
                     chartData={undefined}

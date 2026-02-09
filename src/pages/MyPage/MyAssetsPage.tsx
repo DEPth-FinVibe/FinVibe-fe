@@ -5,7 +5,7 @@ import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import BagIcon from "@/assets/svgs/BagIcon";
 import CalendarIcon from "@/assets/svgs/CalendarIcon";
 import { cn } from "@/utils/cn";
-import { walletApi } from "@/api/wallet";
+import { assetPortfolioApi, type AssetAllocationResponse } from "@/api/asset";
 
 const formatWon = (value: number) => `₩${value.toLocaleString()}`;
 
@@ -21,20 +21,20 @@ type TxItem = {
 const MyAssetsPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // TODO: API 연동 시 교체
-  const changeRate = 4.5;
-  const stock = 8_000_000;
-  const [cash, setCash] = useState<number | null>(null);
+  const [allocation, setAllocation] = useState<AssetAllocationResponse | null>(null);
+  const total = allocation?.totalAmount ?? 0;
+  const stock = allocation?.stockAmount ?? 0;
+  const cash = allocation?.cashAmount ?? null;
+  const changeRate = allocation?.changeRate ?? 0;
   const cashValue = cash ?? 0;
-  const total = cashValue + stock;
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const data = await walletApi.getBalance();
+        const data = await assetPortfolioApi.getAssetAllocation();
         if (!alive) return;
-        setCash(Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0);
+        setAllocation(data);
       } catch {
         // 실패 시 로딩 표시 유지
       }
@@ -115,7 +115,12 @@ const MyAssetsPage: React.FC = () => {
 
                 <div className="flex flex-col gap-1 w-full">
                   <p className="text-Title_L_Medium text-black">{formatWon(total)}</p>
-                  <p className="text-Subtitle_S_Regular text-etc-red">+{changeRate}%</p>
+                  <p className={cn(
+                    "text-Subtitle_S_Regular",
+                    changeRate >= 0 ? "text-etc-red" : "text-sub-blue"
+                  )}>
+                    {changeRate >= 0 ? "+" : ""}{changeRate.toFixed(2)}%
+                  </p>
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import GrayProfileIcon from "@/assets/svgs/GrayProfileIcon";
@@ -6,37 +6,139 @@ import { Button } from "@/components";
 import ServiceRankingRow, {
   type ServiceRankingRowModel,
 } from "@/pages/ServiceRanking/components/ServiceRankingRow";
+import {
+  assetPortfolioApi,
+  type UserProfitRankingItem,
+} from "@/api/asset";
+import {
+  gamificationApi,
+  type UserRankingItem,
+} from "@/api/gamification/gamification";
+import { useAuthStore } from "@/store/useAuthStore";
 
 type RankingType = "return" | "xp";
 type PeriodType = "weekly" | "monthly";
+
+const PERIOD_TO_PROFIT_API: Record<PeriodType, "WEEKLY" | "MONTHLY"> = {
+  weekly: "WEEKLY",
+  monthly: "MONTHLY",
+};
+
+const formatRate = (rate: number) =>
+  `${rate >= 0 ? "+" : ""}${rate.toFixed(1)}%`;
+
+const formatAmount = (amount: number) =>
+  `₩${Math.abs(amount).toLocaleString()}`;
+
+const formatXp = (xp: number) => `${xp.toLocaleString()} XP`;
 
 const ServiceRankingPage: React.FC = () => {
   const navigate = useNavigate();
   const [rankingType, setRankingType] = useState<RankingType>("return");
   const [period, setPeriod] = useState<PeriodType>("weekly");
+  const [profitItems, setProfitItems] = useState<UserProfitRankingItem[]>([]);
+  const [xpItems, setXpItems] = useState<UserRankingItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const user = useAuthStore((s) => s.user);
 
-  // TODO: API 연동 시 교체 (현재는 더미)
-  const myName = "김민준";
-  const myRank = 247;
-  const myTopPercent = 15;
-  const myChangeRateText = "+12.5%";
-  const myAmountText = "000,000";
+  const fetchProfitRanking = useCallback(async (p: PeriodType) => {
+    setLoading(true);
+    try {
+      const data = await assetPortfolioApi.getUserProfitRanking(PERIOD_TO_PROFIT_API[p]);
+      setProfitItems(data.items ?? []);
+    } catch {
+      setProfitItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const rows = useMemo<ServiceRankingRowModel[]>(
-    () => [
-      { rank: 1, name: "이서준", changeRateText: "+28.3%", amountText: "000,000", variant: "top3" },
-      { rank: 2, name: "박지우", changeRateText: "+24.7%", amountText: "000,000", variant: "top3" },
-      { rank: 3, name: "최예은", changeRateText: "+22.1%", amountText: "000,000", variant: "top3" },
-      { rank: 4, name: "정도윤", changeRateText: "+19.5%", amountText: "000,000", variant: "normal" },
-      { rank: 5, name: "강서연", changeRateText: "+18.2%", amountText: "000,000", variant: "normal" },
-      { rank: 6, name: "조민서", changeRateText: "+16.8%", amountText: "000,000", variant: "normal" },
-      { rank: 7, name: "윤지호", changeRateText: "+15.4%", amountText: "000,000", variant: "normal" },
-      { rank: 8, name: "임하윤", changeRateText: "+14.9%", amountText: "000,000", variant: "normal" },
-      { rank: 9, name: "한시우", changeRateText: "+13.7%", amountText: "000,000", variant: "normal" },
-      { rank: 10, name: "신은우", changeRateText: "+12.8%", amountText: "000,000", variant: "normal" },
-    ],
-    []
-  );
+  const fetchXpRanking = useCallback(async (p: PeriodType) => {
+    setLoading(true);
+    try {
+      const data = await gamificationApi.getUserXpRanking(
+        PERIOD_TO_PROFIT_API[p],
+        50,
+      );
+      setXpItems(data);
+    } catch {
+      setXpItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (rankingType === "return") {
+      fetchProfitRanking(period);
+    } else {
+      fetchXpRanking(period);
+    }
+  }, [rankingType, period, fetchProfitRanking, fetchXpRanking]);
+
+  // 내 랭킹 정보
+  const myProfitItem = useMemo(() => {
+    if (!user) return null;
+    return profitItems.find((item) => item.userId === user.userId) ?? null;
+  }, [profitItems, user]);
+
+  const myXpItem = useMemo(() => {
+    if (!user) return null;
+    return xpItems.find((item) => item.userId === user.userId) ?? null;
+  }, [xpItems, user]);
+
+  const myRank = rankingType === "return"
+    ? myProfitItem?.rank ?? null
+    : myXpItem?.ranking ?? null;
+
+  const totalCount = rankingType === "return" ? profitItems.length : xpItems.length;
+
+  // 공통 row 모델 생성
+  const rows = useMemo<ServiceRankingRowModel[]>(() => {
+    if (rankingType === "return") {
+      return profitItems.map((item) => ({
+        rank: item.rank,
+        name: item.userId.slice(0, 8),
+        changeRateText: formatRate(item.returnRate),
+        amountText: formatAmount(item.profitLoss),
+        variant: item.rank <= 3 ? "top3" as const : "normal" as const,
+      }));
+    }
+    return xpItems.map((item) => ({
+      rank: item.ranking,
+      name: item.nickname || item.userId.slice(0, 8),
+      changeRateText: formatXp(item.periodXp),
+      amountText: `총 ${formatXp(item.currentXp)}`,
+      variant: item.ranking <= 3 ? "top3" as const : "normal" as const,
+    }));
+  }, [profitItems, xpItems, rankingType]);
+
+  const handleRowClick = (row: ServiceRankingRowModel) => {
+    if (rankingType === "return") {
+      const item = profitItems.find((i) => i.rank === row.rank);
+      navigate("/mypage/service-ranking/user", {
+        state: {
+          rankingType: "return",
+          name: row.name,
+          rank: row.rank,
+          returnRate: item?.returnRate ?? 0,
+          profitLoss: item?.profitLoss ?? 0,
+        },
+      });
+    } else {
+      const item = xpItems.find((i) => i.ranking === row.rank);
+      navigate("/mypage/service-ranking/user", {
+        state: {
+          rankingType: "xp",
+          name: row.name,
+          rank: row.rank,
+          currentXp: item?.currentXp ?? 0,
+          periodXp: item?.periodXp ?? 0,
+          growthRate: item?.growthRate ?? 0,
+        },
+      });
+    }
+  };
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
@@ -53,7 +155,7 @@ const ServiceRankingPage: React.FC = () => {
                 className="w-8 h-8 flex items-center justify-center text-Headline_L_Bold leading-none"
                 aria-hidden="true"
               >
-                ←
+                &larr;
               </span>
               서비스 랭킹
             </button>
@@ -68,11 +170,11 @@ const ServiceRankingPage: React.FC = () => {
               className={cn(
                 "!rounded-lg !px-5 !py-3.5 !min-h-0",
                 "text-Subtitle_M_Medium",
-                "text-white",
-                "border-none",
+                "!text-white",
+                "!border-none",
                 rankingType === "return"
-                  ? "bg-main-1"
-                  : "bg-gray-200"
+                  ? "!bg-main-1 hover:!bg-main-1"
+                  : "!bg-gray-200 hover:!bg-gray-300"
               )}
               aria-pressed={rankingType === "return"}
             >
@@ -85,11 +187,11 @@ const ServiceRankingPage: React.FC = () => {
               className={cn(
                 "!rounded-lg !px-5 !py-3.5 !min-h-0",
                 "text-Subtitle_M_Medium",
-                "text-white",
-                "border-none",
+                "!text-white",
+                "!border-none",
                 rankingType === "xp"
-                  ? "bg-main-1"
-                  : "bg-gray-200"
+                  ? "!bg-main-1 hover:!bg-main-1"
+                  : "!bg-gray-200 hover:!bg-gray-300"
               )}
               aria-pressed={rankingType === "xp"}
             >
@@ -104,7 +206,6 @@ const ServiceRankingPage: React.FC = () => {
               size="small"
               onClick={() => setPeriod("weekly")}
               className={cn(
-                // button_S: radius 16px, padding 8px 20px, gap 10px
                 "!rounded-2xl !px-5 !py-2 !min-h-0",
                 "!gap-2.5",
                 "!border !border-sub-blue",
@@ -140,7 +241,9 @@ const ServiceRankingPage: React.FC = () => {
           <section className="w-full rounded-2xl bg-etc-light-mint border border-main-1 px-10 py-7.5 flex items-center justify-between">
             <div className="flex items-center gap-5">
               <div className="size-[90px] rounded-full bg-white border border-main-1 flex items-center justify-center">
-                <p className="text-Subtitle_L_Medium text-main-1">{myRank}위</p>
+                <p className="text-Subtitle_L_Medium text-main-1">
+                  {myRank != null ? `${myRank}위` : "-"}
+                </p>
               </div>
 
               <div className="size-[60px] rounded-full bg-white flex items-center justify-center border border-gray-300">
@@ -148,51 +251,56 @@ const ServiceRankingPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <p className="text-Subtitle_L_Medium text-black">{myName}</p>
-                <p className="text-Subtitle_S_Regular text-[#747474]">상위 {myTopPercent}%</p>
+                <p className="text-Subtitle_L_Medium text-black">
+                  {user?.nickname ?? "-"}
+                </p>
+                <p className="text-Subtitle_S_Regular text-[#747474]">
+                  {myRank != null && totalCount > 0
+                    ? `상위 ${Math.max(1, Math.round((myRank / totalCount) * 100))}%`
+                    : "-"}
+                </p>
               </div>
             </div>
 
-            <div className="text-right text-Title_L_Medium text-etc-red whitespace-nowrap">
-              <p className="mb-0">{myChangeRateText}</p>
-              <p>{myAmountText}</p>
-            </div>
+            {rankingType === "return" ? (
+              <div className={cn(
+                "text-right text-Title_L_Medium whitespace-nowrap",
+                myProfitItem && myProfitItem.returnRate >= 0 ? "text-etc-red" : "text-sub-blue"
+              )}>
+                <p className="mb-0">
+                  {myProfitItem ? formatRate(myProfitItem.returnRate) : "-"}
+                </p>
+                <p>
+                  {myProfitItem ? formatAmount(myProfitItem.profitLoss) : "-"}
+                </p>
+              </div>
+            ) : (
+              <div className="text-right text-Title_L_Medium whitespace-nowrap text-main-1">
+                <p className="mb-0">
+                  {myXpItem ? formatXp(myXpItem.periodXp) : "-"}
+                </p>
+                <p className="text-Subtitle_S_Regular text-[#747474]">
+                  {myXpItem ? `총 ${formatXp(myXpItem.currentXp)}` : "-"}
+                </p>
+              </div>
+            )}
           </section>
 
           {/* 랭킹 리스트 */}
           <section className="w-full flex flex-col gap-2.5">
-            {rows.map((r) => (
-              <ServiceRankingRow
-                key={r.rank}
-                item={r}
-                onClick={(item) =>
-                  navigate("/mypage/service-ranking/user", {
-                    state: {
-                      name: item.name,
-                      rankText: `${item.rank}위`,
-                      returnText: item.changeRateText,
-                      xpText: "15,400 XP",
-                      badgeText: "🔥 상위 1% 트레이더",
-                      strategies: [
-                        {
-                          icon: "target",
-                          title: "반도체 집중",
-                          description: "삼성전자 (30%), SK하이닉스 (25%)",
-                          returnText: "+55.0%",
-                        },
-                        {
-                          icon: "shield",
-                          title: "배당주 방어",
-                          description: "맥쿼리인프라 (15%), 리츠 (10%)",
-                          returnText: "+5.2%",
-                        },
-                      ],
-                      activities: ["2시간 전 삼성전자 매도", "어제 카카오 매수"],
-                    },
-                  })
-                }
-              />
-            ))}
+            {loading ? (
+              <div className="py-10 text-center text-gray-400">랭킹을 불러오는 중...</div>
+            ) : rows.length === 0 ? (
+              <div className="py-10 text-center text-gray-400">랭킹 데이터가 없습니다.</div>
+            ) : (
+              rows.map((r) => (
+                <ServiceRankingRow
+                  key={r.rank}
+                  item={r}
+                  onClick={handleRowClick}
+                />
+              ))
+            )}
           </section>
         </div>
       </main>
@@ -201,5 +309,3 @@ const ServiceRankingPage: React.FC = () => {
 };
 
 export default ServiceRankingPage;
-
-

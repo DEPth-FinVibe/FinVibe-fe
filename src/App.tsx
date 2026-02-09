@@ -14,6 +14,7 @@ import TermsPage from "@/pages/MyPage/TermsPage";
 import PrivacyPolicyPage from "@/pages/MyPage/PrivacyPolicyPage";
 import MyAssetsPage from "@/pages/MyPage/MyAssetsPage";
 import MyPortfolioManagementPage from "@/pages/MyPage/MyPortfolioManagementPage";
+import MyChallengesPage from "@/pages/MyPage/MyChallengesPage";
 import ServiceRankingPage from "@/pages/ServiceRanking/ServiceRankingPage";
 import ServiceRankingUserPage from "@/pages/ServiceRanking/ServiceRankingUserPage";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -71,6 +72,7 @@ function App() {
           <Route path="/mypage/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/mypage/assets" element={<MyAssetsPage />} />
           <Route path="/mypage/portfolio" element={<MyPortfolioManagementPage />} />
+          <Route path="/mypage/challenges" element={<MyChallengesPage />} />
           <Route path="/mypage/service-ranking" element={<ServiceRankingPage />} />
           <Route path="/mypage/service-ranking/user" element={<ServiceRankingUserPage />} />
         </Route>

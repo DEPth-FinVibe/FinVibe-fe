@@ -127,9 +127,9 @@ export const studyApi = {
 
   // ── 학습 지표 ──
 
-  /** 10분 학습 핑: POST /study/lessons/{lessonId}/metrics/ten-minute */
-  tenMinutePing: async (lessonId: number): Promise<void> => {
-    await studyApiClient.post(`/study/lessons/${lessonId}/metrics/ten-minute`);
+  /** 1분 학습 핑: POST /study/lessons/{lessonId}/metrics/one-minute */
+  oneMinutePing: async (lessonId: number): Promise<void> => {
+    await studyApiClient.post(`/study/lessons/${lessonId}/metrics/one-minute`);
   },
 
   /** 내 학습 지표 조회: GET /study/metrics/me */

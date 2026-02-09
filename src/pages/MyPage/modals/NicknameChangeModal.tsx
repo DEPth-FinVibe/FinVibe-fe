@@ -74,7 +74,7 @@ const NicknameChangeModal: React.FC<NicknameChangeModalProps> = ({
     if (!isValid || !duplicateChecked || duplicateResult || saving || !user) return;
     setSaving(true);
     try {
-      const updated = await memberApi.changeNickname(user.userId, nickname.trim());
+      const updated = await memberApi.changeNickname(nickname.trim());
       setUser(updated);
       onClose();
     } catch {
