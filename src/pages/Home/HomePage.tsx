@@ -230,7 +230,7 @@ const HomePage: React.FC = () => {
     () => (categories ?? []).filter((c) => !isExcludedThemeCategory(c.categoryName)),
     [categories],
   );
-  const categoryStocks = useCategoryStocks(selectedCategoryId);
+  const categoryStocks = useCategoryStocks(selectedCategoryId, isMarketOpen);
   const categoryChangeRate = useCategoryChangeRate(selectedCategoryId);
 
   // 첫 카테고리 자동 선택
@@ -387,7 +387,14 @@ const HomePage: React.FC = () => {
                 ))}
               </>
             )}
-            {showMockFallback &&
+            {!isMarketOpen && !isLoading && (
+              <>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <TradingVolumeRankSkeleton key={`market-closed-skeleton-${i}`} className="border-none" />
+                ))}
+              </>
+            )}
+            {isMarketOpen && showMockFallback &&
               MOCK_FALLBACK.map((stock) => {
                 const mockStockId = Number(stock.ticker);
                 return (
@@ -431,17 +438,17 @@ const HomePage: React.FC = () => {
                 );
               })
             }
-            {showPersonalError && (
+            {isMarketOpen && showPersonalError && (
               <p className="px-6 py-8 text-sm text-gray-400 text-center">
                 개인 소유 TOP 10 데이터를 불러오지 못했습니다.
               </p>
             )}
-            {showPersonalEmpty && (
+            {isMarketOpen && showPersonalEmpty && (
               <p className="px-6 py-8 text-sm text-gray-400 text-center">
                 개인 소유 종목 데이터가 없습니다.
               </p>
             )}
-            {!isLoading && !isError && stockData && stockData.length > 0 && stockData.map((stock: StockWithPrice, index: number) => {
+            {isMarketOpen && !isLoading && !isError && stockData && stockData.length > 0 && stockData.map((stock: StockWithPrice, index: number) => {
               const tickerText = stock.symbol || "-";
               const selectedKey = stock.symbol || String(stock.stockId);
 

@@ -147,6 +147,27 @@ const RealTimeStockItem = memo(({ stock, onClick, isFavorited, onFavoriteToggle 
   );
 });
 
+const StockListItemSkeleton = () => {
+  return (
+    <div className="flex gap-5 items-center px-[30px] py-5 rounded-lg border border-sub-gray animate-pulse">
+      <div className="w-5 h-[19px] bg-gray-200 rounded" />
+      <div className="flex flex-1 items-center justify-between min-w-0">
+        <div className="flex flex-col gap-[15px] items-start shrink-0 w-[254px]">
+          <div className="flex gap-4 items-center shrink-0 w-[254px]">
+            <div className="h-5 w-20 bg-gray-200 rounded" />
+            <div className="h-4 w-12 bg-gray-100 rounded" />
+          </div>
+          <div className="h-4 w-24 bg-gray-100 rounded" />
+        </div>
+        <div className="flex flex-col gap-[10px] items-end shrink-0 w-[155px]">
+          <div className="h-4 w-16 bg-gray-200 rounded" />
+          <div className="h-6 w-20 bg-gray-200 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SimulationPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
@@ -189,16 +210,17 @@ const SimulationPage = () => {
 
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
   const isSearchMode = debouncedQuery.length >= 1;
+  const { isMarketOpen } = useMarketStatus();
 
   const marketTypeParam = "DOMESTIC";
-  const topByVolume = useTopByVolumeWithPrices();
+  const topByVolume = useTopByVolumeWithPrices(isMarketOpen);
   const searchResult = useStockSearchWithPrices(
     debouncedQuery,
+    isMarketOpen,
     marketTypeParam,
   );
 
   const { subscribe, unsubscribe } = useMarketStore();
-  const { isMarketOpen } = useMarketStatus();
   const [portfolioGroups, setPortfolioGroups] = useState<
     PortfolioGroup[] | null
   >(null);
@@ -377,19 +399,23 @@ const SimulationPage = () => {
 
           {/* 주식 리스트 - 스크롤 영역 */}
           <div className="flex flex-col gap-4 overflow-y-auto flex-1 pr-2">
-            {isLoading && (
+            {!isMarketOpen &&
+              Array.from({ length: 10 }).map((_, index) => (
+                <StockListItemSkeleton key={`stock-list-skeleton-${index}`} />
+              ))}
+            {isMarketOpen && isLoading && (
               <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
                 로딩중...
               </div>
             )}
-            {!isLoading && visibleStocks.length === 0 && (
+            {isMarketOpen && !isLoading && visibleStocks.length === 0 && (
               <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
                 {isSearchMode
                   ? "검색 결과가 없습니다."
                   : "종목 데이터를 불러올 수 없습니다."}
               </div>
             )}
-            {!isLoading &&
+            {isMarketOpen && !isLoading &&
               visibleStocks.map((stock: StockWithPrice) => (
                 <RealTimeStockItem
                   key={stock.stockId}
@@ -404,7 +430,7 @@ const SimulationPage = () => {
                   onFavoriteToggle={() => handleFavoriteToggle(stock.stockId, stock.name)}
                 />
               ))}
-            {!isLoading && hasMore && (
+            {isMarketOpen && !isLoading && hasMore && (
               <button
                 onClick={handleShowMore}
                 className="w-full py-3 text-sm text-gray-500 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
