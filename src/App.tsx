@@ -16,6 +16,10 @@ import MyAssetsPage from "@/pages/MyPage/MyAssetsPage";
 import MyPortfolioManagementPage from "@/pages/MyPage/MyPortfolioManagementPage";
 import ServiceRankingPage from "@/pages/ServiceRanking/ServiceRankingPage";
 import ServiceRankingUserPage from "@/pages/ServiceRanking/ServiceRankingUserPage";
+import InquiryPage from "@/pages/Inquiry/InquiryPage";
+import FAQPage from "@/pages/FAQ/FAQPage";
+import NoticePage from "@/pages/Notice/NoticePage";
+import NoticeDetailPage from "@/pages/Notice/NoticeDetailPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMarketStore } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
@@ -73,6 +77,10 @@ function App() {
           <Route path="/mypage/portfolio" element={<MyPortfolioManagementPage />} />
           <Route path="/mypage/service-ranking" element={<ServiceRankingPage />} />
           <Route path="/mypage/service-ranking/user" element={<ServiceRankingUserPage />} />
+          <Route path="/inquiry" element={<InquiryPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/notice" element={<NoticePage />} />
+          <Route path="/notice/:noticeId" element={<NoticeDetailPage />} />
         </Route>
         
         <Route path="/login" element={<LoginPage />} />

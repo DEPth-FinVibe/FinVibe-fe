@@ -8,6 +8,7 @@ export {
 export { TextField, type TextFieldProps } from "./TextField";
 
 export { Header, type HeaderProps } from "./Header";
+export { Footer, type FooterProps } from "./Footer";
 export {
   default as SwitchBar,
   type SwitchBarProps,

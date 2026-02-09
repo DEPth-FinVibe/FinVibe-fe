@@ -4,7 +4,7 @@ import {
   TradingVolumeRank,
   TradingVolumeRankSkeleton,
   RelatedNews,
-  Chip
+  Chip,
 } from "@/components";
 import { cn } from "@/utils/cn";
 import { formatPrice, formatChangeRate, formatTradingValue } from "@/utils/formatStock";
