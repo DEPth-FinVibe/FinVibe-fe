@@ -7,7 +7,7 @@ import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
-import { fetchCandles, toKstDateTime, type CandleWithVolume } from "@/api/market";
+import { fetchCandles, fetchClosingPrices, toKstDateTime, type CandleWithVolume } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 import { memberApi } from "@/api/member";
@@ -118,6 +118,11 @@ const StockDetailPage = () => {
   const stockIdNum = stockId ? Number(stockId) : 0;
   const quote = useQuote(stockIdNum);
   const { isMarketOpen } = useMarketStatus();
+  const [closingPrice, setClosingPrice] = useState<{
+    close: number;
+    prevDayChangePct: number;
+    volume: number;
+  } | null>(null);
 
   const chartPeriods: ChartPeriod[] = ["분봉", "일봉", "주봉", "월봉", "년봉"];
 
@@ -131,9 +136,42 @@ const StockDetailPage = () => {
   }, [stockIdNum, isMarketOpen, subscribe, unsubscribe]);
 
   // 장 열림: 실시간 WebSocket 데이터 사용
-  const price = quote?.close;
-  const changePct = quote?.prevDayChangePct;
-  const volume = quote?.volume;
+  useEffect(() => {
+    if (!stockIdNum || isMarketOpen) {
+      setClosingPrice(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetchClosingPrices([stockIdNum])
+      .then((prices) => {
+        if (cancelled) return;
+        const latest = prices[0];
+        if (!latest) {
+          setClosingPrice(null);
+          return;
+        }
+        setClosingPrice({
+          close: latest.close,
+          prevDayChangePct: latest.prevDayChangePct,
+          volume: latest.volume,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setClosingPrice(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stockIdNum, isMarketOpen]);
+
+  const basePriceData = isMarketOpen ? quote : closingPrice;
+  const price = basePriceData?.close;
+  const changePct = basePriceData?.prevDayChangePct;
+  const volume = basePriceData?.volume;
 
   // 장중 분봉 차트는 WebSocket 현재가를 반영해 마지막 캔들을 실시간 업데이트
   useEffect(() => {
@@ -288,7 +326,7 @@ const StockDetailPage = () => {
 
           {/* 주식 정보 카드 */}
           <div className="mb-6">
-            {isMarketOpen ? (
+            {isMarketOpen || closingPrice ? (
               <StockListItem
                 stockName={stockData.stockName}
                 stockCode={stockData.stockCode}

@@ -387,14 +387,7 @@ const HomePage: React.FC = () => {
                 ))}
               </>
             )}
-            {!isMarketOpen && !isLoading && (
-              <>
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <TradingVolumeRankSkeleton key={`market-closed-skeleton-${i}`} className="border-none" />
-                ))}
-              </>
-            )}
-            {isMarketOpen && showMockFallback &&
+            {showMockFallback &&
               MOCK_FALLBACK.map((stock) => {
                 const mockStockId = Number(stock.ticker);
                 return (
@@ -438,17 +431,17 @@ const HomePage: React.FC = () => {
                 );
               })
             }
-            {isMarketOpen && showPersonalError && (
+            {showPersonalError && (
               <p className="px-6 py-8 text-sm text-gray-400 text-center">
                 개인 소유 TOP 10 데이터를 불러오지 못했습니다.
               </p>
             )}
-            {isMarketOpen && showPersonalEmpty && (
+            {showPersonalEmpty && (
               <p className="px-6 py-8 text-sm text-gray-400 text-center">
                 개인 소유 종목 데이터가 없습니다.
               </p>
             )}
-            {isMarketOpen && !isLoading && !isError && stockData && stockData.length > 0 && stockData.map((stock: StockWithPrice, index: number) => {
+            {!isLoading && !isError && stockData && stockData.length > 0 && stockData.map((stock: StockWithPrice, index: number) => {
               const tickerText = stock.symbol || "-";
               const selectedKey = stock.symbol || String(stock.stockId);
 

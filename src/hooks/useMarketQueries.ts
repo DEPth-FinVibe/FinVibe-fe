@@ -7,6 +7,7 @@ import {
   fetchTopByValue,
   searchStocks,
   mergeStockData,
+  fetchClosingPrices,
   fetchMarketStatus,
   fetchIndexCandles,
   fetchCandles,
@@ -57,17 +58,22 @@ function toStocksWithEmptyPrice(
 
 async function fetchTop10WithPrices(
   fetcher: () => Promise<import("@/api/market").StockListItem[]>,
+  isMarketOpen: boolean,
 ) {
   const stocks = await fetcher();
   const top10 = stocks.slice(0, 10);
   if (top10.length === 0) return [];
+  if (!isMarketOpen) {
+    const prices = await fetchClosingPrices(top10.map((stock) => stock.stockId));
+    return mergeStockData(top10, prices);
+  }
   return toStocksWithEmptyPrice(top10);
 }
 
 export function useTopByValue(isMarketOpen: boolean) {
   return useQuery({
     queryKey: ["market", "top-by-value", isMarketOpen],
-    queryFn: () => fetchTop10WithPrices(fetchTopByValue),
+    queryFn: () => fetchTop10WithPrices(fetchTopByValue, isMarketOpen),
     staleTime: 30_000,
   });
 }
@@ -75,7 +81,7 @@ export function useTopByValue(isMarketOpen: boolean) {
 export function useTopByVolume(isMarketOpen: boolean) {
   return useQuery({
     queryKey: ["market", "top-by-volume", isMarketOpen],
-    queryFn: () => fetchTop10WithPrices(fetchTopByVolume),
+    queryFn: () => fetchTop10WithPrices(fetchTopByVolume, isMarketOpen),
     staleTime: 30_000,
   });
 }
@@ -83,7 +89,7 @@ export function useTopByVolume(isMarketOpen: boolean) {
 export function useTopRising(isMarketOpen: boolean) {
   return useQuery({
     queryKey: ["market", "top-rising", isMarketOpen],
-    queryFn: () => fetchTop10WithPrices(fetchTopRising),
+    queryFn: () => fetchTop10WithPrices(fetchTopRising, isMarketOpen),
     staleTime: 30_000,
   });
 }
@@ -91,7 +97,7 @@ export function useTopRising(isMarketOpen: boolean) {
 export function useTopFalling(isMarketOpen: boolean) {
   return useQuery({
     queryKey: ["market", "top-falling", isMarketOpen],
-    queryFn: () => fetchTop10WithPrices(fetchTopFalling),
+    queryFn: () => fetchTop10WithPrices(fetchTopFalling, isMarketOpen),
     staleTime: 30_000,
   });
 }
@@ -104,15 +110,21 @@ export function useTopHoldingTop10WithPrices(isMarketOpen: boolean) {
       const top10 = holdings.slice(0, 10);
       if (top10.length === 0) return [];
 
+      const closingPriceMap = !isMarketOpen
+        ? new Map(
+          (await fetchClosingPrices(top10.map((item) => item.stockId))).map((price) => [price.stockId, price]),
+        )
+        : null;
+
       return top10.map((item) => ({
         stockId: item.stockId,
         symbol: "",
         name: item.name,
         categoryId: 0,
-        close: 0,
-        prevDayChangePct: 0,
-        volume: 0,
-        value: 0,
+        close: closingPriceMap?.get(item.stockId)?.close ?? 0,
+        prevDayChangePct: closingPriceMap?.get(item.stockId)?.prevDayChangePct ?? 0,
+        volume: closingPriceMap?.get(item.stockId)?.volume ?? 0,
+        value: closingPriceMap?.get(item.stockId)?.value ?? 0,
       }));
     },
     staleTime: 30_000,
@@ -127,7 +139,12 @@ export function useTopByVolumeWithPrices(isMarketOpen: boolean) {
     queryFn: async () => {
       const stocks = await fetchTopByVolume();
       if (stocks.length === 0) return [];
-      return mergeStockData(stocks, []);
+      if (isMarketOpen) {
+        return mergeStockData(stocks, []);
+      }
+
+      const prices = await fetchClosingPrices(stocks.map((stock) => stock.stockId));
+      return mergeStockData(stocks, prices);
     },
     staleTime: 30_000,
   });
@@ -143,7 +160,12 @@ export function useStockSearchWithPrices(
     queryFn: async () => {
       const stocks = await searchStocks(query, marketType);
       if (stocks.length === 0) return [];
-      return mergeStockData(stocks, []);
+      if (isMarketOpen) {
+        return mergeStockData(stocks, []);
+      }
+
+      const prices = await fetchClosingPrices(stocks.map((stock) => stock.stockId));
+      return mergeStockData(stocks, prices);
     },
     enabled: query.length >= 1,
     staleTime: 30_000,
@@ -201,9 +223,12 @@ export function useCategoryStocks(
     queryKey: ["market", "category-stocks", categoryId, isMarketOpen],
     queryFn: async () => {
       const data = await fetchCategoryStocks(categoryId!);
+      const prices = isMarketOpen
+        ? []
+        : await fetchClosingPrices(data.stocks.map((stock) => stock.stockId));
       return {
         ...data,
-        prices: [] as import("@/api/market").StockClosingPrice[],
+        prices,
       };
     },
     enabled: categoryId != null,
