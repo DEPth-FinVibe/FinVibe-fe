@@ -18,6 +18,30 @@ export type UpdatePortfolioGroupBody = {
   iconCode: string;
 };
 
+export type PortfolioAsset = {
+  id: number;
+  name: string;
+  amount: number;
+  totalPrice: number;
+  currency: string; // "USD" | "KRW"
+  stockId: number;
+};
+
+export type CreatePortfolioAssetBody = {
+  stockId: number;
+  amount: number;
+  stockPrice: number;
+  name: string;
+  currency: string; // "USD" | "KRW"
+};
+
+export type DeletePortfolioAssetBody = {
+  stockId: number;
+  amount: number;
+  stockPrice: number;
+  currency?: string; // 문서상 optional
+};
+
 export const assetPortfolioApi = {
   /** 사용자 포트폴리오 그룹 조회: GET /api/asset/portfolios */
   getPortfolios: async (): Promise<PortfolioGroup[]> => {
@@ -75,6 +99,53 @@ export const assetPortfolioApi = {
       const status = axios.isAxiosError(error) ? error.response?.status : undefined;
       if (status === 404) {
         await api.delete(`/asset/portfolios/${portfolioGroupId}`);
+        return;
+      }
+      throw error;
+    }
+  },
+
+  /** 포트폴리오별 자산 조회: GET /api/asset/portfolios/{portfolioId}/assets */
+  getAssetsByPortfolio: async (portfolioId: number): Promise<PortfolioAsset[]> => {
+    try {
+      const res = await assetApiClient.get<PortfolioAsset[]>(
+        `/portfolios/${portfolioId}/assets`
+      );
+      return res.data;
+    } catch (error: unknown) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 404) {
+        const res2 = await api.get<PortfolioAsset[]>(
+          `/asset/portfolios/${portfolioId}/assets`
+        );
+        return res2.data;
+      }
+      throw error;
+    }
+  },
+
+  /** 자산 등록: POST /api/asset/portfolios/{portfolioId}/assets */
+  createAsset: async (portfolioId: number, body: CreatePortfolioAssetBody): Promise<void> => {
+    try {
+      await assetApiClient.post(`/portfolios/${portfolioId}/assets`, body);
+    } catch (error: unknown) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 404) {
+        await api.post(`/asset/portfolios/${portfolioId}/assets`, body);
+        return;
+      }
+      throw error;
+    }
+  },
+
+  /** 자산 등록 해제: DELETE /api/asset/portfolios/{portfolioId}/assets */
+  deleteAsset: async (portfolioId: number, body: DeletePortfolioAssetBody): Promise<void> => {
+    try {
+      await assetApiClient.delete(`/portfolios/${portfolioId}/assets`, { data: body });
+    } catch (error: unknown) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 404) {
+        await api.delete(`/asset/portfolios/${portfolioId}/assets`, { data: body });
         return;
       }
       throw error;

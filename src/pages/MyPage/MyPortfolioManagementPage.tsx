@@ -8,7 +8,7 @@ import CloseIcon from "@/assets/svgs/CloseIcon";
 import FolderReturnComparisonSection from "@/pages/MyPage/components/FolderReturnComparisonSection";
 import CreateFolderPopover from "@/pages/MyPage/components/CreateFolderPopover";
 import MoveToFolderPopover from "@/pages/MyPage/components/MoveToFolderPopover";
-import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
+import { assetPortfolioApi, type PortfolioAsset, type PortfolioGroup } from "@/api/asset";
 
 type FolderMeta = {
   id: number;
@@ -23,6 +23,24 @@ type StockRow = {
   qty: string;
   price: string;
   folderId: number | null;
+};
+
+const formatMoney = (value: number, currency: string) => {
+  if (!Number.isFinite(value)) return "-";
+  if (currency === "USD") return `$${value.toLocaleString()}`;
+  if (currency === "KRW") return `₩${value.toLocaleString()}`;
+  return `${value.toLocaleString()} ${currency}`;
+};
+
+const toStockRow = (asset: PortfolioAsset, folderId: number): StockRow => {
+  return {
+    id: String(asset.id),
+    name: asset.name,
+    qty: `${asset.amount}주`,
+    // NOTE: 응답에는 현재가가 없어서, 우선 총 평가금액(totalPrice)을 표시 (디자인은 그대로)
+    price: formatMoney(asset.totalPrice, asset.currency),
+    folderId,
+  };
 };
 
 const getGroupTone = (iconCode: string): FolderMeta["tone"] => {
@@ -90,11 +108,7 @@ const MyPortfolioManagementPage: React.FC = () => {
   const [openMoveRowId, setOpenMoveRowId] = useState<string | null>(null);
   const [movePendingFolderId, setMovePendingFolderId] = useState<number | null>(null);
 
-  const [rows, setRows] = useState<StockRow[]>(() => [
-    { id: "samsung", name: "삼성전자", qty: "10주", price: "72,000원", folderId: null },
-    { id: "kodex", name: "KODEX 인버스", qty: "50주", price: "4150원", folderId: null },
-    { id: "kakao", name: "카카오뱅크", qty: "5주", price: "25,000원", folderId: null },
-  ]);
+  const [rows, setRows] = useState<StockRow[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -113,6 +127,41 @@ const MyPortfolioManagementPage: React.FC = () => {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (portfolioGroups === null) return; // 그룹 로딩 전
+      if (portfolioGroups.length === 0) {
+        setRows([]);
+        return;
+      }
+
+      try {
+        const results = await Promise.all(
+          portfolioGroups.map(async (g) => {
+            try {
+              const assets = await assetPortfolioApi.getAssetsByPortfolio(g.id);
+              return (Array.isArray(assets) ? assets : []).map((a) => toStockRow(a, g.id));
+            } catch {
+              // 한 포트폴리오 조회 실패해도 나머지는 최대한 표시
+              return [] as StockRow[];
+            }
+          })
+        );
+        if (!alive) return;
+        setRows(results.flat());
+      } catch {
+        if (!alive) return;
+        // 실패 시 더미 대신 비어있게
+        setRows([]);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [portfolioGroups]);
 
   const refetchGroups = async () => {
     const groups = await assetPortfolioApi.getPortfolios();

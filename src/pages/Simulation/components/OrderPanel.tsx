@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { cn } from "@/utils/cn";
 import { walletApi } from "@/api/wallet";
 import { useCreateTrade } from "@/hooks/useTradeQueries";
+import { assetPortfolioApi } from "@/api/asset";
 import type { TransactionRequest } from "@/api/trade";
 
 interface OrderPanelProps {
   currentPrice: number;
   stockId: number;
   portfolioId: number | null;
+  stockName: string;
+  currency?: "USD" | "KRW";
   onTradeSuccess?: () => void;
 }
 
@@ -18,6 +21,8 @@ const OrderPanel = ({
   currentPrice,
   stockId,
   portfolioId,
+  stockName,
+  currency = "KRW",
   onTradeSuccess,
 }: OrderPanelProps) => {
   const [tradeType, setTradeType] = useState<TradeType>("buy");
@@ -105,10 +110,43 @@ const OrderPanel = ({
 
     try {
       await createTrade.mutateAsync(request);
-      setOrderStatus({
-        type: "success",
-        message: `${tradeType === "buy" ? "매수" : "매도"} 주문이 완료되었습니다.`,
-      });
+
+      // 예약 주문은 체결 전이므로 자산 반영을 하지 않음
+      let assetSynced = true;
+      if (orderType !== "예약") {
+        try {
+          if (tradeType === "buy") {
+            await assetPortfolioApi.createAsset(portfolioId, {
+              stockId,
+              amount: quantity,
+              stockPrice: price,
+              name: stockName,
+              currency,
+            });
+          } else {
+            await assetPortfolioApi.deleteAsset(portfolioId, {
+              stockId,
+              amount: quantity,
+              stockPrice: price,
+              currency,
+            });
+          }
+        } catch {
+          assetSynced = false;
+        }
+      }
+
+      setOrderStatus(
+        assetSynced
+          ? {
+              type: "success",
+              message: `${tradeType === "buy" ? "매수" : "매도"} 주문이 완료되었습니다.`,
+            }
+          : {
+              type: "error",
+              message: "주문은 완료됐지만 자산 반영에 실패했어요. 잠시 후 다시 확인해주세요.",
+            }
+      );
       // 잔액 갱신
       walletApi.getBalance().then((data) => {
         setBalance(Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0);

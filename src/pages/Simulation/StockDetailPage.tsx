@@ -383,6 +383,8 @@ const StockDetailPage = () => {
             currentPrice={currentPrice}
             stockId={stockIdNum}
             portfolioId={portfolioId}
+            stockName={navigationState?.stockName ?? `종목 ${stockIdNum}`}
+            currency="KRW"
           />
         </aside>
       </main>
