@@ -9,4 +9,5 @@ export type {
   LessonCompletionItem,
   MonthlyLessonCompletionResponse,
   MyStudyMetricResponse,
+  TodayAiStudyRecommendResponse,
 } from "./study";

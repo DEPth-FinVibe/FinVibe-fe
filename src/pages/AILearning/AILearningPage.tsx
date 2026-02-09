@@ -53,6 +53,7 @@ const AILearningPage: React.FC = () => {
   // API 상태
   const [courses, setCourses] = useState<MyCourseResponse[]>([]);
   const [studyMetric, setStudyMetric] = useState<MyStudyMetricResponse | null>(null);
+  const [todayAiRecommend, setTodayAiRecommend] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 레슨 학습 모달 상태
@@ -65,9 +66,10 @@ const AILearningPage: React.FC = () => {
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    const [coursesResult, metricResult] = await Promise.allSettled([
+    const [coursesResult, metricResult, recommendResult] = await Promise.allSettled([
       studyApi.getMyCourses(),
       studyApi.getMyStudyMetric(),
+      studyApi.getTodayAiStudyRecommend(),
     ]);
 
     if (coursesResult.status === "fulfilled") {
@@ -76,6 +78,13 @@ const AILearningPage: React.FC = () => {
 
     if (metricResult.status === "fulfilled") {
       setStudyMetric(metricResult.value);
+    }
+
+    if (recommendResult.status === "fulfilled") {
+      const content = recommendResult.value.content?.trim();
+      setTodayAiRecommend(content || null);
+    } else {
+      setTodayAiRecommend(null);
     }
 
     setLoading(false);
@@ -191,7 +200,7 @@ const AILearningPage: React.FC = () => {
           {/* 왼쪽 영역 */}
           <div className="flex flex-col gap-5 w-[978px] max-w-full">
             {/* AI 학습 인사이트 */}
-            <AILearningInsight />
+            <AILearningInsight description={todayAiRecommend ?? undefined} />
 
             {/* 학습 코스 섹션 */}
             {loading ? (
