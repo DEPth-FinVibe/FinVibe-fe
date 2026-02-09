@@ -46,7 +46,12 @@ const ThemeStockChart = ({ stockId, stockName }: ThemeStockChartProps) => {
           {stockName} 1일 봉 차트
         </h4>
         <button
-          onClick={() => navigate(`/simulation/${stockId}`)}
+          onClick={() => navigate(`/simulation/${stockId}`, {
+            state: {
+              stockName,
+              stockCode: String(stockId),
+            },
+          })}
           className="text-[12px] text-[#42d6ba] hover:underline"
         >
           클릭하여 거래하기 →

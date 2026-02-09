@@ -416,7 +416,15 @@ const HomePage: React.FC = () => {
                         price: stock.price,
                         change: stock.change
                       });
-                      navigate(Number.isNaN(mockStockId) ? "/simulation" : `/simulation/${mockStockId}`);
+                      navigate(Number.isNaN(mockStockId)
+                        ? "/simulation"
+                        : `/simulation/${mockStockId}`,
+                      {
+                        state: {
+                          stockName: stock.name,
+                          stockCode: stock.ticker,
+                        },
+                      });
                     }}
                     className={`border-none ${selectedStock.ticker === stock.ticker ? "bg-gray-50" : ""}`}
                   />
@@ -452,7 +460,12 @@ const HomePage: React.FC = () => {
                       price: formatPrice(stock.close),
                       change: formatChangeRate(stock.prevDayChangePct)
                     });
-                    navigate(`/simulation/${stock.stockId}`);
+                    navigate(`/simulation/${stock.stockId}`, {
+                      state: {
+                        stockName: stock.name,
+                        stockCode: tickerText,
+                      },
+                    });
                   }}
                 />
               );

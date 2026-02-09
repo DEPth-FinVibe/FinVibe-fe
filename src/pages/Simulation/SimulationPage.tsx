@@ -394,7 +394,12 @@ const SimulationPage = () => {
                 <RealTimeStockItem
                   key={stock.stockId}
                   stock={stock}
-                  onClick={() => navigate(`/simulation/${stock.stockId}`)}
+                  onClick={() => navigate(`/simulation/${stock.stockId}`, {
+                    state: {
+                      stockName: stock.name,
+                      stockCode: stock.symbol,
+                    },
+                  })}
                   isFavorited={favoriteStockIds.has(stock.stockId)}
                   onFavoriteToggle={() => handleFavoriteToggle(stock.stockId, stock.name)}
                 />
@@ -465,7 +470,12 @@ const SimulationPage = () => {
                       changeRate=""
                       isFavorited
                       onFavoriteToggle={() => handleFavoriteToggle(item.stockId, item.name)}
-                      onClick={() => navigate(`/simulation/${item.stockId}`)}
+                      onClick={() => navigate(`/simulation/${item.stockId}`, {
+                        state: {
+                          stockName: item.name,
+                          stockCode: String(item.stockId),
+                        },
+                      })}
                     />
                   ))
                 )}
