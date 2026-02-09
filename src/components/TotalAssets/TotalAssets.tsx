@@ -26,16 +26,21 @@ export const TotalAssets: React.FC<TotalAssetsProps> = ({
 
   // 변화율 포맷팅
   const formatChangeRate = (rate: number): string => {
-    const sign = rate >= 0 ? "+" : "";
+    if (rate === 0) return "0%";
+    const sign = rate > 0 ? "+" : "";
     return `${sign}${rate}%`;
   };
 
   const hasAmount = typeof totalAmount === "number" && Number.isFinite(totalAmount);
   const hasRate = typeof changeRate === "number" && Number.isFinite(changeRate);
 
-  // 변화율에 따른 색상 결정
+  // 변화율에 따른 색상 결정 (0%는 회색)
   const changeRateColor =
-    hasRate && (changeRate as number) >= 0 ? "text-etc-red" : "text-etc-blue";
+    !hasRate || (changeRate as number) === 0
+      ? "text-gray-400"
+      : (changeRate as number) > 0
+      ? "text-etc-red"
+      : "text-etc-blue";
 
   return (
     <div

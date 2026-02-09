@@ -8,7 +8,8 @@ import CloseIcon from "@/assets/svgs/CloseIcon";
 import FolderReturnComparisonSection from "@/pages/MyPage/components/FolderReturnComparisonSection";
 import CreateFolderPopover from "@/pages/MyPage/components/CreateFolderPopover";
 import MoveToFolderPopover from "@/pages/MyPage/components/MoveToFolderPopover";
-import { assetPortfolioApi, type PortfolioAsset, type PortfolioGroup } from "@/api/asset";
+import { assetPortfolioApi, type PortfolioAsset, type PortfolioGroup, type PortfolioComparisonItem } from "@/api/asset";
+import { formatPrice, formatChangeRate } from "@/utils/formatStock";
 
 type FolderMeta = {
   id: number;
@@ -109,6 +110,7 @@ const MyPortfolioManagementPage: React.FC = () => {
   const [movePendingFolderId, setMovePendingFolderId] = useState<number | null>(null);
 
   const [rows, setRows] = useState<StockRow[]>([]);
+  const [comparisonData, setComparisonData] = useState<PortfolioComparisonItem[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -121,6 +123,25 @@ const MyPortfolioManagementPage: React.FC = () => {
         // 실패 시 더미 대신 비어있게
         if (!alive) return;
         setPortfolioGroups([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // 포트폴리오 비교 데이터 조회
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await assetPortfolioApi.getPortfolioComparison();
+        if (!alive) return;
+        setComparisonData(Array.isArray(data) ? data : []);
+      } catch {
+        // 실패 시 빈 배열
+        if (!alive) return;
+        setComparisonData([]);
       }
     })();
     return () => {
@@ -183,13 +204,23 @@ const MyPortfolioManagementPage: React.FC = () => {
   }, [folderOptions]);
 
   const barData = useMemo(() => {
-    // NOTE: 그룹 조회 API에는 수익률이 없으므로 임시로 0으로 표시 (후속 API에서 교체)
-    return folderOptions.map((f) => ({
-      label: f.label,
-      value: 0,
-      tone: f.tone,
-    }));
-  }, [folderOptions]);
+    // API 데이터를 폴더명으로 매칭
+    const comparisonMap = new Map(comparisonData.map((item) => [item.name, item]));
+    
+    return folderOptions.map((f) => {
+      const comparison = comparisonMap.get(f.label);
+      return {
+        label: f.label,
+        value: comparison?.returnRate ?? 0,
+        tone: f.tone,
+      };
+    });
+  }, [folderOptions, comparisonData]);
+
+  // 폴더별 비교 데이터 맵
+  const comparisonByFolderName = useMemo(() => {
+    return new Map(comparisonData.map((item) => [item.name, item]));
+  }, [comparisonData]);
 
   return (
     <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
@@ -234,28 +265,46 @@ const MyPortfolioManagementPage: React.FC = () => {
                     표시할 폴더가 없어요.
                   </div>
                 ) : (
-                  folderOptions.map((f) => (
-                    <div
-                      key={f.id}
-                      className="grid grid-cols-[1.5fr_1fr_0.7fr_0.7fr] gap-6 items-center px-5 py-5 border-b border-gray-100 last:border-b-0"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        {f.tone === "blue" ? (
-                          <ShieldIcon className="w-6 h-[26px] text-sub-blue" ariaLabel={f.label} />
-                        ) : f.tone === "gray" ? (
-                          <CloseIcon className="size-6 text-[#4C4C4C]" ariaLabel={f.label} />
-                        ) : (
-                          <TargetIcon className="size-6 text-black" />
-                        )}
-                        <p className="text-Subtitle_L_Medium text-black">{f.label}</p>
-                      </div>
+                  folderOptions.map((f) => {
+                    const comparison = comparisonByFolderName.get(f.label);
+                    return (
+                      <div
+                        key={f.id}
+                        className="grid grid-cols-[1.5fr_1fr_0.7fr_0.7fr] gap-6 items-center px-5 py-5 border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          {f.tone === "blue" ? (
+                            <ShieldIcon className="w-6 h-[26px] text-sub-blue" ariaLabel={f.label} />
+                          ) : f.tone === "gray" ? (
+                            <CloseIcon className="size-6 text-[#4C4C4C]" ariaLabel={f.label} />
+                          ) : (
+                            <TargetIcon className="size-6 text-black" />
+                          )}
+                          <p className="text-Subtitle_L_Medium text-black">{f.label}</p>
+                        </div>
 
-                      {/* NOTE: 금액/수익률 API 미연동 - 후속 API에서 교체 */}
-                      <p className="text-Subtitle_L_Regular text-[#364153]">-</p>
-                      <p className="text-Subtitle_M_Medium text-[#364153]">-</p>
-                      <p className="text-right text-Subtitle_S_Regular text-[#101828]">-</p>
-                    </div>
-                  ))
+                        <p className="text-Subtitle_L_Regular text-[#364153]">
+                          {comparison ? formatPrice(comparison.totalAssetAmount) : "-"}
+                        </p>
+                        <p className={cn(
+                          "text-Subtitle_M_Medium",
+                          comparison?.returnRate 
+                            ? (comparison.returnRate >= 0 ? "text-etc-red" : "text-etc-blue")
+                            : "text-[#364153]"
+                        )}>
+                          {comparison ? formatChangeRate(comparison.returnRate) : "-"}
+                        </p>
+                        <p className={cn(
+                          "text-right text-Subtitle_S_Regular",
+                          comparison?.realizedProfit
+                            ? (comparison.realizedProfit >= 0 ? "text-etc-red" : "text-etc-blue")
+                            : "text-[#101828]"
+                        )}>
+                          {comparison ? formatPrice(comparison.realizedProfit) : "-"}
+                        </p>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>

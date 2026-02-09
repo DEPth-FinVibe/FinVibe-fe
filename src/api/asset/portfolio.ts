@@ -6,6 +6,9 @@ export type PortfolioGroup = {
   id: number;
   name: string;
   iconCode: string;
+  totalPurchaseAmount: number;
+  totalCurrentValue: number;
+  totalReturnRate: number;
 };
 
 export type CreatePortfolioGroupBody = {
@@ -41,6 +44,28 @@ export type DeletePortfolioAssetBody = {
   stockPrice: number;
   currency?: string; // 문서상 optional
 };
+
+export type PortfolioComparisonItem = {
+  name: string;
+  totalAssetAmount: number;
+  returnRate: number;
+  realizedProfit: number;
+};
+
+export type AssetAllocationResponse = {
+  cashAmount: number;
+  stockAmount: number;
+  totalAmount: number;
+  changeAmount: number;
+  changeRate: number;
+};
+
+export type AssetHistoryItem = {
+  date: string; // "YYYY-MM-DD" 형식
+  totalAmount: number;
+};
+
+export type AssetHistoryResponse = AssetHistoryItem[];
 
 export const assetPortfolioApi = {
   /** 사용자 포트폴리오 그룹 조회: GET /api/asset/portfolios */
@@ -147,6 +172,58 @@ export const assetPortfolioApi = {
       if (status === 404) {
         await api.delete(`/asset/portfolios/${portfolioId}/assets`, { data: body });
         return;
+      }
+      throw error;
+    }
+  },
+
+  /** 포트폴리오별 수익 비교 조회: GET /api/asset/portfolios/comparison */
+  getPortfolioComparison: async (): Promise<PortfolioComparisonItem[]> => {
+    try {
+      const res = await assetApiClient.get<PortfolioComparisonItem[]>("/portfolios/comparison");
+      return res.data;
+    } catch (error: unknown) {
+      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 404) {
+        const res2 = await api.get<PortfolioComparisonItem[]>("/asset/portfolios/comparison");
+        return res2.data;
+      }
+      throw error;
+    }
+  },
+
+  /** 전체 자산 배분 조회: GET /api/asset/assets/allocation */
+  getAssetAllocation: async (): Promise<AssetAllocationResponse> => {
+    try {
+      const res = await assetApiClient.get<AssetAllocationResponse>("/assets/allocation");
+      return res.data;
+    } catch (error: unknown) {
+      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 404) {
+        const res2 = await api.get<AssetAllocationResponse>("/asset/assets/allocation");
+        return res2.data;
+      }
+      throw error;
+    }
+  },
+
+  /** 자산 히스토리 조회: GET /api/asset/assets/history */
+  getAssetHistory: async (period: "WEEKLY" | "MONTHLY" = "WEEKLY"): Promise<AssetHistoryResponse> => {
+    try {
+      const res = await assetApiClient.get<AssetHistoryResponse>("/assets/history", {
+        params: { period },
+      });
+      return res.data;
+    } catch (error: unknown) {
+      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 404) {
+        const res2 = await api.get<AssetHistoryResponse>("/asset/assets/history", {
+          params: { period },
+        });
+        return res2.data;
       }
       throw error;
     }

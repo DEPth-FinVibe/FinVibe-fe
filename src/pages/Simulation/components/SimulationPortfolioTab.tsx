@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/utils/cn";
 import CloseIcon from "@/assets/svgs/CloseIcon";
+import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
+import { assetPortfolioApi, type PortfolioAsset } from "@/api/asset";
 
 export type SimulationPortfolioGroup = {
   id: number;
@@ -117,6 +119,46 @@ const SimulationPortfolioTab: React.FC<Props> = ({
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
   const editInputRef = useRef<HTMLInputElement | null>(null);
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<number>>(new Set());
+  const [portfolioAssets, setPortfolioAssets] = useState<Record<number, PortfolioAsset[]>>({});
+  const [loadingAssets, setLoadingAssets] = useState<Set<number>>(new Set());
+
+  // 포트폴리오 그룹이 변경될 때마다 각 포트폴리오의 자산 개수 미리 로드
+  useEffect(() => {
+    if (groups.length === 0) return;
+    
+    let cancelled = false;
+    const loadAssetCounts = async () => {
+      const assetCounts: Record<number, PortfolioAsset[]> = {};
+      
+      // 모든 포트폴리오의 자산 개수를 병렬로 로드
+      await Promise.all(
+        groups.map(async (group) => {
+          try {
+            const assets = await assetPortfolioApi.getAssetsByPortfolio(group.id);
+            if (!cancelled) {
+              assetCounts[group.id] = assets;
+            }
+          } catch {
+            // 에러 발생 시 빈 배열로 설정
+            if (!cancelled) {
+              assetCounts[group.id] = [];
+            }
+          }
+        })
+      );
+      
+      if (!cancelled) {
+        setPortfolioAssets((prev) => ({ ...prev, ...assetCounts }));
+      }
+    };
+
+    loadAssetCounts();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [groups]);
 
   useEffect(() => {
     if (!isCreateOpen) return;
@@ -173,8 +215,56 @@ const SimulationPortfolioTab: React.FC<Props> = ({
       await onDeleteGroup?.(groupId);
       // parent에서 refetch까지 처리
       if (editingGroupId === groupId) cancelEdit();
+      // 삭제된 포트폴리오의 확장 상태 및 자산 데이터 제거
+      setExpandedGroupIds((prev) => {
+        const next = new Set(prev);
+        next.delete(groupId);
+        return next;
+      });
+      setPortfolioAssets((prev) => {
+        const next = { ...prev };
+        delete next[groupId];
+        return next;
+      });
     } catch {
       // parent에서 에러 메시지 내려주면 표시
+    }
+  };
+
+  const toggleExpand = async (groupId: number) => {
+    // 편집 중이면 확장/축소 불가
+    if (editingGroupId === groupId) return;
+
+    const isExpanded = expandedGroupIds.has(groupId);
+    if (isExpanded) {
+      // 축소
+      setExpandedGroupIds((prev) => {
+        const next = new Set(prev);
+        next.delete(groupId);
+        return next;
+      });
+    } else {
+      // 확장
+      setExpandedGroupIds((prev) => new Set(prev).add(groupId));
+      
+      // 이미 로드된 데이터가 있으면 스킵
+      if (portfolioAssets[groupId]) return;
+
+      // 자산 데이터 로드
+      setLoadingAssets((prev) => new Set(prev).add(groupId));
+      try {
+        const assets = await assetPortfolioApi.getAssetsByPortfolio(groupId);
+        setPortfolioAssets((prev) => ({ ...prev, [groupId]: assets }));
+      } catch {
+        // 에러 발생 시 빈 배열로 설정
+        setPortfolioAssets((prev) => ({ ...prev, [groupId]: [] }));
+      } finally {
+        setLoadingAssets((prev) => {
+          const next = new Set(prev);
+          next.delete(groupId);
+          return next;
+        });
+      }
     }
   };
 
@@ -206,7 +296,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
       {/* 새 폴더 입력 바 (Figma: 1086:37595) */}
       {isCreateOpen && (
         <div className="w-full flex flex-col gap-2">
-          <div className="w-full flex items-center justify-between">
+          <div className="w-full flex items-center gap-2.5">
             <input
               ref={inputRef}
               value={folderName}
@@ -218,47 +308,46 @@ const SimulationPortfolioTab: React.FC<Props> = ({
               }}
               placeholder="폴더명 검색"
               className={cn(
-                "w-76 h-9",
-                "rounded-lg border border-gray-300 bg-white",
+                "flex-1 h-[36px]",
+                "rounded-[8px] border border-gray-300 bg-white",
                 "px-5 py-2.5",
-                "text-Body_M_Light text-[#4C4C4C]",
-                "placeholder:text-[#4C4C4C]",
+                "text-Body_M_Light text-gray-400",
+                "placeholder:text-gray-400",
                 "focus:outline-none",
                 "disabled:opacity-60 disabled:cursor-not-allowed"
               )}
               aria-label="폴더명 입력"
             />
 
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={submitCreate}
-                disabled={isCreating || folderName.trim().length === 0}
-                className={cn(
-                  "h-9 rounded-lg bg-main-1",
-                  "px-5 py-2.5",
-                  "text-Caption_L_Light text-white",
-                  (isCreating || folderName.trim().length === 0) &&
-                    "opacity-60 cursor-not-allowed"
-                )}
-              >
-                추가
-              </button>
-              <button
-                type="button"
-                onClick={closeCreate}
-                disabled={isCreating}
-                className={cn(
-                  "h-9 rounded-lg bg-white border border-gray-300",
-                  "px-4",
-                  "inline-flex items-center justify-center",
-                  isCreating && "opacity-60 cursor-not-allowed"
-                )}
-                aria-label="폴더 추가 취소"
-              >
-                <CloseIcon className="size-6" ariaLabel="닫기" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={submitCreate}
+              disabled={isCreating || folderName.trim().length === 0}
+              className={cn(
+                "h-[36px] rounded-[8px] bg-main-1",
+                "px-5 py-2.5",
+                "text-Caption_L_Light text-white",
+                "inline-flex items-center justify-center",
+                (isCreating || folderName.trim().length === 0) &&
+                  "opacity-60 cursor-not-allowed"
+              )}
+            >
+              추가
+            </button>
+            <button
+              type="button"
+              onClick={closeCreate}
+              disabled={isCreating}
+              className={cn(
+                "h-[36px] rounded-[8px] bg-white border border-gray-300",
+                "px-[15px] py-2.5",
+                "inline-flex items-center justify-center",
+                isCreating && "opacity-60 cursor-not-allowed"
+              )}
+              aria-label="폴더 추가 취소"
+            >
+              <CloseIcon className="size-6" ariaLabel="닫기" />
+            </button>
           </div>
 
           {createErrorMessage && (
@@ -280,128 +369,232 @@ const SimulationPortfolioTab: React.FC<Props> = ({
             표시할 포트폴리오가 없어요.
           </div>
         ) : (
-          groups.map((g) => (
-            <div
-              key={g.id}
-              className="w-full rounded-lg border border-main-1 py-4"
-            >
-              <div className="w-full px-5 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <FolderMintIcon />
+          groups.map((g) => {
+            const isExpanded = expandedGroupIds.has(g.id);
+            const assets = portfolioAssets[g.id] ?? [];
+            const assetCount = assets.length;
+            const isLoadingAssets = loadingAssets.has(g.id);
+
+            return (
+              <div
+                key={g.id}
+                className={cn(
+                  "w-full rounded-lg border border-main-1",
+                  isExpanded ? "rounded-tl-lg rounded-tr-lg" : "rounded-lg",
+                  isExpanded && "bg-etc-light-mint"
+                )}
+              >
+                <div
+                  className={cn(
+                    "w-full px-5 flex items-center justify-between",
+                    isExpanded ? "py-4 border-b border-main-1" : "py-4",
+                    assetCount > 0 && editingGroupId !== g.id && "cursor-pointer"
+                  )}
+                  onClick={() => assetCount > 0 && toggleExpand(g.id)}
+                  role={assetCount > 0 && editingGroupId !== g.id ? "button" : undefined}
+                  tabIndex={assetCount > 0 && editingGroupId !== g.id ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (assetCount > 0 && editingGroupId !== g.id && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      toggleExpand(g.id);
+                    }
+                  }}
+                >
                   <div className="flex items-center gap-2.5">
-                    {editingGroupId === g.id ? (
-                      <input
-                        ref={editInputRef}
-                        value={editingName}
-                        disabled={isUpdating && updatingGroupId === g.id}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") submitEdit();
-                          if (e.key === "Escape") cancelEdit();
-                        }}
-                        className={cn(
-                          "h-9 w-[200px]",
-                          "rounded-lg border border-gray-300 bg-white",
-                          "px-4 py-2",
-                          "text-Body_M_Light text-black",
-                          "placeholder:text-gray-400",
-                          "focus:outline-none",
-                          "disabled:opacity-60 disabled:cursor-not-allowed"
-                        )}
-                        aria-label="폴더명 수정"
-                      />
-                    ) : (
-                      <p className="text-Subtitle_S_Regular text-black">
-                        {g.name}
+                    <FolderMintIcon />
+                    <div className="flex items-center gap-2.5">
+                      {editingGroupId === g.id ? (
+                        <input
+                          ref={editInputRef}
+                          value={editingName}
+                          disabled={isUpdating && updatingGroupId === g.id}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") submitEdit();
+                            if (e.key === "Escape") cancelEdit();
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className={cn(
+                            "h-9 w-[200px]",
+                            "rounded-lg border border-gray-300 bg-white",
+                            "px-4 py-2",
+                            "text-Body_M_Light text-black",
+                            "placeholder:text-gray-400",
+                            "focus:outline-none",
+                            "disabled:opacity-60 disabled:cursor-not-allowed"
+                          )}
+                          aria-label="폴더명 수정"
+                        />
+                      ) : (
+                        <p className="text-Subtitle_S_Regular text-black">
+                          {g.name}
+                        </p>
+                      )}
+                      <p className="text-Caption_L_Light text-black">
+                        ({assetCount})
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-5">
+                    {editingGroupId === g.id ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            submitEdit();
+                          }}
+                          disabled={
+                            (isUpdating && updatingGroupId === g.id) ||
+                            editingName.trim().length === 0
+                          }
+                          className={cn(
+                            "h-9 rounded-lg bg-main-1",
+                            "px-5 py-2.5",
+                            "text-Caption_L_Light text-white",
+                            ((isUpdating && updatingGroupId === g.id) ||
+                              editingName.trim().length === 0) &&
+                              "opacity-60 cursor-not-allowed"
+                          )}
+                        >
+                          저장
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cancelEdit();
+                          }}
+                          disabled={isUpdating && updatingGroupId === g.id}
+                          className={cn(
+                            "h-9 rounded-lg bg-white border border-gray-300",
+                            "px-4",
+                            "inline-flex items-center justify-center",
+                            (isUpdating && updatingGroupId === g.id) &&
+                              "opacity-60 cursor-not-allowed"
+                          )}
+                          aria-label="수정 취소"
+                        >
+                          <CloseIcon className="size-6" ariaLabel="닫기" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="p-0"
+                          aria-label="폴더 편집"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEdit(g);
+                          }}
+                          disabled={isCreating || isUpdating || isDeleting}
+                        >
+                          <PenIcon ariaLabel="편집" />
+                        </button>
+                        <button
+                          type="button"
+                          className="p-0"
+                          aria-label="폴더 삭제"
+                          disabled={
+                            isCreating ||
+                            isUpdating ||
+                            isDeleting ||
+                            (isDeleting && deletingGroupId === g.id)
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            submitDelete(g.id);
+                          }}
+                        >
+                          <TrashIcon ariaLabel="삭제" />
+                        </button>
+                      </>
                     )}
-                    {/* NOTE: 종목 개수 API 미연동 - 후속 API에서 교체 */}
-                    <p className="text-Caption_L_Light text-black">(2)</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-5">
-                  {editingGroupId === g.id ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={submitEdit}
-                        disabled={
-                          (isUpdating && updatingGroupId === g.id) ||
-                          editingName.trim().length === 0
-                        }
-                        className={cn(
-                          "h-9 rounded-lg bg-main-1",
-                          "px-5 py-2.5",
-                          "text-Caption_L_Light text-white",
-                          ((isUpdating && updatingGroupId === g.id) ||
-                            editingName.trim().length === 0) &&
-                            "opacity-60 cursor-not-allowed"
-                        )}
-                      >
-                        저장
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelEdit}
-                        disabled={isUpdating && updatingGroupId === g.id}
-                        className={cn(
-                          "h-9 rounded-lg bg-white border border-gray-300",
-                          "px-4",
-                          "inline-flex items-center justify-center",
-                          (isUpdating && updatingGroupId === g.id) &&
-                            "opacity-60 cursor-not-allowed"
-                        )}
-                        aria-label="수정 취소"
-                      >
-                        <CloseIcon className="size-6" ariaLabel="닫기" />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="p-0"
-                        aria-label="폴더 편집"
-                        onClick={() => startEdit(g)}
-                        disabled={isCreating || isUpdating || isDeleting}
-                      >
-                        <PenIcon ariaLabel="편집" />
-                      </button>
-                      <button
-                        type="button"
-                        className="p-0"
-                        aria-label="폴더 삭제"
-                        disabled={
-                          isCreating ||
-                          isUpdating ||
-                          isDeleting ||
-                          (isDeleting && deletingGroupId === g.id)
-                        }
-                        onClick={() => submitDelete(g.id)}
-                      >
-                        <TrashIcon ariaLabel="삭제" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
+                {/* 확장된 포트폴리오 내 종목 목록 */}
+                {isExpanded && (
+                  <div className="bg-etc-light-mint flex flex-col gap-1 px-5 py-4 rounded-bl-lg rounded-br-lg">
+                    {isLoadingAssets ? (
+                      <div className="text-Caption_L_Light text-gray-400 py-2">
+                        로딩 중...
+                      </div>
+                    ) : assets.length === 0 ? (
+                      <div className="text-Caption_L_Light text-gray-400 py-2">
+                        종목이 없습니다.
+                      </div>
+                    ) : (
+                      assets.map((asset) => {
+                        // 임시로 등락률 계산 (실제로는 API에서 받아와야 함)
+                        // 현재는 더미 데이터로 처리
+                        const changeRate: number = 0; // TODO: 실제 등락률 API 연동 필요
+                        const isPositive = changeRate >= 0;
+                        const changeRateText = changeRate === 0 ? "0.00%" : `${isPositive ? "+" : ""}${changeRate.toFixed(2)}%`;
+                        const totalPriceNum = typeof asset.totalPrice === "number" ? asset.totalPrice : Number(asset.totalPrice);
+                        const price = asset.currency === "USD" 
+                          ? `$${totalPriceNum.toFixed(2)}` 
+                          : `₩${totalPriceNum.toLocaleString()}`;
 
-              {editingGroupId === g.id &&
-                updateErrorMessage &&
-                updatingGroupId === g.id && (
-                  <p className="text-Caption_L_Light text-etc-red px-5 pt-2">
-                    {updateErrorMessage}
-                  </p>
+                        return (
+                          <div
+                            key={asset.id}
+                            className="border border-sub-gray rounded-lg h-[49px] flex items-center justify-between px-5 py-2.5"
+                          >
+                            <div className="flex flex-col items-start w-[132px]">
+                              <div className="flex items-center gap-4">
+                                <p className="text-Subtitle_S_Regular text-sub-blue">
+                                  {asset.name}
+                                </p>
+                                <p className="text-Caption_M_Light text-black">
+                                  {asset.stockId}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1 items-end w-[105px]">
+                              <p className="text-Body_S_Light text-gray-400 text-right">
+                                {price}
+                              </p>
+                              <div className="flex items-center gap-1">
+                                <ChangeRateIcon
+                                  className="h-[26px] w-6"
+                                  color={isPositive ? "#FF0000" : "#001AFF"}
+                                  direction={isPositive ? "up" : "down"}
+                                  ariaLabel="등락률"
+                                />
+                                <p className={cn(
+                                  "text-Body_S_Light text-right w-12",
+                                  isPositive ? "text-etc-red" : "text-etc-blue"
+                                )}>
+                                  {changeRateText}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 )}
 
-              {deleteErrorMessage && deletingGroupId === g.id && (
-                <p className="text-Caption_L_Light text-etc-red px-5 pt-2">
-                  {deleteErrorMessage}
-                </p>
-              )}
-            </div>
-          ))
+                {editingGroupId === g.id &&
+                  updateErrorMessage &&
+                  updatingGroupId === g.id && (
+                    <p className="text-Caption_L_Light text-etc-red px-5 pt-2">
+                      {updateErrorMessage}
+                    </p>
+                  )}
+
+                {deleteErrorMessage && deletingGroupId === g.id && (
+                  <p className="text-Caption_L_Light text-etc-red px-5 pt-2">
+                    {deleteErrorMessage}
+                  </p>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
     </div>
