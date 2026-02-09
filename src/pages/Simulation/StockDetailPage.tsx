@@ -7,7 +7,7 @@ import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { cn } from "@/utils/cn";
-import { fetchCandles, fetchClosingPrices, toKstDateTime, type StockClosingPrice, type CandleWithVolume } from "@/api/market";
+import { fetchCandles, fetchClosingPrices, toKstDateTime, type CandleWithVolume } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 import { memberApi } from "@/api/member";
@@ -48,6 +48,27 @@ function generateOrderBook(currentPrice: number) {
 
   return { askOrders, bidOrders };
 }
+
+const StockDetailSkeleton = () => {
+  return (
+    <div className="flex gap-5 items-center px-[30px] py-5 rounded-lg border border-sub-gray animate-pulse">
+      <div className="w-5 h-[19px] bg-gray-200 rounded" />
+      <div className="flex flex-1 items-center justify-between min-w-0">
+        <div className="flex flex-col gap-[15px] items-start shrink-0 w-[254px]">
+          <div className="flex gap-4 items-center shrink-0 w-[254px]">
+            <div className="h-5 w-24 bg-gray-200 rounded" />
+            <div className="h-4 w-14 bg-gray-100 rounded" />
+          </div>
+          <div className="h-4 w-24 bg-gray-100 rounded" />
+        </div>
+        <div className="flex flex-col gap-[10px] items-end shrink-0 w-[155px]">
+          <div className="h-4 w-20 bg-gray-200 rounded" />
+          <div className="h-6 w-20 bg-gray-200 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function parseKstDateTime(dateTime: string): number {
   if (!dateTime) return NaN;
@@ -124,13 +145,17 @@ const StockDetailPage = () => {
 
   const [chartData, setChartData] = useState<CandleWithVolume[]>([]);
   const [isChartLoading, setIsChartLoading] = useState(false);
-  const [stockInfo, setStockInfo] = useState<StockClosingPrice | null>(null);
   const allChartDataRef = useRef<CandleWithVolume[]>([]);
 
   const { subscribe, unsubscribe } = useMarketStore();
   const stockIdNum = stockId ? Number(stockId) : 0;
   const quote = useQuote(stockIdNum);
   const { isMarketOpen } = useMarketStatus();
+  const [closingPrice, setClosingPrice] = useState<{
+    close: number;
+    prevDayChangePct: number;
+    volume: number;
+  } | null>(null);
 
   const chartPeriods: ChartPeriod[] = ["분봉", "일봉", "주봉", "월봉", "년봉"];
 
@@ -143,26 +168,43 @@ const StockDetailPage = () => {
     };
   }, [stockIdNum, isMarketOpen, subscribe, unsubscribe]);
 
-  // Fetch stock info (초기 데이터)
+  // 장 열림: 실시간 WebSocket 데이터 사용
   useEffect(() => {
-    if (!stockId) return;
-    const loadStockInfo = async () => {
-      try {
-        const [info] = await fetchClosingPrices([Number(stockId)]);
-        if (info) {
-          setStockInfo(info);
-        }
-      } catch (error) {
-        console.error("Failed to fetch stock info:", error);
-      }
-    };
-    loadStockInfo();
-  }, [stockId]);
+    if (!stockIdNum || isMarketOpen) {
+      setClosingPrice(null);
+      return;
+    }
 
-  // 장 열림: 실시간 WebSocket 데이터 우선, 장 닫힘: 종가 API 데이터만 사용
-  const price = isMarketOpen ? (quote?.close ?? stockInfo?.close) : stockInfo?.close;
-  const changePct = isMarketOpen ? (quote?.prevDayChangePct ?? stockInfo?.prevDayChangePct) : stockInfo?.prevDayChangePct;
-  const volume = isMarketOpen ? (quote?.volume ?? stockInfo?.volume) : stockInfo?.volume;
+    let cancelled = false;
+    fetchClosingPrices([stockIdNum])
+      .then((prices) => {
+        if (cancelled) return;
+        const latest = prices[0];
+        if (!latest) {
+          setClosingPrice(null);
+          return;
+        }
+        setClosingPrice({
+          close: latest.close,
+          prevDayChangePct: latest.prevDayChangePct,
+          volume: latest.volume,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setClosingPrice(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stockIdNum, isMarketOpen]);
+
+  const basePriceData = isMarketOpen ? quote : closingPrice;
+  const price = basePriceData?.close;
+  const changePct = basePriceData?.prevDayChangePct;
+  const volume = basePriceData?.volume;
 
   // 장중 분봉 차트는 WebSocket 현재가를 반영해 마지막 캔들을 실시간 업데이트
   useEffect(() => {
@@ -243,7 +285,7 @@ const StockDetailPage = () => {
   );
 
   const stockData = {
-    stockName: stockInfo?.stockName ?? navigationState?.stockName ?? "로딩 중...",
+    stockName: navigationState?.stockName ?? "로딩 중...",
     stockCode: navigationState?.stockCode ?? (stockId || "종목 코드"),
     tradingVolume: displayVolume,
     price: displayPrice,
@@ -323,15 +365,19 @@ const StockDetailPage = () => {
 
           {/* 주식 정보 카드 */}
           <div className="mb-6">
-            <StockListItem
-              stockName={stockData.stockName}
-              stockCode={stockData.stockCode}
-              tradingVolume={stockData.tradingVolume}
-              price={stockData.price}
-              changeRate={stockData.changeRate}
-              isFavorited={isFavorited}
-              onFavoriteToggle={handleFavoriteToggle}
-            />
+            {isMarketOpen || closingPrice ? (
+              <StockListItem
+                stockName={stockData.stockName}
+                stockCode={stockData.stockCode}
+                tradingVolume={stockData.tradingVolume}
+                price={stockData.price}
+                changeRate={stockData.changeRate}
+                isFavorited={isFavorited}
+                onFavoriteToggle={handleFavoriteToggle}
+              />
+            ) : (
+              <StockDetailSkeleton />
+            )}
           </div>
 
           {/* 차트 기간 선택 탭 */}

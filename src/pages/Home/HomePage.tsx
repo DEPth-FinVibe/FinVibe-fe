@@ -230,7 +230,7 @@ const HomePage: React.FC = () => {
     () => (categories ?? []).filter((c) => !isExcludedThemeCategory(c.categoryName)),
     [categories],
   );
-  const categoryStocks = useCategoryStocks(selectedCategoryId);
+  const categoryStocks = useCategoryStocks(selectedCategoryId, isMarketOpen);
   const categoryChangeRate = useCategoryChangeRate(selectedCategoryId);
 
   // 첫 카테고리 자동 선택
