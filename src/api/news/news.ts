@@ -117,7 +117,7 @@ export const newsApi = {
   /** 뉴스 목록 조회: GET /news */
   getNewsList: async (sort: NewsSortType = "LATEST"): Promise<NewsListItem[]> => {
     const res = await insightApiClient.get("/news", {
-      params: { sort },
+      params: { sortType: sort },
     });
     return unwrapArray<NewsListItem>(res.data);
   },
