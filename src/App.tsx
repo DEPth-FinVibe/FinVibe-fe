@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "@/pages/Login/LoginPage";
 import SignupPage from "@/pages/Signup/SignupPage";
@@ -32,9 +32,10 @@ const StockDetailPage = lazy(() => import("@/pages/Simulation/StockDetailPage"))
 
 // 앱 라우팅 설정
 function App() {
-  const { tokens, user, setUser } = useAuthStore();
+  const { tokens, setUser } = useAuthStore();
   const { connect, disconnect } = useMarketStore();
   const { isMarketOpen } = useMarketStatus();
+  const didSyncMeRef = useRef(false);
 
   // 장 열림 + 로그인 시 웹소켓 연결, 장 닫힘 or 로그아웃 시 연결 해제
   useEffect(() => {
@@ -45,15 +46,26 @@ function App() {
     }
   }, [tokens, isMarketOpen, connect, disconnect]);
 
-  // 로그인 상태에서 유저 정보가 없으면 조회
+  // 홈 첫 접근 시점(로그인 세션당 1회)에 내 정보 동기화
   useEffect(() => {
-    if (!tokens || user) return;
+    if (!tokens) {
+      didSyncMeRef.current = false;
+      return;
+    }
+
+    if (didSyncMeRef.current) return;
+    didSyncMeRef.current = true;
+
     let cancelled = false;
     memberApi.getMe().then((data) => {
       if (!cancelled) setUser(data);
-    }).catch(() => { /* 실패 시 무시 */ });
+    }).catch(() => {
+      if (!cancelled) {
+        didSyncMeRef.current = false;
+      }
+    });
     return () => { cancelled = true; };
-  }, [tokens, user, setUser]);
+  }, [tokens, setUser]);
 
   return (
     <BrowserRouter>
