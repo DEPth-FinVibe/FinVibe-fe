@@ -11,7 +11,7 @@ type FolderMeta = {
   id: number;
   label: string;
   iconCode: string;
-  tone: "red" | "blue" | "gray";
+  tone: "red" | "blue" | "purple" | "green" | "orange" | "pink" | "yellow" | "cyan";
 };
 
 type StockRow = {
@@ -20,6 +20,7 @@ type StockRow = {
   qty: string;
   price: string;
   folderId: number | null;
+  stockId: number;
 };
 
 const formatMoney = (value: number, currency: string) => {
@@ -37,40 +38,54 @@ const toStockRow = (asset: PortfolioAsset, folderId: number): StockRow => {
     // NOTE: 응답에는 현재가가 없어서, 우선 총 평가금액(totalPrice)을 표시 (디자인은 그대로)
     price: formatMoney(asset.totalPrice, asset.currency),
     folderId,
+    stockId: asset.stockId,
   };
 };
 
-const getGroupTone = (iconCode: string): FolderMeta["tone"] => {
-  switch (iconCode) {
-    case "ICON_02":
-      return "blue";
-    case "ICON_03":
-      return "gray";
-    case "ICON_01":
-    default:
-      return "red";
-  }
+// 포트폴리오 추가 순서에 따라 색상 결정
+const getToneByIndex = (index: number): FolderMeta["tone"] => {
+  const tones: FolderMeta["tone"][] = [
+    "red",
+    "blue",
+    "purple",
+    "green",
+    "orange",
+    "pink",
+    "yellow",
+    "cyan",
+  ];
+  return tones[index % tones.length];
 };
 
 const FolderChip: React.FC<{ folder: FolderMeta }> = ({ folder }) => {
-  const styles =
-    folder.tone === "red"
-      ? {
-          wrap: "bg-etc-light-red text-etc-red",
-        }
-      : folder.tone === "blue"
-        ? {
-            wrap: "bg-etc-light-blue text-etc-blue",
-          }
-        : {
-            wrap: "bg-white border border-gray-300 text-[#4C4C4C]",
-          };
+  const getStyles = (tone: FolderMeta["tone"]) => {
+    switch (tone) {
+      case "red":
+        return "bg-etc-light-red text-etc-red";
+      case "blue":
+        return "bg-etc-light-blue text-etc-blue";
+      case "purple":
+        return "bg-purple-100 text-purple-600";
+      case "green":
+        return "bg-green-100 text-green-600";
+      case "orange":
+        return "bg-orange-100 text-orange-600";
+      case "pink":
+        return "bg-pink-100 text-pink-600";
+      case "yellow":
+        return "bg-yellow-100 text-yellow-600";
+      case "cyan":
+        return "bg-cyan-100 text-cyan-600";
+      default:
+        return "bg-white border border-gray-300 text-[#4C4C4C]";
+    }
+  };
 
   return (
     <span
       className={cn(
         "inline-flex items-center justify-center gap-2.5 px-5 py-2.5 rounded-full",
-        styles.wrap
+        getStyles(folder.tone)
       )}
     >
       <span className="text-Subtitle_S_Regular">{folder.label}</span>
@@ -173,11 +188,11 @@ const MyPortfolioManagementPage: React.FC = () => {
   // 제한 없이 그대로 사용 (비어있으면 빈 상태 유지)
   const groupsForUi = portfolioGroups ?? [];
 
-  const folderOptions: FolderMeta[] = groupsForUi.map((g) => ({
+  const folderOptions: FolderMeta[] = groupsForUi.map((g, index) => ({
     id: g.id,
     label: g.name,
     iconCode: g.iconCode,
-    tone: getGroupTone(g.iconCode),
+    tone: getToneByIndex(index),
   }));
 
   const folderById = useMemo(() => {
@@ -348,7 +363,7 @@ const MyPortfolioManagementPage: React.FC = () => {
                   tab === "folder" ? "border-b-2 border-main-1 text-black" : "text-black"
                 )}
               >
-                폴더별 보기
+                포트폴리오별 보기
               </button>
               <button
                 type="button"
@@ -430,7 +445,19 @@ const MyPortfolioManagementPage: React.FC = () => {
                           }}
                         />
                       </div>
-                      <button type="button" className="bg-main-1 text-white rounded-lg px-5 py-3 text-[14px] leading-5">
+                      <button
+                        type="button"
+                        className="bg-main-1 text-white rounded-lg px-5 py-3 text-[14px] leading-5"
+                        onClick={() => {
+                          // 해당 종목의 투자 시뮬레이터 화면으로 이동
+                          navigate(`/simulation/${row.stockId}`, {
+                            state: {
+                              stockName: row.name,
+                              stockCode: String(row.stockId),
+                            },
+                          });
+                        }}
+                      >
                         매수 / 매도
                       </button>
                     </div>

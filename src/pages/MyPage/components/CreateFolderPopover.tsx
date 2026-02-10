@@ -77,7 +77,7 @@ const CreateFolderPopover: React.FC<Props> = ({
         ref={inputRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="새 폴더명...."
+        placeholder="새 포트폴리오명...."
         disabled={isSubmitting}
         className={cn(
           "flex-1 bg-transparent",

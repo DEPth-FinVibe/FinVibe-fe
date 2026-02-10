@@ -7,7 +7,11 @@ export function formatPriceWithSymbol(price: number): string {
 }
 
 export function formatChangeRate(rate: number): string {
-  const sign = rate >= 0 ? "+" : "";
+  // 0.00%일 때는 부호 없이 표시
+  if (rate === 0 || Math.abs(rate) < 0.01) {
+    return "0.00%";
+  }
+  const sign = rate > 0 ? "+" : "";
   return `${sign}${rate.toFixed(2)}%`;
 }
 
