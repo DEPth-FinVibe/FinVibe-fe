@@ -135,7 +135,12 @@ const MyPage: React.FC = () => {
             </div>
 
             {/* 달성 챌린지 (Figma: 2123:34002) */}
-            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap">
+            <button
+              type="button"
+              onClick={() => navigate("/mypage/challenge-history")}
+              className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap hover:bg-gray-50 transition-colors cursor-pointer text-left"
+              aria-label="달성 챌린지 상세 보기"
+            >
               <p className="text-[18px] leading-[17px] font-normal text-black">달성 챌린지</p>
               <div className="flex flex-col gap-2.5 w-full">
                 <p className="text-Title_L_Medium text-main-1">
@@ -145,7 +150,7 @@ const MyPage: React.FC = () => {
                   다음 배지까지 {nextBadgeCount}개
                 </p>
               </div>
-            </div>
+            </button>
 
             {/* 커뮤니티 랭킹 (Figma: 2123:34007) */}
             <button

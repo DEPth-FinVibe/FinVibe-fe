@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { CourseItem, Button } from "@/components";
 import { AILearningInsight } from "@/components/AILearningInsight";
 import { LearningStats } from "@/components/LearningStats";
-import { BadgeCard } from "@/components/BadgeCard";
 import { AICourseCreateModal } from "@/components/AICourseCreateModal";
 import { LessonStudyModal } from "@/components/LessonStudyModal";
+import { cn } from "@/utils/cn";
+import {
+  BADGE_CONFIG,
+  ALL_BADGE_TYPES,
+} from "@/components/Badge/badgeConfig";
 import type { CourseLevel } from "@/components/Progress/CourseItem";
 import {
   studyApi,
@@ -13,6 +17,10 @@ import {
   type LessonDetailResponse,
   type MyStudyMetricResponse,
 } from "@/api/study";
+import {
+  gamificationApi,
+  type BadgeInfo,
+} from "@/api/gamification";
 
 const DIFFICULTY_MAP: Record<CourseDifficulty, CourseLevel> = {
   BEGINNER: "초급",
@@ -55,6 +63,9 @@ const AILearningPage: React.FC = () => {
   const [studyMetric, setStudyMetric] = useState<MyStudyMetricResponse | null>(null);
   const [todayAiRecommend, setTodayAiRecommend] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // 획득 배지
+  const [badges, setBadges] = useState<BadgeInfo[]>([]);
 
   // 레슨 학습 모달 상태
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
@@ -66,10 +77,11 @@ const AILearningPage: React.FC = () => {
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    const [coursesResult, metricResult, recommendResult] = await Promise.allSettled([
+    const [coursesResult, metricResult, recommendResult, badgesResult] = await Promise.allSettled([
       studyApi.getMyCourses(),
       studyApi.getMyStudyMetric(),
       studyApi.getTodayAiStudyRecommend(),
+      gamificationApi.getMyBadges(),
     ]);
 
     if (coursesResult.status === "fulfilled") {
@@ -85,6 +97,10 @@ const AILearningPage: React.FC = () => {
       setTodayAiRecommend(content || null);
     } else {
       setTodayAiRecommend(null);
+    }
+
+    if (badgesResult.status === "fulfilled") {
+      setBadges(badgesResult.value);
     }
 
     setLoading(false);
@@ -192,6 +208,28 @@ const AILearningPage: React.FC = () => {
     0
   );
 
+  // 모든 배지 목록 (획득한 것과 미획득한 것 모두 포함, 중복 제거)
+  const allBadges = useMemo(() => {
+    // 획득한 배지 맵 생성 (중복 제거)
+    const acquiredBadgesMap = new Map<string, BadgeInfo>();
+    badges.forEach((badge) => {
+      if (!acquiredBadgesMap.has(badge.badge)) {
+        acquiredBadgesMap.set(badge.badge, badge);
+      }
+    });
+
+    // 모든 배지 타입에 대해 획득 여부 확인
+    return ALL_BADGE_TYPES.map((badgeType) => {
+      const acquiredBadge = acquiredBadgesMap.get(badgeType);
+      return {
+        badgeType,
+        isAcquired: !!acquiredBadge,
+        displayName: acquiredBadge?.displayName || BADGE_CONFIG[badgeType].displayName,
+        acquiredAt: acquiredBadge?.acquiredAt,
+      };
+    });
+  }, [badges]);
+
   return (
     <div className="bg-gray-100 min-h-screen">
       {/* 메인 컨텐츠 영역 */}
@@ -260,13 +298,28 @@ const AILearningPage: React.FC = () => {
             {/* 획득 배지 */}
             <div className="bg-white rounded-lg p-5 flex flex-col gap-5">
               <h2 className="text-Subtitle_L_Medium text-black">획득 배지</h2>
-              <div className="flex flex-wrap gap-x-2.5 gap-y-3.5 justify-center">
-                <BadgeCard type="first-lecture" />
-                <BadgeCard type="beginner-master" />
-                <BadgeCard type="practice-learning" />
-                <BadgeCard type="locked" />
-                <BadgeCard type="locked" />
-                <BadgeCard type="locked" />
+              <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5 justify-items-center">
+                {allBadges.map((badge) => {
+                  const config = BADGE_CONFIG[badge.badgeType];
+                  const isAcquired = badge.isAcquired;
+                  
+                  return (
+                    <div
+                      key={badge.badgeType}
+                      className={cn(
+                        "bg-white rounded-lg p-4 flex flex-col gap-2 items-center justify-center h-[87px] w-[110px]",
+                        isAcquired ? config.bg : "bg-gray-100"
+                      )}
+                    >
+                      <div className="flex items-center justify-center">
+                        {config.icon(isAcquired)}
+                      </div>
+                      <p className="text-Subtitle_S_Regular text-[#4C4C4C] text-center whitespace-pre-wrap leading-tight">
+                        {isAcquired ? badge.displayName : "미획득"}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
