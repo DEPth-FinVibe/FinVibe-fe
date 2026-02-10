@@ -160,7 +160,12 @@ const MyPage: React.FC = () => {
             </button>
 
             {/* 학습 진행률 (Figma: 2123:33997) */}
-            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5">
+            <button
+              type="button"
+              onClick={() => navigate("/ai-learning")}
+              className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap hover:bg-gray-50 transition-colors cursor-pointer text-left"
+              aria-label="AI 투자 학습 페이지로 이동"
+            >
               <p className="text-[18px] leading-[17px] font-normal text-black">학습 진행률</p>
               <div className="flex flex-col gap-[25px] w-full">
                 <p className="text-Title_L_Medium text-main-1">{learningProgress}%</p>
@@ -173,7 +178,7 @@ const MyPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
 
             {/* 달성 챌린지 (Figma: 2123:34002) */}
             <button
