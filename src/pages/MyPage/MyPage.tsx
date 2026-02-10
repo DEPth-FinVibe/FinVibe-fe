@@ -3,23 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { TotalAssets, MyPortfolio } from "@/components";
 import SettingsIcon from "@/assets/svgs/SettingsIcon";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
-import ShieldIcon from "@/assets/svgs/ShieldIcon";
 import BookIcon from "@/assets/svgs/BookIcon";
 import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
-import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
 import { walletApi } from "@/api/wallet";
 import { assetPortfolioApi, type PortfolioGroup, type AssetAllocationResponse } from "@/api/asset";
-import GraphIcon from "@/assets/svgs/GraphIcon";
+import { gamificationApi } from "@/api/gamification";
+import { ALL_BADGE_TYPES } from "@/components/Badge/badgeConfig";
 import PortfolioPerformanceWrapper from "./components/PortfolioPerformanceWrapper";
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
   // TODO: API 연동 시 교체
   const learningProgress = 65; // %
-  const achievedChallenges = 12;
-  const totalChallenges = 20;
-  const nextBadgeCount = 2;
   const communityRank = 247;
   const communityTopPercent = 15;
   const communityXp = 11_230;
@@ -31,6 +27,12 @@ const MyPage: React.FC = () => {
   // - null: 로딩/미시도
   // - []: 실패 또는 데이터 없음 (요청: 더미 대신 비어있게)
   const [portfolioGroups, setPortfolioGroups] = useState<PortfolioGroup[] | null>(null);
+
+  // 챌린지 데이터
+  const [challenges, setChallenges] = useState<number[] | null>(null); // [달성완료 수, 진행중+달성완료 수]
+  
+  // 미획득 배지 수
+  const [unacquiredBadgeCount, setUnacquiredBadgeCount] = useState<number | null>(null);
   
   // API 데이터 또는 기본값
   const totalAssets = allocation?.totalAmount ?? (cash !== null ? (cash + (allocation?.stockAmount ?? 0)) : null);
@@ -77,20 +79,59 @@ const MyPage: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const myChallenges = await gamificationApi.getMyChallenges();
+        if (!alive) return;
+        
+        // 달성완료 수
+        const completedCount = myChallenges.filter((c) => c.achieved).length;
+        // 진행중+달성완료 수 (전체 챌린지 수)
+        const totalActiveCount = myChallenges.length;
+        
+        setChallenges([completedCount, totalActiveCount]);
+      } catch {
+        // 실패 시 0으로 설정
+        if (!alive) return;
+        setChallenges([0, 0]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const myBadges = await gamificationApi.getMyBadges();
+        if (!alive) return;
+        
+        // 획득한 배지 타입 Set 생성
+        const acquiredBadgeTypes = new Set(myBadges.map((badge) => badge.badge));
+        
+        // 미획득한 배지 수 계산
+        const unacquiredCount = ALL_BADGE_TYPES.filter(
+          (badgeType) => !acquiredBadgeTypes.has(badgeType)
+        ).length;
+        
+        setUnacquiredBadgeCount(unacquiredCount);
+      } catch {
+        // 실패 시 전체 배지 수로 설정 (모두 미획득으로 간주)
+        if (!alive) return;
+        setUnacquiredBadgeCount(ALL_BADGE_TYPES.length);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // 제한 없이 그대로 노출
   const myPortfolioGroups = portfolioGroups ?? [];
-
-  const getPortfolioIcon = (iconCode: string) => {
-    switch (iconCode) {
-      case "ICON_02":
-        return ShieldIcon;
-      case "ICON_03":
-        return GraphIcon;
-      case "ICON_01":
-      default:
-        return ChangeRateIcon;
-    }
-  };
 
   // NOTE: 그룹 조회 API에는 수익률/차트 데이터가 없어서 임시로 0/undefined 처리
 
@@ -135,17 +176,22 @@ const MyPage: React.FC = () => {
             </div>
 
             {/* 달성 챌린지 (Figma: 2123:34002) */}
-            <div className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap">
+            <button
+              type="button"
+              onClick={() => navigate("/mypage/challenge-history")}
+              className="bg-white border border-gray-300 rounded-lg w-80 h-38 px-7.5 py-5 flex flex-col items-start gap-5 whitespace-pre-wrap hover:bg-gray-50 transition-colors cursor-pointer text-left"
+              aria-label="달성 챌린지 상세 보기"
+            >
               <p className="text-[18px] leading-[17px] font-normal text-black">달성 챌린지</p>
               <div className="flex flex-col gap-2.5 w-full">
                 <p className="text-Title_L_Medium text-main-1">
-                  {achievedChallenges}/{totalChallenges}
+                  {challenges ? `${challenges[0]}/${challenges[1]}` : "0/0"}
                 </p>
                 <p className="text-[16px] leading-[17px] font-normal text-[#747474]">
-                  다음 배지까지 {nextBadgeCount}개
+                  {unacquiredBadgeCount ?? 0}개 뱃지 미획득
                 </p>
               </div>
-            </div>
+            </button>
 
             {/* 커뮤니티 랭킹 (Figma: 2123:34007) */}
             <button
@@ -218,8 +264,6 @@ const MyPage: React.FC = () => {
                     key={g.id}
                     title={g.name}
                     changeRate={0}
-                    icon={getPortfolioIcon(g.iconCode)}
-                    iconClassName="text-sub-blue"
                     chartData={undefined}
                   />
                 ))}

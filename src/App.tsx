@@ -20,6 +20,7 @@ import InquiryPage from "@/pages/Inquiry/InquiryPage";
 import FAQPage from "@/pages/FAQ/FAQPage";
 import NoticePage from "@/pages/Notice/NoticePage";
 import NoticeDetailPage from "@/pages/Notice/NoticeDetailPage";
+import MyChallengeHistoryPage from "@/pages/MyChallengeHistory/MyChallengeHistoryPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMarketStore } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
@@ -82,6 +83,7 @@ function App() {
           <Route path="/news/:newsId" element={<NewsDetailPage />} />
           <Route path="/challenge" element={<ChallengePage />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage/challenge-history" element={<MyChallengeHistoryPage />} />
           <Route path="/mypage/settings" element={<MyPageSettingsPage />} />
           <Route path="/mypage/terms" element={<TermsPage />} />
           <Route path="/mypage/privacy" element={<PrivacyPolicyPage />} />

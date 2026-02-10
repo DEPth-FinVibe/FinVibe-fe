@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import TargetIcon from "@/assets/svgs/TargetIcon";
-import ShieldIcon from "@/assets/svgs/ShieldIcon";
-import GraphIcon from "@/assets/svgs/GraphIcon";
-import CloseIcon from "@/assets/svgs/CloseIcon";
 import FolderReturnComparisonSection from "@/pages/MyPage/components/FolderReturnComparisonSection";
 import CreateFolderPopover from "@/pages/MyPage/components/CreateFolderPopover";
 import MoveToFolderPopover from "@/pages/MyPage/components/MoveToFolderPopover";
@@ -61,22 +57,14 @@ const FolderChip: React.FC<{ folder: FolderMeta }> = ({ folder }) => {
     folder.tone === "red"
       ? {
           wrap: "bg-etc-light-red text-etc-red",
-          icon: "text-etc-red",
-          Icon: GraphIcon,
         }
       : folder.tone === "blue"
         ? {
             wrap: "bg-etc-light-blue text-etc-blue",
-            icon: "text-etc-blue",
-            Icon: ShieldIcon,
           }
         : {
             wrap: "bg-white border border-gray-300 text-[#4C4C4C]",
-            icon: "text-[#4C4C4C]",
-            Icon: CloseIcon,
           };
-
-  const IconComp = styles.Icon as React.ComponentType<{ className?: string; color?: string; ariaLabel?: string }>;
 
   return (
     <span
@@ -85,13 +73,6 @@ const FolderChip: React.FC<{ folder: FolderMeta }> = ({ folder }) => {
         styles.wrap
       )}
     >
-      {folder.tone === "blue" ? (
-        <ShieldIcon className={cn("w-6 h-[26px] shrink-0", styles.icon)} ariaLabel={folder.label} />
-      ) : folder.tone === "gray" ? (
-        <CloseIcon className={cn("size-6 shrink-0", styles.icon)} ariaLabel={folder.label} />
-      ) : (
-        <IconComp className={cn("w-6 h-[26px] shrink-0", styles.icon)} ariaLabel={folder.label} />
-      )}
       <span className="text-Subtitle_S_Regular">{folder.label}</span>
     </span>
   );
@@ -243,7 +224,7 @@ const MyPortfolioManagementPage: React.FC = () => {
           {/* 1) 폴더별 수익률 비교 */}
           <section className="bg-white border border-gray-300 rounded-lg w-full px-10 py-8 flex flex-col gap-8">
             <div className="w-full py-2.5">
-              <h2 className="text-Title_L_Medium text-black">폴더별 수익률 비교</h2>
+              <h2 className="text-Title_L_Medium text-black">포트폴리오별 수익률 비교</h2>
             </div>
 
             {/* 차트(바) + 요약 테이블 */}
@@ -254,7 +235,7 @@ const MyPortfolioManagementPage: React.FC = () => {
               {/* 요약 테이블 (폴더명/총 평가금/수익률/실현 수익) */}
               <div className="w-full">
                 <div className="grid grid-cols-[1.5fr_1fr_0.7fr_0.7fr] gap-6 items-center px-5 py-5 border-b border-gray-300 text-Subtitle_L_Medium text-black">
-                  <div>폴더명</div>
+                  <div>포트폴리오명</div>
                   <div>총 평가금</div>
                   <div>수익률</div>
                   <div className="text-right">실현 수익</div>
@@ -262,7 +243,7 @@ const MyPortfolioManagementPage: React.FC = () => {
 
                 {folderOptions.length === 0 ? (
                   <div className="px-5 py-8 text-Subtitle_M_Regular text-gray-400">
-                    표시할 폴더가 없어요.
+                    표시할 포트폴리오가 없어요.
                   </div>
                 ) : (
                   folderOptions.map((f) => {
@@ -273,13 +254,6 @@ const MyPortfolioManagementPage: React.FC = () => {
                         className="grid grid-cols-[1.5fr_1fr_0.7fr_0.7fr] gap-6 items-center px-5 py-5 border-b border-gray-100 last:border-b-0"
                       >
                         <div className="flex items-center gap-2.5">
-                          {f.tone === "blue" ? (
-                            <ShieldIcon className="w-6 h-[26px] text-sub-blue" ariaLabel={f.label} />
-                          ) : f.tone === "gray" ? (
-                            <CloseIcon className="size-6 text-[#4C4C4C]" ariaLabel={f.label} />
-                          ) : (
-                            <TargetIcon className="size-6 text-black" />
-                          )}
                           <p className="text-Subtitle_L_Medium text-black">{f.label}</p>
                         </div>
 
@@ -329,7 +303,7 @@ const MyPortfolioManagementPage: React.FC = () => {
                 <span className="text-white text-Subtitle_L_Regular leading-none" aria-hidden="true">
                   +
                 </span>
-                새 폴더 만들기
+                새 포트폴리오 만들기
               </button>
 
               <CreateFolderPopover
@@ -356,7 +330,7 @@ const MyPortfolioManagementPage: React.FC = () => {
                     setNewFolderName("");
                     setIsCreateFolderOpen(false);
                   } catch {
-                    setCreateFolderError("폴더 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+                    setCreateFolderError("포트폴리오 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
                   } finally {
                     setIsCreatingFolder(false);
                   }
@@ -402,7 +376,7 @@ const MyPortfolioManagementPage: React.FC = () => {
                   <div className="px-5">종목명</div>
                   <div className="px-5">보유수량</div>
                   <div className="text-center">현재가</div>
-                  {showFolderColumn && <div className="px-5">현재 폴더</div>}
+                  {showFolderColumn && <div className="px-5">현재 포트폴리오</div>}
                   <div className="px-5">관리</div>
                 </div>
 

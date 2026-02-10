@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { CourseItem, Button } from "@/components";
 import { AILearningInsight } from "@/components/AILearningInsight";
 import { LearningStats } from "@/components/LearningStats";
-import { BadgeCard } from "@/components/BadgeCard";
 import { AICourseCreateModal } from "@/components/AICourseCreateModal";
 import { LessonStudyModal } from "@/components/LessonStudyModal";
+import { cn } from "@/utils/cn";
+import {
+  BADGE_CONFIG,
+  ALL_BADGE_TYPES,
+} from "@/components/Badge/badgeConfig";
 import type { CourseLevel } from "@/components/Progress/CourseItem";
 import {
   studyApi,
@@ -199,6 +203,28 @@ const AILearningPage: React.FC = () => {
     0
   );
 
+  // 모든 배지 목록 (획득한 것과 미획득한 것 모두 포함, 중복 제거)
+  const allBadges = useMemo(() => {
+    // 획득한 배지 맵 생성 (중복 제거)
+    const acquiredBadgesMap = new Map<string, BadgeInfo>();
+    badges.forEach((badge) => {
+      if (!acquiredBadgesMap.has(badge.badge)) {
+        acquiredBadgesMap.set(badge.badge, badge);
+      }
+    });
+
+    // 모든 배지 타입에 대해 획득 여부 확인
+    return ALL_BADGE_TYPES.map((badgeType) => {
+      const acquiredBadge = acquiredBadgesMap.get(badgeType);
+      return {
+        badgeType,
+        isAcquired: !!acquiredBadge,
+        displayName: acquiredBadge?.displayName || BADGE_CONFIG[badgeType].displayName,
+        acquiredAt: acquiredBadge?.acquiredAt,
+      };
+    });
+  }, [badges]);
+
   return (
     <div className="bg-gray-100 min-h-screen">
       {/* 메인 컨텐츠 영역 */}
@@ -267,27 +293,28 @@ const AILearningPage: React.FC = () => {
             {/* 획득 배지 */}
             <div className="bg-white rounded-lg p-5 flex flex-col gap-5">
               <h2 className="text-Subtitle_L_Medium text-black">획득 배지</h2>
-              <div className="flex flex-wrap gap-x-2.5 gap-y-3.5 justify-center">
-                {badges.length > 0 ? (
-                  <>
-                    {badges.map((badge, index) => (
-                      <BadgeCard
-                        key={`${badge.badge}-${index}`}
-                        type={badge.badge as any}
-                        title={badge.displayName}
-                      />
-                    ))}
-                    {/* 빈 슬롯 표시 (최소 6개 유지) */}
-                    {Array.from({ length: Math.max(0, 6 - badges.length) }).map((_, i) => (
-                      <BadgeCard key={`locked-${i}`} type="locked" />
-                    ))}
-                  </>
-                ) : (
-                  /* 배지가 없을 때 기본 잠금 배지 표시 */
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <BadgeCard key={`locked-${i}`} type="locked" />
-                  ))
-                )}
+              <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5 justify-items-center">
+                {allBadges.map((badge) => {
+                  const config = BADGE_CONFIG[badge.badgeType];
+                  const isAcquired = badge.isAcquired;
+                  
+                  return (
+                    <div
+                      key={badge.badgeType}
+                      className={cn(
+                        "bg-white rounded-lg p-4 flex flex-col gap-2 items-center justify-center h-[87px] w-[90px]",
+                        isAcquired ? config.bg : "bg-gray-100"
+                      )}
+                    >
+                      <div className="flex items-center justify-center">
+                        {config.icon(isAcquired)}
+                      </div>
+                      <p className="text-Subtitle_S_Regular text-[#4C4C4C] text-center whitespace-pre-wrap leading-tight">
+                        {isAcquired ? badge.displayName : "미획득"}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
