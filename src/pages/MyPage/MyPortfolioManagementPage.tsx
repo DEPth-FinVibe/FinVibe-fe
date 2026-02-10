@@ -348,7 +348,7 @@ const MyPortfolioManagementPage: React.FC = () => {
                   tab === "folder" ? "border-b-2 border-main-1 text-black" : "text-black"
                 )}
               >
-                폴더별 보기
+                포트폴리오별 보기
               </button>
               <button
                 type="button"

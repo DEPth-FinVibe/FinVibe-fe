@@ -379,7 +379,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
               "opacity-60 cursor-not-allowed"
           )}
         >
-          + 새 폴더
+          + 새 포트폴리오
         </button>
       </div>
 
@@ -396,7 +396,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
                 if (e.key === "Enter") submitCreate();
                 if (e.key === "Escape") closeCreate();
               }}
-              placeholder="폴더명 검색"
+              placeholder="포트폴리오명 검색"
               className={cn(
                 "flex-1 h-[36px]",
                 "rounded-[8px] border border-gray-300 bg-white",
@@ -434,7 +434,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
                 "inline-flex items-center justify-center",
                 isCreating && "opacity-60 cursor-not-allowed"
               )}
-              aria-label="폴더 추가 취소"
+              aria-label="포트폴리오 추가 취소"
             >
               <CloseIcon className="size-6" ariaLabel="닫기" />
             </button>
@@ -513,7 +513,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
                             "focus:outline-none",
                             "disabled:opacity-60 disabled:cursor-not-allowed"
                           )}
-                          aria-label="폴더명 수정"
+                          aria-label="포트폴리오명 수정"
                         />
                       ) : (
                         <p className="text-Subtitle_S_Regular text-black">
@@ -574,7 +574,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
                         <button
                           type="button"
                           className="p-0"
-                          aria-label="폴더 편집"
+                          aria-label="포트폴리오 편집"
                           onClick={(e) => {
                             e.stopPropagation();
                             startEdit(g);
@@ -586,7 +586,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
                         <button
                           type="button"
                           className="p-0"
-                          aria-label="폴더 삭제"
+                          aria-label="포트폴리오 삭제"
                           disabled={
                             isCreating ||
                             isUpdating ||
