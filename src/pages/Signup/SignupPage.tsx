@@ -179,7 +179,8 @@ const SignupPage: React.FC = () => {
         : await authApi.signup(signupData);
       
       setTokens(response.data.tokens);
-      setCurrentStep("onboarding_school");
+      // 개인화(학교/관심종목/투자스타일) 단계는 건너뛰고 바로 완료 단계로 이동
+      setCurrentStep("complete");
     } catch (error: any) {
       console.error("Signup failed details:", error.response?.data);
       
