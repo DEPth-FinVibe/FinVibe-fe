@@ -12,7 +12,6 @@ import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 import { memberApi } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
-import { assetPortfolioApi } from "@/api/asset/portfolio";
 
 const StockDetailSkeleton = () => {
   return (
@@ -67,18 +66,6 @@ const StockDetailPage = () => {
   const user = useAuthStore((s) => s.user);
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
-  const [portfolioId, setPortfolioId] = useState<number | null>(null);
-
-  // 포트폴리오 조회 (첫 번째 포트폴리오 사용)
-  useEffect(() => {
-    let cancelled = false;
-    assetPortfolioApi.getPortfolios().then((portfolios) => {
-      if (!cancelled && portfolios.length > 0) {
-        setPortfolioId(portfolios[0].id);
-      }
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
 
   // 관심종목 여부 조회
   useEffect(() => {
@@ -382,7 +369,6 @@ const StockDetailPage = () => {
           <OrderPanel
             currentPrice={currentPrice}
             stockId={stockIdNum}
-            portfolioId={portfolioId}
             stockName={navigationState?.stockName ?? `종목 ${stockIdNum}`}
             currency="KRW"
           />
