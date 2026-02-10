@@ -369,6 +369,7 @@ const ChallengePage = () => {
         title: challenge.title,
         description: challenge.description,
         difficulty: getDifficultyByRewardXp(challenge.rewardXp),
+        progressPercentage: clampProgress(challenge.progressPercentage, 0, 100),
         completedDays: Number(currentValue.toFixed(1)),
         totalDays: Number(totalValue.toFixed(1)),
         daysUntilEnd,
@@ -438,6 +439,7 @@ const ChallengePage = () => {
                   title={challenge.title}
                   description={challenge.description}
                   difficulty={challenge.difficulty}
+                  progressPercentage={challenge.progressPercentage}
                   completedDays={challenge.completedDays}
                   totalDays={challenge.totalDays}
                   daysUntilEnd={challenge.daysUntilEnd}

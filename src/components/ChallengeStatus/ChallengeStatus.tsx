@@ -16,6 +16,8 @@ export interface ChallengeStatusProps {
   completedDays?: number;
   /** 총 일수 */
   totalDays?: number;
+  /** 진행률(0-100), 전달 시 우선 사용 */
+  progressPercentage?: number;
   /** 종료까지 남은 일수 */
   daysUntilEnd?: number;
   /** 보상 XP */
@@ -34,14 +36,18 @@ export const ChallengeStatus = ({
   difficulty = "쉬움",
   completedDays = 7,
   totalDays = 7,
+  progressPercentage,
   daysUntilEnd = 3,
   rewardXp = 100,
   isPinned = false,
   className,
   onPinClick,
 }: ChallengeStatusProps) => {
-  const progressPercentage = (completedDays / totalDays) * 100;
-  const isCompleted = completedDays >= totalDays;
+  const normalizedProgress =
+    typeof progressPercentage === "number"
+      ? Math.min(100, Math.max(0, progressPercentage))
+      : Math.min(100, Math.max(0, (completedDays / totalDays) * 100));
+  const isCompleted = normalizedProgress >= 100 || completedDays >= totalDays;
   const statusLabel = isCompleted ? "성공" : "진행중";
 
   // 난이도별 스타일 정의
@@ -128,12 +134,12 @@ export const ChallengeStatus = ({
         aria-valuenow={completedDays}
         aria-valuemin={0}
         aria-valuemax={totalDays}
-        aria-valuetext={`${Math.round(progressPercentage)}% 완료`}
+        aria-valuetext={`${Math.round(normalizedProgress)}% 완료`}
         aria-label="챌린지 진행률"
       >
         <div
           className="absolute top-0 left-0 h-full bg-black rounded-full transition-all duration-300"
-          style={{ width: `${progressPercentage}%` }}
+          style={{ width: `${normalizedProgress}%` }}
         />
       </div>
 
