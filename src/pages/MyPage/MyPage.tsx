@@ -10,6 +10,7 @@ import { walletApi } from "@/api/wallet";
 import { assetPortfolioApi, type PortfolioGroup, type AssetAllocationResponse } from "@/api/asset";
 import { gamificationApi } from "@/api/gamification";
 import { ALL_BADGE_TYPES } from "@/components/Badge/badgeConfig";
+import { useRecentActivity, formatRelativeTime } from "@/hooks/useRecentActivity";
 import PortfolioPerformanceWrapper from "./components/PortfolioPerformanceWrapper";
 
 const MyPage: React.FC = () => {
@@ -130,6 +131,9 @@ const MyPage: React.FC = () => {
     };
   }, []);
 
+  // 최근 활동
+  const { data: recentActivities = [], isLoading: isActivityLoading } = useRecentActivity();
+
   // 제한 없이 그대로 노출
   const myPortfolioGroups = portfolioGroups ?? [];
 
@@ -215,32 +219,39 @@ const MyPage: React.FC = () => {
           <PortfolioPerformanceWrapper />
 
           {/* 하단 2열 */}
-          <div className="flex gap-5 items-start w-full">
+          <div className="flex gap-5 items-stretch w-full">
             {/* 최근 활동 */}
             <section className="bg-white border border-gray-300 rounded-lg w-[709px] px-10 pt-10 pb-12 flex flex-col gap-10">
               <h2 className="text-Title_L_Medium text-black">최근 활동</h2>
 
               <div className="flex flex-col gap-8 pl-8">
-                <div className="flex items-center gap-5">
-                  <div className="size-11 rounded-full bg-main-1 flex items-center justify-center">
-                    <CartIcon className="text-white size-6" />
-                  </div>
-                  <p className="text-Subtitle_L_Regular text-black">삼성전자 매수</p>
-                </div>
-
-                <div className="flex items-center gap-5">
-                  <div className="size-11 rounded-full bg-main-1 flex items-center justify-center">
-                    <BookIcon className="w-6 h-6" color="#FFFFFF" ariaLabel="학습" />
-                  </div>
-                  <p className="text-Subtitle_L_Regular text-black">학습 완료</p>
-                </div>
-
-                <div className="flex items-center gap-5">
-                  <div className="size-11 rounded-full bg-main-1 flex items-center justify-center">
-                    <BadgeAwardsIcon className="w-6 h-6" color="#FFFFFF" ariaLabel="챌린지" />
-                  </div>
-                  <p className="text-Subtitle_L_Regular text-black">챌린지 달성</p>
-                </div>
+                {isActivityLoading ? (
+                  <p className="text-Subtitle_L_Regular text-gray-400">불러오는 중...</p>
+                ) : recentActivities.length === 0 ? (
+                  <p className="text-Subtitle_L_Regular text-gray-400">최근 활동이 없습니다</p>
+                ) : (
+                  recentActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-center gap-5">
+                      <div className="size-11 rounded-full bg-main-1 flex items-center justify-center shrink-0">
+                        {activity.type === "trade" && (
+                          <CartIcon className="text-white size-6" />
+                        )}
+                        {activity.type === "study" && (
+                          <BookIcon className="w-6 h-6" color="#FFFFFF" ariaLabel="학습" />
+                        )}
+                        {activity.type === "challenge" && (
+                          <BadgeAwardsIcon className="w-6 h-6" color="#FFFFFF" ariaLabel="챌린지" />
+                        )}
+                      </div>
+                      <p className="text-Subtitle_L_Regular text-black flex-1 truncate">
+                        {activity.title}
+                      </p>
+                      <span className="text-Subtitle_S_Regular text-gray-400 shrink-0">
+                        {formatRelativeTime(activity.timestamp)}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
 
