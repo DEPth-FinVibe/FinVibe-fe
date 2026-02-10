@@ -106,16 +106,23 @@ interface PortfolioAssetItemProps {
 const PortfolioAssetItem = memo(({ asset }: PortfolioAssetItemProps) => {
   const quote = useQuote(asset.stockId);
 
-  // 실시간 데이터가 있으면 사용, 없으면 0으로 표시
-  const currentPrice = quote?.close ?? 0;
-  const changeRate = quote?.prevDayChangePct ?? 0;
+  // totalPrice는 투자원금 (매수 당시 총액)
+  const purchaseAmount = asset.totalPrice;
 
-  const isPositive = changeRate >= 0;
-  const changeRateText = formatChangeRate(changeRate);
-  const totalPriceNum = typeof asset.totalPrice === "number" ? asset.totalPrice : Number(asset.totalPrice);
-  const price = asset.currency === "USD"
-    ? `$${totalPriceNum.toFixed(2)}`
-    : formatPriceWithSymbol(currentPrice);
+  // 현재 평가금액 = 실시간 현재가 × 보유 수량
+  const currentPrice = quote?.close ?? 0;
+  const currentValue = currentPrice > 0 ? currentPrice * asset.amount : purchaseAmount;
+
+  // 수익률 계산: (현재 평가금액 - 투자원금) / 투자원금 × 100
+  const returnRate = purchaseAmount > 0
+    ? ((currentValue - purchaseAmount) / purchaseAmount) * 100
+    : 0;
+
+  const isPositive = returnRate >= 0;
+  const returnRateText = formatChangeRate(returnRate);
+  const displayValue = asset.currency === "USD"
+    ? `$${currentValue.toFixed(2)}`
+    : formatPriceWithSymbol(currentValue);
 
   return (
     <div
@@ -133,20 +140,20 @@ const PortfolioAssetItem = memo(({ asset }: PortfolioAssetItemProps) => {
       </div>
       <div className="flex flex-col gap-1 items-end w-[105px]">
         <p className="text-Body_S_Light text-gray-400 text-right">
-          {price}
+          {displayValue}
         </p>
         <div className="flex items-center gap-1">
           <ChangeRateIcon
             className="h-[26px] w-6"
             color={isPositive ? "#FF0000" : "#001AFF"}
             direction={isPositive ? "up" : "down"}
-            ariaLabel="등락률"
+            ariaLabel="수익률"
           />
           <p className={cn(
             "text-Body_S_Light text-right w-12",
             isPositive ? "text-etc-red" : "text-etc-blue"
           )}>
-            {changeRateText}
+            {returnRateText}
           </p>
         </div>
       </div>
