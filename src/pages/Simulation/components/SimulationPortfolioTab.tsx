@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, memo } from "react";
 import { cn } from "@/utils/cn";
-import CloseIcon from "@/assets/svgs/CloseIcon";
+import PortfolioCloseIcon from "@/assets/svgs/PortfolioCloseIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import { assetPortfolioApi, type PortfolioAsset } from "@/api/asset";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
@@ -371,9 +371,9 @@ const SimulationPortfolioTab: React.FC<Props> = ({
           }}
           disabled={isCreating || isUpdating || isDeleting}
           className={cn(
-            "inline-flex items-center justify-center",
+            "inline-flex items-center justify-center gap-2.5",
             "rounded-[14px] bg-main-1",
-            "px-4 py-1",
+            "px-[14px] py-[5px]",
             "text-Caption_L_Light text-white",
             (isCreating || isUpdating || isDeleting) &&
               "opacity-60 cursor-not-allowed"
@@ -436,7 +436,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
               )}
               aria-label="포트폴리오 추가 취소"
             >
-              <CloseIcon className="size-6" ariaLabel="닫기" />
+              <PortfolioCloseIcon className="size-6" ariaLabel="닫기" />
             </button>
           </div>
 
@@ -566,7 +566,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
                           )}
                           aria-label="수정 취소"
                         >
-                          <CloseIcon className="size-6" ariaLabel="닫기" />
+                          <PortfolioCloseIcon className="size-6" ariaLabel="닫기" />
                         </button>
                       </>
                     ) : (
