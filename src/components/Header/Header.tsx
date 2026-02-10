@@ -1,8 +1,6 @@
 import React from "react";
 import { cn } from "@/utils/cn";
-import { TextField } from "@/components/TextField";
 import LogoIcon from "@/assets/svgs/LogoIcon";
-import SearchIcon from "@/assets/svgs/SearchIcon";
 import BellIcon from "@/assets/svgs/BellIcon";
 import UserIcon from "@/assets/svgs/UserIcon";
 
@@ -10,7 +8,6 @@ export interface HeaderProps {
   activeMenu?: string;
   menus?: string[];
   onMenuClick?: (menu: string) => void;
-  onSearch?: (value: string) => void;
   onNotificationClick?: () => void;
   onProfileClick?: () => void;
   className?: string;
@@ -28,7 +25,6 @@ export const Header: React.FC<HeaderProps> = ({
   activeMenu = "홈",
   menus = DEFAULT_MENUS,
   onMenuClick,
-  onSearch,
   onNotificationClick,
   onProfileClick,
   className,
@@ -66,20 +62,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 오른쪽 유틸리티 섹션 */}
       <div className="flex items-center gap-4 shrink-0">
-        {/* 검색창 */}
-        <TextField
-          size="small"
-          placeholder="Search in site"
-          fullWidth={false}
-          className="w-[240px]"
-          containerClassName="group"
-          inputClassName="h-10 pl-12 placeholder:text-gray-500 text-Body_M_Regular "
-          leftIcon={
-            <SearchIcon className="size-5 text-gray-400  transition-colors" />
-          }
-          onChange={(e) => onSearch?.(e.target.value)}
-        />
-
         {/* 알림 버튼 */}
         <BellIcon onClick={onNotificationClick} ariaLabel="알림" />
 

@@ -23,7 +23,6 @@ const meta = {
   },
   args: {
     onMenuClick: fn(),
-    onSearch: fn(),
     onNotificationClick: fn(),
     onProfileClick: fn(),
   },
