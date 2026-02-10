@@ -1,10 +1,10 @@
 import { cn } from "@/utils/cn";
-import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
-import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
-import BookIcon from "@/assets/svgs/BookIcon";
 import LockIcon from "@/assets/svgs/LockIcon";
+import { BADGE_CONFIG, type BadgeType as BadgeConfigType } from "@/components/Badge/badgeConfig";
 
-export type BadgeType = "first-lecture" | "beginner-master" | "practice-learning" | "locked";
+export type BadgeType =
+  | "locked"
+  | BadgeConfigType;
 
 export interface BadgeCardProps {
   /** 배지 타입 */
@@ -13,53 +13,55 @@ export interface BadgeCardProps {
   title?: string;
   /** 추가 스타일 */
   className?: string;
+  /** 커스텀 아이콘 (있으면 기본 아이콘 대신 사용) */
+  customIcon?: React.ReactNode;
+  /** 획득 여부 (customIcon이 없을 때 BADGE_CONFIG의 아이콘 함수에 전달) */
+  isAcquired?: boolean;
 }
-
-const badgeConfig: Record<BadgeType, { 
-  bg: string; 
-  icon: React.ReactNode; 
-  title: string;
-}> = {
-  "first-lecture": {
-    bg: "bg-etc-light-yellow",
-    icon: <BadgeAwardsIcon className="w-[15px] h-[23px]" color="#FFD166" />,
-    title: "첫 강의\n완료",
-  },
-  "beginner-master": {
-    bg: "bg-etc-light-blue",
-    icon: <BookIcon className="w-6 h-[26px] text-etc-blue" />,
-    title: "초급\n마스터",
-  },
-  "practice-learning": {
-    bg: "bg-etc-light-green",
-    icon: <ChangeRateIcon className="w-6 h-[26px]" color="#00A63E" />,
-    title: "연습\n학습",
-  },
-  "locked": {
-    bg: "bg-gray-100",
-    icon: <LockIcon className="w-6 h-[26px] text-gray-500" />,
-    title: "미획득",
-  },
-};
 
 export const BadgeCard: React.FC<BadgeCardProps> = ({
   type,
   title,
   className,
+  customIcon,
+  isAcquired = true,
 }) => {
-  const config = badgeConfig[type];
-  const displayTitle = title || config.title;
+  // "locked" 타입 처리
+  if (type === "locked") {
+    return (
+      <div
+        className={cn(
+          "bg-white rounded-lg p-4 flex flex-col gap-2 items-center justify-center h-[87px] w-[90px]",
+          "bg-gray-100",
+          className
+        )}
+      >
+        <div className="flex items-center justify-center">
+          {customIcon || <LockIcon className="w-6 h-[26px] text-gray-500" />}
+        </div>
+        <p className="text-Subtitle_S_Regular text-[#4C4C4C] text-center whitespace-pre-wrap leading-tight">
+          {title || "미획득"}
+        </p>
+      </div>
+    );
+  }
+
+  // BADGE_CONFIG에서 설정 가져오기
+  const config = BADGE_CONFIG[type];
+  const displayTitle = title || config.displayName;
+  const icon = customIcon || config.icon(isAcquired);
+  const bg = config.bg;
 
   return (
     <div
       className={cn(
-        "bg-white rounded-lg p-4 flex flex-col gap-2 items-center justify-center h-[87px] w-[110px]",
-        config.bg,
+        "bg-white rounded-lg p-4 flex flex-col gap-2 items-center justify-center h-[87px] w-[90px]",
+        bg,
         className
       )}
     >
       <div className="flex items-center justify-center">
-        {config.icon}
+        {icon}
       </div>
       <p className="text-Subtitle_S_Regular text-[#4C4C4C] text-center whitespace-pre-wrap leading-tight">
         {displayTitle}

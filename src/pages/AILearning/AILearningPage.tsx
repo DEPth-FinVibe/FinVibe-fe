@@ -17,10 +17,7 @@ import {
   type LessonDetailResponse,
   type MyStudyMetricResponse,
 } from "@/api/study";
-import {
-  gamificationApi,
-  type BadgeInfo,
-} from "@/api/gamification";
+import { gamificationApi, type BadgeInfo } from "@/api/gamification";
 
 const DIFFICULTY_MAP: Record<CourseDifficulty, CourseLevel> = {
   BEGINNER: "초급",
@@ -62,10 +59,8 @@ const AILearningPage: React.FC = () => {
   const [courses, setCourses] = useState<MyCourseResponse[]>([]);
   const [studyMetric, setStudyMetric] = useState<MyStudyMetricResponse | null>(null);
   const [todayAiRecommend, setTodayAiRecommend] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  
-  // 획득 배지
   const [badges, setBadges] = useState<BadgeInfo[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // 레슨 학습 모달 상태
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
@@ -307,7 +302,7 @@ const AILearningPage: React.FC = () => {
                     <div
                       key={badge.badgeType}
                       className={cn(
-                        "bg-white rounded-lg p-4 flex flex-col gap-2 items-center justify-center h-[87px] w-[110px]",
+                        "bg-white rounded-lg p-4 flex flex-col gap-2 items-center justify-center h-[87px] w-[90px]",
                         isAcquired ? config.bg : "bg-gray-100"
                       )}
                     >

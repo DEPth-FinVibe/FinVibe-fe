@@ -174,6 +174,27 @@ const HomePage: React.FC = () => {
   // 관련 뉴스
   const [latestNews, setLatestNews] = useState<NewsSummary[]>([]);
   const [latestNewsLoading, setLatestNewsLoading] = useState(false);
+  const [newsIdByTitle, setNewsIdByTitle] = useState<Map<string, number>>(new Map());
+
+  // 뉴스 상세 이동용 ID 매핑(제목 기반)
+  useEffect(() => {
+    let cancelled = false;
+    newsApi.getNewsList("LATEST").then((data) => {
+      if (cancelled) return;
+      const map = new Map<string, number>();
+      data.forEach((item) => {
+        if (!map.has(item.title)) {
+          map.set(item.title, item.id);
+        }
+      });
+      setNewsIdByTitle(map);
+    }).catch(() => {
+      if (!cancelled) {
+        setNewsIdByTitle(new Map());
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // 좌측 리스트 쿼리
   const { isMarketOpen } = useMarketStatus();
@@ -548,13 +569,21 @@ const HomePage: React.FC = () => {
                 <p className="text-sm text-gray-400 py-4">뉴스를 불러오는 중...</p>
               ) : latestNews.length > 0 ? (
                 latestNews.map((news) => {
+                  const detailNewsId = news.id ?? news.newsId ?? newsIdByTitle.get(news.title);
+                  const canNavigateNews = detailNewsId != null;
                   const timeLabel = `${news.provider} · ${formatRelativeTime(news.publishedAt)}`;
                   return (
                     <RelatedNews
                       key={`${news.provider}-${news.publishedAt}-${news.title}`}
                       sourceAndTime={timeLabel}
                       title={news.title}
-                      className="border-gray-200 text-black hover:border-[#42d6ba] transition-colors"
+                      onClick={canNavigateNews ? () => navigate(`/news/${detailNewsId}`) : undefined}
+                      className={cn(
+                        "border-gray-200 text-black transition-colors",
+                        canNavigateNews
+                          ? "hover:border-[#42d6ba] hover:bg-[#f8fffd]"
+                          : "cursor-default"
+                      )}
                     />
                   );
                 })

@@ -309,4 +309,3 @@ const MyAssetsPage: React.FC = () => {
 
 export default MyAssetsPage;
 
-

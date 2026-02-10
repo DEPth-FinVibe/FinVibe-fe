@@ -92,21 +92,21 @@ export const memberApi = {
 
   // ── 관심 종목 ──
 
-  /** 관심 종목 조회: GET /members/{userId}/favorite-stocks */
-  getFavoriteStocks: async (userId: string): Promise<FavoriteStockResponse[]> => {
-    const res = await api.get<FavoriteStockResponse[]>(`/members/${userId}/favorite-stocks`);
+  /** 관심 종목 조회: GET /members/favorite-stocks */
+  getFavoriteStocks: async (): Promise<FavoriteStockResponse[]> => {
+    const res = await api.get<FavoriteStockResponse[]>("/members/favorite-stocks");
     return Array.isArray(res.data) ? res.data : [];
   },
 
-  /** 관심 종목 추가: POST /members/{userId}/favorite-stocks/{stockId} */
-  addFavoriteStock: async (userId: string, stockId: number): Promise<FavoriteStockResponse> => {
-    const res = await api.post<FavoriteStockResponse>(`/members/${userId}/favorite-stocks/${stockId}`);
+  /** 관심 종목 추가: POST /members/favorite-stocks/{stockId} */
+  addFavoriteStock: async (stockId: number): Promise<FavoriteStockResponse> => {
+    const res = await api.post<FavoriteStockResponse>(`/members/favorite-stocks/${stockId}`);
     return res.data;
   },
 
-  /** 관심 종목 삭제: DELETE /members/{userId}/favorite-stocks/{stockId} */
-  removeFavoriteStock: async (userId: string, stockId: number): Promise<FavoriteStockResponse> => {
-    const res = await api.delete<FavoriteStockResponse>(`/members/${userId}/favorite-stocks/${stockId}`);
+  /** 관심 종목 삭제: DELETE /members/favorite-stocks/{stockId} */
+  removeFavoriteStock: async (stockId: number): Promise<FavoriteStockResponse> => {
+    const res = await api.delete<FavoriteStockResponse>(`/members/favorite-stocks/${stockId}`);
     return res.data;
   },
 };

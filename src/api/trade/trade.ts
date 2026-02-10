@@ -28,6 +28,7 @@ export interface TradeResponse {
 export interface TradeHistoryResponse {
   tradeId: number;
   stockId: number;
+  stockName?: string;
   amount: number;
   price: number;
   portfolioId: number;

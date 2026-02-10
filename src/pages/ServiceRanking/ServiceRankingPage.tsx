@@ -111,7 +111,7 @@ const ServiceRankingPage: React.FC = () => {
   }, [rankingType, period, user?.userId]);
 
   // 내 랭킹 정보 (API 데이터 또는 기본값)
-  const myName = user?.nickname || "사용자";
+  const myName = user?.nickname || user?.name || "사용자";
   const myRank = rankingType === "return" 
     ? (myRanking?.rank ?? 0)
     : (myXpRanking?.rank ?? 0);
@@ -330,5 +330,4 @@ const ServiceRankingPage: React.FC = () => {
 };
 
 export default ServiceRankingPage;
-
 
