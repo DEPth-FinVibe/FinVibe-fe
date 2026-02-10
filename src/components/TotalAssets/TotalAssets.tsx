@@ -51,12 +51,12 @@ export const TotalAssets: React.FC<TotalAssetsProps> = ({
       )}
     >
       {/* 라벨 */}
-      <p className="text-Subtitle_M_Regular text-main-1">총 자산</p>
+      <p className="text-[18px] leading-[17px] font-normal text-black">총 자산</p>
 
       {/* 금액 및 변화율 */}
       <div className="flex flex-col gap-1">
         {/* 총 자산 금액 */}
-        <p className="text-Title_L_Medium text-black">
+        <p className="text-Title_L_Medium text-main-1">
           {hasAmount ? formatAmount(totalAmount as number) : "-"}
         </p>
         {/* 변화율 */}
