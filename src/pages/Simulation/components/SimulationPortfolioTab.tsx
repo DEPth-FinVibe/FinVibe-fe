@@ -1,8 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, memo } from "react";
 import { cn } from "@/utils/cn";
 import CloseIcon from "@/assets/svgs/CloseIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import { assetPortfolioApi, type PortfolioAsset } from "@/api/asset";
+import { useMarketStore, useQuote } from "@/store/useMarketStore";
+import { formatPriceWithSymbol, formatChangeRate } from "@/utils/formatStock";
 
 export type SimulationPortfolioGroup = {
   id: number;
@@ -96,6 +98,62 @@ const TrashIcon: React.FC<{ className?: string; ariaLabel?: string }> = ({
   );
 };
 
+// 실시간 가격 업데이트를 위한 포트폴리오 자산 아이템 컴포넌트
+interface PortfolioAssetItemProps {
+  asset: PortfolioAsset;
+}
+
+const PortfolioAssetItem = memo(({ asset }: PortfolioAssetItemProps) => {
+  const quote = useQuote(asset.stockId);
+
+  // 실시간 데이터가 있으면 사용, 없으면 0으로 표시
+  const currentPrice = quote?.close ?? 0;
+  const changeRate = quote?.prevDayChangePct ?? 0;
+
+  const isPositive = changeRate >= 0;
+  const changeRateText = formatChangeRate(changeRate);
+  const totalPriceNum = typeof asset.totalPrice === "number" ? asset.totalPrice : Number(asset.totalPrice);
+  const price = asset.currency === "USD"
+    ? `$${totalPriceNum.toFixed(2)}`
+    : formatPriceWithSymbol(currentPrice);
+
+  return (
+    <div
+      className="border border-sub-gray rounded-lg h-[49px] flex items-center justify-between px-5 py-2.5"
+    >
+      <div className="flex flex-col items-start w-[132px]">
+        <div className="flex items-center gap-4">
+          <p className="text-Subtitle_S_Regular text-sub-blue">
+            {asset.name}
+          </p>
+          <p className="text-Caption_M_Light text-black">
+            {asset.stockId}
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1 items-end w-[105px]">
+        <p className="text-Body_S_Light text-gray-400 text-right">
+          {price}
+        </p>
+        <div className="flex items-center gap-1">
+          <ChangeRateIcon
+            className="h-[26px] w-6"
+            color={isPositive ? "#FF0000" : "#001AFF"}
+            direction={isPositive ? "up" : "down"}
+            ariaLabel="등락률"
+          />
+          <p className={cn(
+            "text-Body_S_Light text-right w-12",
+            isPositive ? "text-etc-red" : "text-etc-blue"
+          )}>
+            {changeRateText}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 const SimulationPortfolioTab: React.FC<Props> = ({
   groups = [],
   isLoading = false,
@@ -113,6 +171,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
   onDeleteGroup,
   className,
 }) => {
+  const { subscribe, unsubscribe } = useMarketStore();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -246,7 +305,7 @@ const SimulationPortfolioTab: React.FC<Props> = ({
     } else {
       // 확장
       setExpandedGroupIds((prev) => new Set(prev).add(groupId));
-      
+
       // 이미 로드된 데이터가 있으면 스킵
       if (portfolioAssets[groupId]) return;
 
@@ -267,6 +326,30 @@ const SimulationPortfolioTab: React.FC<Props> = ({
       }
     }
   };
+
+  // 확장된 포트폴리오의 종목들에 대해 웹소켓 구독 처리
+  useEffect(() => {
+    const stockIds: number[] = [];
+
+    // 확장된 포트폴리오의 모든 종목 ID 수집
+    expandedGroupIds.forEach((groupId) => {
+      const assets = portfolioAssets[groupId] ?? [];
+      assets.forEach((asset) => {
+        stockIds.push(asset.stockId);
+      });
+    });
+
+    if (stockIds.length > 0) {
+      subscribe(stockIds);
+    }
+
+    // 컴포넌트 언마운트 또는 확장 상태 변경 시 구독 해제
+    return () => {
+      if (stockIds.length > 0) {
+        unsubscribe(stockIds);
+      }
+    };
+  }, [expandedGroupIds, portfolioAssets, subscribe, unsubscribe]);
 
   return (
     <div className={cn("w-[445px] flex flex-col gap-7.5 pt-2.5", className)}>
@@ -527,54 +610,9 @@ const SimulationPortfolioTab: React.FC<Props> = ({
                         종목이 없습니다.
                       </div>
                     ) : (
-                      assets.map((asset) => {
-                        // 임시로 등락률 계산 (실제로는 API에서 받아와야 함)
-                        // 현재는 더미 데이터로 처리
-                        const changeRate: number = 0; // TODO: 실제 등락률 API 연동 필요
-                        const isPositive = changeRate >= 0;
-                        const changeRateText = changeRate === 0 ? "0.00%" : `${isPositive ? "+" : ""}${changeRate.toFixed(2)}%`;
-                        const totalPriceNum = typeof asset.totalPrice === "number" ? asset.totalPrice : Number(asset.totalPrice);
-                        const price = asset.currency === "USD" 
-                          ? `$${totalPriceNum.toFixed(2)}` 
-                          : `₩${totalPriceNum.toLocaleString()}`;
-
-                        return (
-                          <div
-                            key={asset.id}
-                            className="border border-sub-gray rounded-lg h-[49px] flex items-center justify-between px-5 py-2.5"
-                          >
-                            <div className="flex flex-col items-start w-[132px]">
-                              <div className="flex items-center gap-4">
-                                <p className="text-Subtitle_S_Regular text-sub-blue">
-                                  {asset.name}
-                                </p>
-                                <p className="text-Caption_M_Light text-black">
-                                  {asset.stockId}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex flex-col gap-1 items-end w-[105px]">
-                              <p className="text-Body_S_Light text-gray-400 text-right">
-                                {price}
-                              </p>
-                              <div className="flex items-center gap-1">
-                                <ChangeRateIcon
-                                  className="h-[26px] w-6"
-                                  color={isPositive ? "#FF0000" : "#001AFF"}
-                                  direction={isPositive ? "up" : "down"}
-                                  ariaLabel="등락률"
-                                />
-                                <p className={cn(
-                                  "text-Body_S_Light text-right w-12",
-                                  isPositive ? "text-etc-red" : "text-etc-blue"
-                                )}>
-                                  {changeRateText}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
+                      assets.map((asset) => (
+                        <PortfolioAssetItem key={asset.id} asset={asset} />
+                      ))
                     )}
                   </div>
                 )}
