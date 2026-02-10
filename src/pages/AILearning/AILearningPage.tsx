@@ -13,6 +13,7 @@ import {
   type LessonDetailResponse,
   type MyStudyMetricResponse,
 } from "@/api/study";
+import { gamificationApi, type BadgeInfo } from "@/api/gamification";
 
 const DIFFICULTY_MAP: Record<CourseDifficulty, CourseLevel> = {
   BEGINNER: "초급",
@@ -54,6 +55,7 @@ const AILearningPage: React.FC = () => {
   const [courses, setCourses] = useState<MyCourseResponse[]>([]);
   const [studyMetric, setStudyMetric] = useState<MyStudyMetricResponse | null>(null);
   const [todayAiRecommend, setTodayAiRecommend] = useState<string | null>(null);
+  const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   // 레슨 학습 모달 상태
@@ -66,10 +68,11 @@ const AILearningPage: React.FC = () => {
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    const [coursesResult, metricResult, recommendResult] = await Promise.allSettled([
+    const [coursesResult, metricResult, recommendResult, badgesResult] = await Promise.allSettled([
       studyApi.getMyCourses(),
       studyApi.getMyStudyMetric(),
       studyApi.getTodayAiStudyRecommend(),
+      gamificationApi.getMyBadges(),
     ]);
 
     if (coursesResult.status === "fulfilled") {
@@ -85,6 +88,10 @@ const AILearningPage: React.FC = () => {
       setTodayAiRecommend(content || null);
     } else {
       setTodayAiRecommend(null);
+    }
+
+    if (badgesResult.status === "fulfilled") {
+      setBadges(badgesResult.value);
     }
 
     setLoading(false);
@@ -261,12 +268,26 @@ const AILearningPage: React.FC = () => {
             <div className="bg-white rounded-lg p-5 flex flex-col gap-5">
               <h2 className="text-Subtitle_L_Medium text-black">획득 배지</h2>
               <div className="flex flex-wrap gap-x-2.5 gap-y-3.5 justify-center">
-                <BadgeCard type="first-lecture" />
-                <BadgeCard type="beginner-master" />
-                <BadgeCard type="practice-learning" />
-                <BadgeCard type="locked" />
-                <BadgeCard type="locked" />
-                <BadgeCard type="locked" />
+                {badges.length > 0 ? (
+                  <>
+                    {badges.map((badge, index) => (
+                      <BadgeCard
+                        key={`${badge.badge}-${index}`}
+                        type={badge.badge as any}
+                        title={badge.displayName}
+                      />
+                    ))}
+                    {/* 빈 슬롯 표시 (최소 6개 유지) */}
+                    {Array.from({ length: Math.max(0, 6 - badges.length) }).map((_, i) => (
+                      <BadgeCard key={`locked-${i}`} type="locked" />
+                    ))}
+                  </>
+                ) : (
+                  /* 배지가 없을 때 기본 잠금 배지 표시 */
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <BadgeCard key={`locked-${i}`} type="locked" />
+                  ))
+                )}
               </div>
             </div>
           </div>

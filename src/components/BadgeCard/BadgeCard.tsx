@@ -4,7 +4,16 @@ import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import BookIcon from "@/assets/svgs/BookIcon";
 import LockIcon from "@/assets/svgs/LockIcon";
 
-export type BadgeType = "first-lecture" | "beginner-master" | "practice-learning" | "locked";
+export type BadgeType =
+  | "locked"
+  | "FIRST_PROFIT"
+  | "KNOWLEDGE_SEEKER"
+  | "DILIGENT_INVESTOR"
+  | "DIVERSIFICATION_MASTER"
+  | "BEST_DEBATER"
+  | "PERFECT_SCORE_QUIZ"
+  | "CHALLENGE_MARATHONER"
+  | "TOP_ONE_PERCENT_TRAINER";
 
 export interface BadgeCardProps {
   /** 배지 타입 */
@@ -15,30 +24,55 @@ export interface BadgeCardProps {
   className?: string;
 }
 
-const badgeConfig: Record<BadgeType, { 
-  bg: string; 
-  icon: React.ReactNode; 
+const badgeConfig: Record<BadgeType, {
+  bg: string;
+  icon: React.ReactNode;
   title: string;
 }> = {
-  "first-lecture": {
-    bg: "bg-etc-light-yellow",
-    icon: <BadgeAwardsIcon className="w-[15px] h-[23px]" color="#FFD166" />,
-    title: "첫 강의\n완료",
-  },
-  "beginner-master": {
-    bg: "bg-etc-light-blue",
-    icon: <BookIcon className="w-6 h-[26px] text-etc-blue" />,
-    title: "초급\n마스터",
-  },
-  "practice-learning": {
-    bg: "bg-etc-light-green",
-    icon: <ChangeRateIcon className="w-6 h-[26px]" color="#00A63E" />,
-    title: "연습\n학습",
-  },
   "locked": {
     bg: "bg-gray-100",
     icon: <LockIcon className="w-6 h-[26px] text-gray-500" />,
     title: "미획득",
+  },
+  "FIRST_PROFIT": {
+    bg: "bg-etc-light-yellow",
+    icon: <BadgeAwardsIcon className="w-[15px] h-[23px]" color="#FFD166" />,
+    title: "첫 수익\n달성",
+  },
+  "KNOWLEDGE_SEEKER": {
+    bg: "bg-etc-light-blue",
+    icon: <BookIcon className="w-6 h-[26px] text-etc-blue" />,
+    title: "지식\n탐구자",
+  },
+  "DILIGENT_INVESTOR": {
+    bg: "bg-etc-light-green",
+    icon: <ChangeRateIcon className="w-6 h-[26px]" color="#00A63E" />,
+    title: "성실한\n투자자",
+  },
+  "DIVERSIFICATION_MASTER": {
+    bg: "bg-etc-light-yellow",
+    icon: <BadgeAwardsIcon className="w-[15px] h-[23px]" color="#FFD166" />,
+    title: "분산투자\n마스터",
+  },
+  "BEST_DEBATER": {
+    bg: "bg-etc-light-blue",
+    icon: <BookIcon className="w-6 h-[26px] text-etc-blue" />,
+    title: "최고의\n토론자",
+  },
+  "PERFECT_SCORE_QUIZ": {
+    bg: "bg-etc-light-green",
+    icon: <ChangeRateIcon className="w-6 h-[26px]" color="#00A63E" />,
+    title: "퀴즈\n만점",
+  },
+  "CHALLENGE_MARATHONER": {
+    bg: "bg-etc-light-yellow",
+    icon: <BadgeAwardsIcon className="w-[15px] h-[23px]" color="#FFD166" />,
+    title: "챌린지\n마라토너",
+  },
+  "TOP_ONE_PERCENT_TRAINER": {
+    bg: "bg-etc-light-blue",
+    icon: <BookIcon className="w-6 h-[26px] text-etc-blue" />,
+    title: "상위 1%\n트레이너",
   },
 };
 
