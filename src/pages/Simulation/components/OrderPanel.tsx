@@ -5,6 +5,7 @@ import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { useCreateTrade } from "@/hooks/useTradeQueries";
 import { cn } from "@/utils/cn";
 import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 
 interface OrderPanelProps {
   currentPrice: number;
@@ -174,8 +175,15 @@ const OrderPanel = ({
       });
       onTradeSuccess?.();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "주문에 실패했습니다.";
+      let message = "주문에 실패했습니다.";
+
+      if (axios.isAxiosError(error)) {
+        // API 에러 응답에서 메시지 추출
+        message = error.response?.data?.message || message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+
       setOrderStatus({ type: "error", message });
     }
   };
