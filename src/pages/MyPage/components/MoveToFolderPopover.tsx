@@ -50,35 +50,35 @@ const MoveToFolderPopover: React.FC<Props> = ({
     <div
       ref={rootRef}
       className={cn(
-        "absolute left-0 top-full mt-2 z-20",
+        "absolute left-0 top-full mt-2 z-[9999]",
         "w-fit min-w-24",
         "bg-gray-100",
         "rounded-lg",
         "shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)]",
         "px-5 py-2.5",
-        "flex flex-col items-center gap-2.5",
+        "flex flex-col items-center gap-[10px]",
         className
       )}
       role="listbox"
       aria-label="폴더 선택"
     >
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-[10px]">
         {options.length === 0 ? (
-          <p className="text-[14px] leading-5 text-gray-400 whitespace-nowrap">
+          <p className="text-[14px] leading-[20px] text-gray-400 whitespace-nowrap">
             폴더 없음
           </p>
         ) : (
           options.map((opt, idx) => {
             const active = pendingId != null && opt.id === pendingId;
-            const textTone = idx % 2 === 1 ? "text-main-1" : "text-black";
+            // 첫 번째부터 검정, main-1을 반복
+            const textTone = idx % 2 === 0 ? "text-black" : "text-main-1";
             return (
               <button
                 key={opt.id}
                 type="button"
                 className={cn(
-                  "text-[14px] leading-5 whitespace-nowrap",
-                  textTone,
-                  active && "underline underline-offset-4"
+                  "text-[14px] leading-[20px] whitespace-nowrap",
+                  textTone
                 )}
                 role="option"
                 aria-selected={active}
@@ -94,10 +94,11 @@ const MoveToFolderPopover: React.FC<Props> = ({
       <button
         type="button"
         className={cn(
-          "rounded-lg",
-          "px-5 py-3.5",
-          "text-[14px] leading-5 text-white",
           "bg-main-1",
+          "rounded-lg",
+          "px-[10px] py-[6px]",
+          "text-[14px] leading-[20px] text-white",
+          "inline-flex items-center justify-center gap-[10px]",
           "disabled:opacity-60 disabled:cursor-not-allowed"
         )}
         disabled={pendingId == null || options.length === 0}

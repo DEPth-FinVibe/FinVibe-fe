@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 export type FolderReturnBarData = {
   label: string;
   value: number;
-  tone: "red" | "blue" | "gray";
+  tone: "red" | "blue" | "purple" | "green" | "orange" | "pink" | "yellow" | "cyan";
 };
 
 type Props = {
@@ -108,12 +108,17 @@ const FolderReturnComparisonSection: React.FC<Props> = ({ barData, yStep = 6 }) 
                   const height = isPositive
                     ? Math.max(0, zeroPct - valPct)
                     : Math.max(0, valPct - zeroPct);
-                  const color =
-                    b.tone === "blue"
-                      ? "bg-[#3B82F6]"
-                      : b.tone === "gray"
-                        ? "bg-[#9CA3AF]"
-                        : "bg-etc-red";
+                  // 수익률 값에 따라 색상 결정: 0.00%면 검정색, 양수면 빨간색, 음수면 파란색
+                  const getColorByValue = (value: number) => {
+                    if (value === 0 || Math.abs(value) < 0.01) {
+                      return "bg-black";
+                    } else if (value > 0) {
+                      return "bg-etc-red";
+                    } else {
+                      return "bg-[#3B82F6]";
+                    }
+                  };
+                  const color = getColorByValue(b.value);
                   const rounded = isPositive ? "rounded-t" : "rounded-b";
 
                   return (
