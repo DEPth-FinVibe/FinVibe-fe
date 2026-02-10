@@ -32,6 +32,8 @@ export type NewsListItem = {
 
 /** 뉴스 요약 (테마 상세/뉴스 상세 내부) */
 export type NewsSummary = {
+  id?: number;
+  newsId?: number;
   title: string;
   publishedAt: string;
   provider: string;
