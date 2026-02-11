@@ -5,7 +5,7 @@ import { StockListItem } from "@/components/StockListItem";
 import StockChart, { type ChartPeriod } from "./components/StockChart";
 import OrderPanel from "./components/OrderPanel";
 import BackIcon from "@/assets/svgs/BackIcon";
-import ChevronIcon from "@/assets/svgs/ChevronIcon";
+
 import { cn } from "@/utils/cn";
 import { fetchCandles, fetchClosingPrices, toKstDateTime, type CandleWithVolume } from "@/api/market";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
@@ -344,9 +344,6 @@ const StockDetailPage = () => {
                 )}
               >
                 {period}
-                {period === "분봉" && (
-                  <ChevronIcon className="w-4 h-4" />
-                )}
               </button>
             ))}
           </div>

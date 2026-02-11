@@ -35,9 +35,9 @@ const NewsDetailPage = () => {
   }, [newsId]);
 
   const [commentInput, setCommentInput] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [sortOrder, setSortOrder] = useState<"최신순" | "인기순">("최신순");
   const [postingComment, setPostingComment] = useState(false);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
 
   // 뉴스 상세
   const [detail, setDetail] = useState<NewsDetailResponse | null>(null);
@@ -123,16 +123,20 @@ const NewsDetailPage = () => {
     navigate("/news");
   };
 
+  const [likingNews, setLikingNews] = useState(false);
+
   const handleToggleLike = async () => {
-    if (!newsId) return;
+    if (!newsId || likingNews) return;
+    setLikingNews(true);
     try {
       await newsApi.toggleNewsLike(Number(newsId));
-      setLiked((prev) => {
-        setLikeCount((countPrev) => Math.max(0, countPrev + (prev ? -1 : 1)));
-        return !prev;
-      });
+      const wasLiked = liked;
+      setLiked(!wasLiked);
+      setLikeCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
     } catch {
       // 실패 시 무시
+    } finally {
+      setLikingNews(false);
     }
   };
 
@@ -155,8 +159,14 @@ const NewsDetailPage = () => {
   const [likedDiscussionIds, setLikedDiscussionIds] = useState<Set<number>>(new Set());
   const [likedCommentIds, setLikedCommentIds] = useState<Set<number>>(new Set());
 
+  // 좋아요 중복 클릭 방지
+  const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
+
   // 토론 좋아요 토글
   const handleDiscussionLike = async (discussionId: number) => {
+    const key = `d-${discussionId}`;
+    if (likingIds.has(key)) return;
+    setLikingIds((prev) => new Set(prev).add(key));
     try {
       await discussionApi.toggleDiscussionLike(discussionId);
       const wasLiked = likedDiscussionIds.has(discussionId);
@@ -173,11 +183,16 @@ const NewsDetailPage = () => {
             : d
         )
       );
-    } catch {}
+    } catch {} finally {
+      setLikingIds((prev) => { const next = new Set(prev); next.delete(key); return next; });
+    }
   };
 
   // 댓글 좋아요 토글
   const handleCommentLike = async (commentId: number, discussionId: number) => {
+    const key = `c-${commentId}`;
+    if (likingIds.has(key)) return;
+    setLikingIds((prev) => new Set(prev).add(key));
     try {
       await discussionApi.toggleCommentLike(commentId);
       const wasLiked = likedCommentIds.has(commentId);
@@ -201,7 +216,9 @@ const NewsDetailPage = () => {
             : d
         )
       );
-    } catch {}
+    } catch {} finally {
+      setLikingIds((prev) => { const next = new Set(prev); next.delete(key); return next; });
+    }
   };
 
   // 토론 삭제
@@ -349,38 +366,23 @@ const NewsDetailPage = () => {
                       {detailDiscussionCount}
                     </span>
                   </div>
-                  <div className="flex items-center gap-5">
+                  <button
+                    className="flex items-center gap-5"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(window.location.href);
+                      setShowCopiedToast(true);
+                      setTimeout(() => setShowCopiedToast(false), 2000);
+                    }}
+                  >
                     <ShareIcon className="w-6 h-6" />
                     <span className="text-Subtitle_S_Regular text-black">공유</span>
-                  </div>
+                  </button>
                 </div>
               </article>
 
               {/* 토론 게시판 */}
               <div className="bg-white rounded-lg p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-Subtitle_M_Medium text-black">토론 게시판</h3>
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => setIsAnonymous(false)}
-                      className={cn(
-                        "text-Body_M_Light",
-                        !isAnonymous ? "text-black" : "text-gray-400"
-                      )}
-                    >
-                      실명
-                    </button>
-                    <button
-                      onClick={() => setIsAnonymous(true)}
-                      className={cn(
-                        "text-Body_M_Light",
-                        isAnonymous ? "text-black" : "text-gray-400"
-                      )}
-                    >
-                      익명
-                    </button>
-                  </div>
-                </div>
+                <h3 className="text-Subtitle_M_Medium text-black mb-4">토론 게시판</h3>
 
                 {/* 댓글 입력 */}
                 <div className="flex gap-4 mb-6">
@@ -483,6 +485,13 @@ const NewsDetailPage = () => {
           <PopularDiscussionSection discussions={popularDiscussions} />
         </aside>
       </main>
+
+      {/* 클립보드 복사 토스트 */}
+      {showCopiedToast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-lg text-Body_M_Light z-50 animate-fade-in">
+          링크가 클립보드에 복사되었습니다
+        </div>
+      )}
     </div>
   );
 };

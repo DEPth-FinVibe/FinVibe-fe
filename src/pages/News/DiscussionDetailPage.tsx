@@ -103,15 +103,20 @@ const DiscussionDetailPage = () => {
     navigate("/news");
   };
 
+  const [likingDiscussion, setLikingDiscussion] = useState(false);
+  const [likingCommentIds, setLikingCommentIds] = useState<Set<number>>(new Set());
+
   const handleToggleLike = async () => {
-    if (!discussionId) return;
+    if (!discussionId || likingDiscussion) return;
+    setLikingDiscussion(true);
     try {
       await discussionApi.toggleDiscussionLike(Number(discussionId));
-      setLiked((prev) => {
-        setLikeCount((c) => Math.max(0, c + (prev ? -1 : 1)));
-        return !prev;
-      });
-    } catch {}
+      const wasLiked = liked;
+      setLiked(!wasLiked);
+      setLikeCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
+    } catch {} finally {
+      setLikingDiscussion(false);
+    }
   };
 
   const handlePostComment = async () => {
@@ -129,6 +134,8 @@ const DiscussionDetailPage = () => {
   };
 
   const handleCommentLike = async (commentId: number) => {
+    if (likingCommentIds.has(commentId)) return;
+    setLikingCommentIds((prev) => new Set(prev).add(commentId));
     try {
       await discussionApi.toggleCommentLike(commentId);
       const wasLiked = likedCommentIds.has(commentId);
@@ -145,7 +152,9 @@ const DiscussionDetailPage = () => {
             : c
         )
       );
-    } catch {}
+    } catch {} finally {
+      setLikingCommentIds((prev) => { const next = new Set(prev); next.delete(commentId); return next; });
+    }
   };
 
   const handleDeleteDiscussion = async () => {

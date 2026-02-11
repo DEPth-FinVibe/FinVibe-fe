@@ -40,7 +40,6 @@ const NewsPage = () => {
   const [activeTab, setActiveTab] = useState<NewsTabType>("news");
   const [sortOrder, setSortOrder] = useState<"인기순" | "최신순">("인기순");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [discussionContent, setDiscussionContent] = useState("");
   const [posting, setPosting] = useState(false);
 
@@ -139,7 +138,11 @@ const NewsPage = () => {
   // 좋아요 토글 상태 (세션 내)
   const [likedDiscussionIds, setLikedDiscussionIds] = useState<Set<number>>(new Set());
 
+  const [likingIds, setLikingIds] = useState<Set<number>>(new Set());
+
   const handleDiscussionLike = async (discussionId: number) => {
+    if (likingIds.has(discussionId)) return;
+    setLikingIds((prev) => new Set(prev).add(discussionId));
     try {
       await discussionApi.toggleDiscussionLike(discussionId);
       const wasLiked = likedDiscussionIds.has(discussionId);
@@ -156,7 +159,9 @@ const NewsPage = () => {
             : d
         )
       );
-    } catch {}
+    } catch {} finally {
+      setLikingIds((prev) => { const next = new Set(prev); next.delete(discussionId); return next; });
+    }
   };
 
   const handleDeleteDiscussion = async (discussionId: number) => {
@@ -248,29 +253,7 @@ const NewsPage = () => {
             <>
               {/* 토론 게시판 UI */}
               <div className="flex flex-col gap-6 bg-white rounded-lg p-8">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-Subtitle_L_Medium text-black font-bold">새 토론 시작하기</h2>
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => setIsAnonymous(false)}
-                      className={cn(
-                        "text-Body_M_Medium transition-colors",
-                        !isAnonymous ? "text-black border-b-2 border-black" : "text-gray-400"
-                      )}
-                    >
-                      실명
-                    </button>
-                    <button
-                      onClick={() => setIsAnonymous(true)}
-                      className={cn(
-                        "text-Body_M_Medium transition-colors",
-                        isAnonymous ? "text-black border-b-2 border-black" : "text-gray-400"
-                      )}
-                    >
-                      익명
-                    </button>
-                  </div>
-                </div>
+                <h2 className="text-Subtitle_L_Medium text-black font-bold">새 토론 시작하기</h2>
 
                 <div className="relative">
                   <textarea
