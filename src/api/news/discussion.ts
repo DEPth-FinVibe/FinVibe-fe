@@ -39,8 +39,9 @@ export const discussionApi = {
 
   /** 토론 작성: POST /discussions */
   createDiscussion: async (newsId: number, content: string): Promise<DiscussionResponse> => {
-    const res = await insightApiClient.post<DiscussionResponse>("/discussions", null, {
-      params: { newsId, content },
+    const res = await insightApiClient.post<DiscussionResponse>("/discussions", {
+      newsId,
+      content,
     });
     return res.data;
   },
@@ -63,8 +64,8 @@ export const discussionApi = {
 
   /** 댓글 작성: POST /discussions/{discussionId}/comments */
   createComment: async (discussionId: number, content: string): Promise<CommentResponse> => {
-    const res = await insightApiClient.post<CommentResponse>(`/discussions/${discussionId}/comments`, null, {
-      params: { content },
+    const res = await insightApiClient.post<CommentResponse>(`/discussions/${discussionId}/comments`, {
+      content,
     });
     return res.data;
   },
