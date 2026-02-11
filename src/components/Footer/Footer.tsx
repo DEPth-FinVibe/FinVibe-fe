@@ -21,15 +21,15 @@ type FooterCardProps = {
 
 const FooterCard: React.FC<FooterCardProps> = ({ title, items }) => {
   return (
-    <div className="bg-white rounded-[8px] px-[30px] pt-[20px] pb-[30px] w-full">
-      <div className="w-full border-b border-[#717478] px-[20px] pt-[10px] pb-[20px]">
-        <p className="text-Headline_L_Bold text-main-1">{title}</p>
+    <div className="rounded-[8px] px-[30px] py-[10px] w-full">
+      <div className="w-full border-b border-[#717478] px-[50px] py-[10px]">
+        <p className="text-Headline_S_Bold text-main-1">{title}</p>
       </div>
 
-      <div className="flex flex-col gap-[27px] pt-[20px] px-[20px]">
+      <div className="flex flex-col gap-[15px] pl-[50px] pr-[200px] pt-6">
         {items.map((item) => {
           const content = (
-            <span className="text-Title_L_Medium text-black">{item.label}</span>
+            <span className="text-Subtitle_M_Medium text-black">{item.label}</span>
           );
 
           return item.to ? (
@@ -53,20 +53,10 @@ const FooterCard: React.FC<FooterCardProps> = ({ title, items }) => {
 
 export const Footer: React.FC<FooterProps> = ({ className }) => {
   return (
-    <footer className={cn("w-full bg-[#EAEBED]", className)}>
-      <div className="mx-auto w-full max-w-[1920px] px-6 py-10 md:px-12 xl:px-[240px]">
-        <div className="flex flex-col gap-[40px]">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-[60px]">
-            <FooterCard
-              title="서비스"
-              items={[
-                { label: "홈", to: "/" },
-                { label: "투자 시뮬레이터", to: "/simulation" },
-                { label: "AI 투자 학습", to: "/ai-learning" },
-                { label: "뉴스&토론", to: "/news" },
-                { label: "챌린지", to: "/challenge" },
-              ]}
-            />
+    <footer className={cn("w-full bg-gray-100", className)}>
+      <div className="mx-auto w-full max-w-[1920px] px-6 py-[10px] md:px-12 xl:px-[300px]">
+        <div className="flex flex-col gap-[25px]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:gap-[60px]">
             <FooterCard
               title="고객 지원"
               items={[
@@ -87,22 +77,22 @@ export const Footer: React.FC<FooterProps> = ({ className }) => {
 
           <div className="w-full border-t border-gray-300" />
 
-          <div className="w-full bg-white rounded-[8px] px-[30px] py-[20px] flex flex-col gap-[60px]">
-            <p className="text-Headline_L_Bold text-main-1">FinVibe</p>
+          <div className="w-full rounded-[8px] px-[30px] py-[10px] flex flex-col gap-[25px]">
+            <p className="text-Headline_S_Bold text-main-1">FinVibe</p>
 
-            <div className="flex flex-col gap-[40px]">
-              <div className="flex flex-col gap-[27px] px-[20px]">
-                <p className="text-Title_L_Medium text-black">(주)핀바이브 ㅣ 대표: 000</p>
-                <p className="text-Title_L_Medium text-black">
+            <div className="flex flex-col gap-[30px]">
+              <div className="flex flex-col gap-[15px] pl-[20px] pr-[200px]">
+                <p className="text-Subtitle_M_Medium text-black">(주)핀바이브 ㅣ 대표: 000</p>
+                <p className="text-Subtitle_M_Medium text-black">
                   사업자등록번호: 123-45-67890 ㅣ 00시 00구 00로 000
                 </p>
-                <p className="text-Title_L_Medium text-black">
+                <p className="text-Subtitle_M_Medium text-black">
                   고객센터: 1588-0000 ㅣ 이메일: help@finvibe.com
                 </p>
               </div>
 
               <div className="px-[20px]">
-                <p className="text-Subtitle_L_Medium text-[#4C4C4C]">
+                <p className="text-Subtitle_S_Medium text-[#4C4C4C]">
                   본 서비스는 가상 투자 시뮬레이션이며, 실제 금융 거래가 발생하지 않습니다.
                 </p>
               </div>
@@ -111,7 +101,7 @@ export const Footer: React.FC<FooterProps> = ({ className }) => {
 
           <div className="w-full border-t border-gray-300" />
 
-          <div className="w-full flex items-center justify-between gap-6 flex-wrap">
+          <div className="w-full flex items-center justify-between gap-6 flex-wrap px-[80px]">
             <div className="flex items-center gap-[20px]">
               <button
                 type="button"
@@ -136,7 +126,7 @@ export const Footer: React.FC<FooterProps> = ({ className }) => {
               </button>
             </div>
 
-            <p className="text-Subtitle_L_Regular text-black">
+            <p className="text-Subtitle_S_Regular text-black">
               © FinVibe Corp. All rights reserved.
             </p>
           </div>
