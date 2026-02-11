@@ -29,6 +29,11 @@ const NewsDetailPage = () => {
   const navigate = useNavigate();
   const { newsId } = useParams<{ newsId: string }>();
   const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [newsId]);
+
   const [commentInput, setCommentInput] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [sortOrder, setSortOrder] = useState<"최신순" | "인기순">("최신순");

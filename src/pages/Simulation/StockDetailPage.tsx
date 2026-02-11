@@ -67,6 +67,10 @@ const StockDetailPage = () => {
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [stockId]);
+
   // 관심종목 여부 조회
   useEffect(() => {
     if (!user || !stockId) return;

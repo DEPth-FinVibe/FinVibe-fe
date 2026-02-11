@@ -28,6 +28,10 @@ export interface DiscussionProps {
   onReport?: () => void;
 }
 
+function formatCount(n: number): string {
+  return n > 99 ? "99+" : String(n);
+}
+
 export const Discussion = ({
   author,
   time,
@@ -84,7 +88,7 @@ export const Discussion = ({
           >
             <LikeIcon className="size-5" />
             <span className="text-Body_M_Light">
-              {likeCount.toString().padStart(2, "0")}
+              {formatCount(likeCount)}
             </span>
           </button>
           {onComment && (
@@ -96,7 +100,7 @@ export const Discussion = ({
             >
               <CommentIcon className="size-5" color="#000000" />
               <span className="text-Body_M_Light text-black">
-                {commentCount.toString().padStart(2, "0")}
+                {formatCount(commentCount)}
               </span>
             </button>
           )}

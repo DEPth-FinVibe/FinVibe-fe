@@ -27,6 +27,10 @@ const DiscussionDetailPage = () => {
   const { discussionId } = useParams<{ discussionId: string }>();
   const user = useAuthStore((s) => s.user);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [discussionId]);
+
   const [discussion, setDiscussion] = useState<DiscussionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<CommentResponse[]>([]);
