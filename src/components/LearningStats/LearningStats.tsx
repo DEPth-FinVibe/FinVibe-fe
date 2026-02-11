@@ -35,7 +35,7 @@ export const LearningStats: React.FC<LearningStatsProps> = ({
       {/* 헤더 */}
       <div className="flex items-center gap-5">
         <div className="w-[30px] h-[30px] flex items-center justify-center">
-          <AwardsIcon className="text-point-yellow" />
+          <AwardsIcon color="#42D6BA" />
         </div>
         <h2 className="text-Subtitle_L_Medium text-black">학습 통계</h2>
       </div>
