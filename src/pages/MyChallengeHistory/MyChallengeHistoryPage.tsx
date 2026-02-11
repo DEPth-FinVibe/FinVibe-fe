@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MyChallengeHistoryItem } from "@/components/MyChallengeHistoryItem";
 import { CompletedChallengeItem } from "@/components/CompletedChallengeItem";
@@ -347,6 +347,17 @@ const MyChallengeHistoryPage = () => {
               const config = BADGE_CONFIG[badge.badgeType];
               const isAcquired = badge.isAcquired;
               
+              // 마이페이지에서만 아이콘 크기 조정 (원 100px, 아이콘 70px)
+              const renderIcon = () => {
+                const iconElement = config.icon(isAcquired);
+                if (isAcquired && React.isValidElement(iconElement)) {
+                  return React.cloneElement(iconElement, {
+                    className: "w-[50px] h-[50px]",
+                  } as React.HTMLAttributes<SVGElement>);
+                }
+                return iconElement;
+              };
+              
               return (
                 <div
                   key={badge.badgeType}
@@ -357,7 +368,7 @@ const MyChallengeHistoryPage = () => {
                       "w-full h-full rounded-full flex items-center justify-center border-2 border-gray-300",
                       isAcquired ? "" : "bg-gray-100"
                     )}>
-                      {config.icon(isAcquired)}
+                      {renderIcon()}
                     </div>
                   </div>
                   <p className="text-Subtitle_L_Medium text-black text-center whitespace-pre-wrap">
