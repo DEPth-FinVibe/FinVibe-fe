@@ -116,8 +116,8 @@ export const StockListItem = ({
           {/* 현재 가격 */}
           <p
             className={cn(
-              "text-Body_M_Light min-w-full shrink-0 text-right w-min whitespace-pre-wrap",
-              isFavorited ? "text-gray-100" : "text-gray-400"
+              "text-Subtitle_L_Medium min-w-full shrink-0 text-right w-min whitespace-pre-wrap",
+              isFavorited ? "text-gray-100" : "text-black"
             )}
           >
             {price}
