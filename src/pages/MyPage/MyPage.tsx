@@ -8,20 +8,24 @@ import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
 import { walletApi } from "@/api/wallet";
 import { assetPortfolioApi, type PortfolioGroup, type AssetAllocationResponse } from "@/api/asset";
-import { gamificationApi } from "@/api/gamification";
+import { gamificationApi, type UserRankingItem } from "@/api/gamification";
 import { studyApi, type MyCourseResponse } from "@/api/study";
 import { ALL_BADGE_TYPES } from "@/components/Badge/badgeConfig";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useRecentActivity, formatRelativeTime } from "@/hooks/useRecentActivity";
 import PortfolioPerformanceWrapper from "./components/PortfolioPerformanceWrapper";
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
-  const communityRank = 247;
-  const communityTopPercent = 15;
-  const communityXp = 11_230;
+  const { user } = useAuthStore();
 
   const [allocation, setAllocation] = useState<AssetAllocationResponse | null>(null);
   const [cash, setCash] = useState<number | null>(null);
+  
+  // 커뮤니티 랭킹 정보
+  const [communityRank, setCommunityRank] = useState<number | null>(null);
+  const [communityTopPercent, setCommunityTopPercent] = useState<number | null>(null);
+  const [communityXp, setCommunityXp] = useState<number | null>(null);
   
   // 학습 진행률
   const [learningProgress, setLearningProgress] = useState<number | null>(null);
@@ -166,6 +170,47 @@ const MyPage: React.FC = () => {
     };
   }, []);
 
+  // 커뮤니티 랭킹 정보 조회
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        // XP 랭킹 조회 (주간 기준)
+        const xpRankingData = await gamificationApi.getUserXpRanking("WEEKLY", 50);
+        if (!alive) return;
+        
+        // 내 랭킹 찾기
+        if (user?.userId) {
+          const myItem = xpRankingData.find((item) => item.userId === user.userId);
+          if (myItem) {
+            setCommunityRank(myItem.ranking);
+            setCommunityXp(myItem.currentXp);
+            
+            // 상위 퍼센트 계산
+            const topPercent = xpRankingData.length > 0
+              ? Math.round((myItem.ranking / xpRankingData.length) * 100)
+              : null;
+            setCommunityTopPercent(topPercent);
+          } else {
+            // 랭킹에 없으면 null로 설정
+            setCommunityRank(null);
+            setCommunityTopPercent(null);
+            setCommunityXp(null);
+          }
+        }
+      } catch {
+        // 실패 시 null로 유지
+        if (!alive) return;
+        setCommunityRank(null);
+        setCommunityTopPercent(null);
+        setCommunityXp(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user?.userId]);
+
   // 최근 활동
   const { data: recentActivities = [], isLoading: isActivityLoading } = useRecentActivity();
 
@@ -248,10 +293,16 @@ const MyPage: React.FC = () => {
             >
               <p className="text-[18px] leading-[17px] font-normal text-black">커뮤니티 랭킹</p>
               <div className="flex flex-col gap-2.5 w-full">
-                <p className="text-Title_L_Medium text-main-1">#{communityRank}</p>
+                <p className="text-Title_L_Medium text-main-1">
+                  {communityRank !== null ? `#${communityRank}` : "-"}
+                </p>
                 <div className="flex flex-col gap-1 text-[16px] leading-[17px] font-normal text-[#747474]">
-                  <p>상위 {communityTopPercent}%</p>
-                  <p>{communityXp.toLocaleString()} XP</p>
+                  <p>
+                    {communityTopPercent !== null ? `상위 ${communityTopPercent}%` : "랭킹 정보 없음"}
+                  </p>
+                  <p>
+                    {communityXp !== null ? `${communityXp.toLocaleString()} XP` : "-"}
+                  </p>
                 </div>
               </div>
             </button>

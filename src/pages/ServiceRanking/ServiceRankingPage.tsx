@@ -177,12 +177,12 @@ const ServiceRankingPage: React.FC = () => {
               onClick={() => setRankingType("return")}
               className={cn(
                 "!rounded-lg !px-5 !py-3.5 !min-h-0",
-                "text-Subtitle_M_Medium",
+                "!text-Subtitle_M_Medium",
                 "text-white",
                 "border-none",
                 rankingType === "return"
-                  ? "bg-main-1"
-                  : "bg-gray-200"
+                  ? "bg-main-1 hover:!bg-main-1"
+                  : "bg-gray-200 hover:!bg-gray-200"
               )}
               aria-pressed={rankingType === "return"}
             >
@@ -194,12 +194,12 @@ const ServiceRankingPage: React.FC = () => {
               onClick={() => setRankingType("xp")}
               className={cn(
                 "!rounded-lg !px-5 !py-3.5 !min-h-0",
-                "text-Subtitle_M_Medium",
+                "!text-Subtitle_M_Medium",
                 "text-white",
                 "border-none",
                 rankingType === "xp"
-                  ? "bg-main-1"
-                  : "bg-gray-200"
+                  ? "bg-main-1 hover:!bg-main-1"
+                  : "bg-gray-200 hover:!bg-gray-200"
               )}
               aria-pressed={rankingType === "xp"}
             >
@@ -215,10 +215,10 @@ const ServiceRankingPage: React.FC = () => {
               onClick={() => setPeriod("weekly")}
               className={cn(
                 // button_S: radius 16px, padding 8px 20px, gap 10px
-                "!rounded-2xl !px-5 !py-2 !min-h-0",
+                "!rounded-2xl !px-5 !py-1 !min-h-0",
                 "!gap-2.5",
                 "!border !border-sub-blue",
-                "text-[16px] leading-[17px] font-medium",
+                "!text-Subtitle_S_Regular",
                 period === "weekly"
                   ? "!bg-sub-blue !text-white"
                   : "!bg-white !text-sub-blue"
@@ -232,10 +232,10 @@ const ServiceRankingPage: React.FC = () => {
               size="small"
               onClick={() => setPeriod("monthly")}
               className={cn(
-                "!rounded-2xl !px-5 !py-2 !min-h-0",
+                "!rounded-2xl !px-5 !py-1 !min-h-0",
                 "!gap-2.5",
                 "!border !border-sub-blue",
-                "text-[16px] leading-[17px] font-medium",
+                "!text-Subtitle_S_Regular",
                 period === "monthly"
                   ? "!bg-sub-blue !text-white"
                   : "!bg-white !text-sub-blue"
