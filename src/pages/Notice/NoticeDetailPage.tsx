@@ -222,7 +222,7 @@ const NoticeDetailPage: React.FC = () => {
 
   if (!notice) {
     return (
-      <div className="bg-[#EAEBED] min-h-[calc(100vh-80px)]">
+      <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
         <main className="w-full px-4 sm:px-8 2xl:px-60 pt-10 pb-20">
           <div className="w-full max-w-[1440px] mx-auto">
             <div className="bg-white border border-gray-300 rounded-[8px] px-[30px] py-[20px] text-center">
@@ -262,7 +262,7 @@ const NoticeDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#EAEBED] min-h-[calc(100vh-80px)]">
+    <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
       <main className="w-full px-4 sm:px-8 2xl:px-60 pt-10 pb-20">
         <div className="w-full max-w-[1440px] mx-auto flex flex-col gap-[30px]">
           {/* 헤더 카드 */}

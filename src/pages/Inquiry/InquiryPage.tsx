@@ -86,7 +86,7 @@ const InquiryPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#EAEBED] min-h-[calc(100vh-80px)]">
+    <div className="bg-gray-100 min-h-[calc(100vh-80px)]">
       <main className="w-full px-4 sm:px-8 2xl:px-60 pt-10 pb-20">
         <div className="w-full max-w-[1440px] mx-auto">
           <section className="bg-white border border-gray-300 rounded-[4px] px-5 sm:px-10 py-[30px] flex flex-col gap-[30px]">
