@@ -146,13 +146,26 @@ const NewsDetailPage = () => {
     }
   };
 
+  // 좋아요 토글 상태 (세션 내)
+  const [likedDiscussionIds, setLikedDiscussionIds] = useState<Set<number>>(new Set());
+  const [likedCommentIds, setLikedCommentIds] = useState<Set<number>>(new Set());
+
   // 토론 좋아요 토글
   const handleDiscussionLike = async (discussionId: number) => {
     try {
       await discussionApi.toggleDiscussionLike(discussionId);
+      const wasLiked = likedDiscussionIds.has(discussionId);
+      setLikedDiscussionIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.delete(discussionId);
+        else next.add(discussionId);
+        return next;
+      });
       setDiscussions((prev) =>
         prev.map((d) =>
-          d.id === discussionId ? { ...d, likeCount: d.likeCount + 1 } : d
+          d.id === discussionId
+            ? { ...d, likeCount: Math.max(0, d.likeCount + (wasLiked ? -1 : 1)) }
+            : d
         )
       );
     } catch {}
@@ -162,15 +175,48 @@ const NewsDetailPage = () => {
   const handleCommentLike = async (commentId: number, discussionId: number) => {
     try {
       await discussionApi.toggleCommentLike(commentId);
+      const wasLiked = likedCommentIds.has(commentId);
+      setLikedCommentIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.delete(commentId);
+        else next.add(commentId);
+        return next;
+      });
       setDiscussions((prev) =>
         prev.map((d) =>
           d.id === discussionId
             ? {
                 ...d,
                 comments: d.comments.map((c) =>
-                  c.id === commentId ? { ...c, likeCount: c.likeCount + 1 } : c
+                  c.id === commentId
+                    ? { ...c, likeCount: Math.max(0, c.likeCount + (wasLiked ? -1 : 1)) }
+                    : c
                 ),
               }
+            : d
+        )
+      );
+    } catch {}
+  };
+
+  // 토론 삭제
+  const handleDeleteDiscussion = async (discussionId: number) => {
+    if (!confirm("토론을 삭제하시겠습니까?")) return;
+    try {
+      await discussionApi.deleteDiscussion(discussionId);
+      setDiscussions((prev) => prev.filter((d) => d.id !== discussionId));
+    } catch {}
+  };
+
+  // 댓글 삭제
+  const handleDeleteComment = async (commentId: number, discussionId: number) => {
+    if (!confirm("댓글을 삭제하시겠습니까?")) return;
+    try {
+      await discussionApi.deleteComment(commentId);
+      setDiscussions((prev) =>
+        prev.map((d) =>
+          d.id === discussionId
+            ? { ...d, comments: d.comments.filter((c) => c.id !== commentId) }
             : d
         )
       );
@@ -395,8 +441,11 @@ const NewsDetailPage = () => {
                         time={formatRelativeTime(discussion.createdAt)}
                         content={discussion.content}
                         likeCount={discussion.likeCount}
+                        liked={likedDiscussionIds.has(discussion.id)}
                         commentCount={discussion.comments.length}
                         onLike={() => handleDiscussionLike(discussion.id)}
+                        onComment={() => navigate(`/discussion/${discussion.id}`)}
+                        onDelete={discussion.userId === user?.userId ? () => handleDeleteDiscussion(discussion.id) : undefined}
                       />
                       {/* 해당 토론의 댓글들 */}
                       {discussion.comments.length > 0 && (
@@ -408,8 +457,9 @@ const NewsDetailPage = () => {
                               time={formatRelativeTime(comment.createdAt)}
                               content={comment.content}
                               likeCount={comment.likeCount}
-                              commentCount={0}
+                              liked={likedCommentIds.has(comment.id)}
                               onLike={() => handleCommentLike(comment.id, discussion.id)}
+                              onDelete={comment.userId === user?.userId ? () => handleDeleteComment(comment.id, discussion.id) : undefined}
                             />
                           ))}
                         </div>
