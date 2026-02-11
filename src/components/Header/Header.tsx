@@ -1,14 +1,12 @@
 import React from "react";
 import { cn } from "@/utils/cn";
 import LogoIcon from "@/assets/svgs/LogoIcon";
-import BellIcon from "@/assets/svgs/BellIcon";
 import UserIcon from "@/assets/svgs/UserIcon";
 
 export interface HeaderProps {
   activeMenu?: string;
   menus?: string[];
   onMenuClick?: (menu: string) => void;
-  onNotificationClick?: () => void;
   onProfileClick?: () => void;
   className?: string;
 }
@@ -25,7 +23,6 @@ export const Header: React.FC<HeaderProps> = ({
   activeMenu = "홈",
   menus = DEFAULT_MENUS,
   onMenuClick,
-  onNotificationClick,
   onProfileClick,
   className,
 }) => {
@@ -62,9 +59,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 오른쪽 유틸리티 섹션 */}
       <div className="flex items-center gap-4 shrink-0">
-        {/* 알림 버튼 */}
-        <BellIcon onClick={onNotificationClick} ariaLabel="알림" />
-
         {/* 프로필 버튼 */}
         <UserIcon onClick={onProfileClick} ariaLabel="프로필" className="text-gray-500" />
       </div>
