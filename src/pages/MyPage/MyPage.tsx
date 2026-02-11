@@ -279,7 +279,7 @@ const MyPage: React.FC = () => {
                   <MyPortfolio
                     key={g.id}
                     title={g.name}
-                    changeRate={0}
+                    changeRate={g.totalReturnRate}
                     chartData={undefined}
                   />
                 ))}
