@@ -67,6 +67,10 @@ const StockDetailPage = () => {
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [stockId]);
+
   // 관심종목 여부 조회
   useEffect(() => {
     if (!user || !stockId) return;
@@ -297,7 +301,7 @@ const StockDetailPage = () => {
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-white h-[calc(100vh-64px)] overflow-hidden">
       <main className="flex px-32 py-6 gap-10">
         {/* 왼쪽 패널 - 차트 영역 */}
         <section className="flex-1 min-w-0 overflow-hidden">

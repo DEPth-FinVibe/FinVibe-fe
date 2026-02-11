@@ -68,17 +68,17 @@ const MoveToFolderPopover: React.FC<Props> = ({
             폴더 없음
           </p>
         ) : (
-          options.map((opt, idx) => {
+          options.map((opt) => {
             const active = pendingId != null && opt.id === pendingId;
-            // 첫 번째부터 검정, main-1을 반복
-            const textTone = idx % 2 === 0 ? "text-black" : "text-main-1";
             return (
               <button
                 key={opt.id}
                 type="button"
                 className={cn(
-                  "text-[14px] leading-[20px] whitespace-nowrap",
-                  textTone
+                  "text-[14px] leading-[20px] whitespace-nowrap rounded-md px-3 py-1 transition-colors",
+                  active
+                    ? "bg-main-1 text-white"
+                    : "text-black hover:bg-gray-200"
                 )}
                 role="option"
                 aria-selected={active}

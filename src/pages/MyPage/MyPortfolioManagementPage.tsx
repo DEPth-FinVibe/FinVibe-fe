@@ -16,6 +16,7 @@ type FolderMeta = {
 
 type StockRow = {
   id: string;
+  assetId: number;
   name: string;
   qty: string;
   price: string;
@@ -33,6 +34,7 @@ const formatMoney = (value: number, currency: string) => {
 const toStockRow = (asset: PortfolioAsset, folderId: number): StockRow => {
   return {
     id: String(asset.id),
+    assetId: asset.id,
     name: asset.name,
     qty: `${asset.amount}주`,
     // NOTE: 응답에는 현재가가 없어서, 우선 총 평가금액(totalPrice)을 표시 (디자인은 그대로)
@@ -95,6 +97,11 @@ const FolderChip: React.FC<{ folder: FolderMeta }> = ({ folder }) => {
 
 const MyPortfolioManagementPage: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const [tab, setTab] = useState<"folder" | "all">("folder");
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -435,13 +442,22 @@ const MyPortfolioManagementPage: React.FC = () => {
                           pendingId={movePendingFolderId}
                           onPendingChange={setMovePendingFolderId}
                           onClose={() => setOpenMoveRowId(null)}
-                          onConfirm={() => {
-                            if (movePendingFolderId == null) return;
-                            setRows((prev) =>
-                              prev.map((r) =>
-                                r.id === row.id ? { ...r, folderId: movePendingFolderId } : r
-                              )
-                            );
+                          onConfirm={async () => {
+                            if (movePendingFolderId == null || movePendingFolderId === row.folderId) return;
+                            try {
+                              await assetPortfolioApi.transferAsset(
+                                row.folderId,
+                                row.assetId,
+                                { targetPortfolioId: movePendingFolderId }
+                              );
+                              setRows((prev) =>
+                                prev.map((r) =>
+                                  r.id === row.id ? { ...r, folderId: movePendingFolderId } : r
+                                )
+                              );
+                            } catch {
+                              alert("자산 이동에 실패했습니다.");
+                            }
                           }}
                         />
                       </div>

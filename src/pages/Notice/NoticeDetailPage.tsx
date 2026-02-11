@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import BlackCalendarIcon from "@/assets/svgs/BlackCalendarIcon";
@@ -216,6 +216,10 @@ for (let i = 12; i >= 1; i--) {
 const NoticeDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { noticeId } = useParams<{ noticeId: string }>();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [noticeId]);
   
   // TODO: API 연동 시 실제 데이터 가져오기
   const notice = noticeId ? MOCK_NOTICE_DETAILS[noticeId] : MOCK_NOTICE_DETAILS["n-15"];

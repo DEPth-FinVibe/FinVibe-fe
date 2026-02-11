@@ -88,6 +88,10 @@ export type PerformanceChartResponse = {
   total: PerformanceChartPoint[];
 };
 
+export type TransferAssetBody = {
+  targetPortfolioId: number;
+};
+
 export const assetPortfolioApi = {
   /** 사용자 포트폴리오 그룹 조회: GET /api/asset/portfolios */
   getPortfolios: async (): Promise<PortfolioGroup[]> => {
@@ -245,6 +249,30 @@ export const assetPortfolioApi = {
           params: { period },
         });
         return res2.data;
+      }
+      throw error;
+    }
+  },
+
+  /** 자산 이동: PATCH /api/asset/portfolios/{sourcePortfolioId}/assets/{assetId}/transfer */
+  transferAsset: async (
+    sourcePortfolioId: number,
+    assetId: number,
+    body: TransferAssetBody
+  ): Promise<void> => {
+    try {
+      await assetApiClient.patch(
+        `/portfolios/${sourcePortfolioId}/assets/${assetId}/transfer`,
+        body
+      );
+    } catch (error: unknown) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 404) {
+        await api.patch(
+          `/asset/portfolios/${sourcePortfolioId}/assets/${assetId}/transfer`,
+          body
+        );
+        return;
       }
       throw error;
     }

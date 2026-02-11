@@ -136,17 +136,35 @@ const NewsPage = () => {
     }
   };
 
+  // 좋아요 토글 상태 (세션 내)
+  const [likedDiscussionIds, setLikedDiscussionIds] = useState<Set<number>>(new Set());
+
   const handleDiscussionLike = async (discussionId: number) => {
     try {
       await discussionApi.toggleDiscussionLike(discussionId);
+      const wasLiked = likedDiscussionIds.has(discussionId);
+      setLikedDiscussionIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.delete(discussionId);
+        else next.add(discussionId);
+        return next;
+      });
       setDiscussions((prev) =>
         prev.map((d) =>
-          d.id === discussionId ? { ...d, likeCount: d.likeCount + 1 } : d
+          d.id === discussionId
+            ? { ...d, likeCount: Math.max(0, d.likeCount + (wasLiked ? -1 : 1)) }
+            : d
         )
       );
-    } catch {
-      // 실패 시 무시
-    }
+    } catch {}
+  };
+
+  const handleDeleteDiscussion = async (discussionId: number) => {
+    if (!confirm("토론을 삭제하시겠습니까?")) return;
+    try {
+      await discussionApi.deleteDiscussion(discussionId);
+      setDiscussions((prev) => prev.filter((d) => d.id !== discussionId));
+    } catch {}
   };
 
 
@@ -330,10 +348,12 @@ const NewsPage = () => {
                     time={formatRelativeTime(discussion.createdAt)}
                     content={discussion.content}
                     likeCount={discussion.likeCount}
+                    liked={likedDiscussionIds.has(discussion.id)}
                     commentCount={discussion.comments.length}
                     className="border-gray-100"
                     onLike={() => handleDiscussionLike(discussion.id)}
-                    onComment={() => navigate(`/news/${discussion.newsId}`)}
+                    onComment={() => navigate(`/discussion/${discussion.id}`)}
+                    onDelete={discussion.userId === user?.userId ? () => handleDeleteDiscussion(discussion.id) : undefined}
                   />
                 ))}
               </div>

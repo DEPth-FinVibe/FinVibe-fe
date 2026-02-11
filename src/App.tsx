@@ -6,6 +6,7 @@ import HomePage from "@/pages/Home/HomePage";
 import OAuthCallbackPage from "@/pages/OAuthCallback/OAuthCallbackPage";
 import NewsPage from "@/pages/News/NewsPage";
 import NewsDetailPage from "@/pages/News/NewsDetailPage";
+import DiscussionDetailPage from "@/pages/News/DiscussionDetailPage";
 import ChallengePage from "@/pages/Challenge/ChallengePage";
 import AILearningPage from "@/pages/AILearning/AILearningPage";
 import MyPage from "@/pages/MyPage/MyPage";
@@ -81,6 +82,7 @@ function App() {
           <Route path="/ai-learning" element={<AILearningPage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/news/:newsId" element={<NewsDetailPage />} />
+          <Route path="/discussion/:discussionId" element={<DiscussionDetailPage />} />
           <Route path="/challenge" element={<ChallengePage />} />
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/mypage/challenge-history" element={<MyChallengeHistoryPage />} />
