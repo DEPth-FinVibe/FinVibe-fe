@@ -108,20 +108,20 @@ const AILearningPage: React.FC = () => {
   useEffect(() => {
     if (!isLessonModalOpen || !selectedLessonId) return;
 
-    const sendTenMinutePing = async () => {
+    const sendOneMinutePing = async () => {
       try {
-        await studyApi.tenMinutePing(selectedLessonId);
+        await studyApi.oneMinutePing(selectedLessonId);
       } catch {
         // 지표 전송 실패는 학습 흐름을 막지 않음
       }
     };
 
     // 모달 오픈 시 1회 즉시 전송
-    sendTenMinutePing();
+    sendOneMinutePing();
 
     const intervalId = window.setInterval(() => {
-      sendTenMinutePing();
-    }, 10 * 60 * 1000);
+      sendOneMinutePing();
+    }, 1 * 60 * 1000);
 
     return () => {
       window.clearInterval(intervalId);
