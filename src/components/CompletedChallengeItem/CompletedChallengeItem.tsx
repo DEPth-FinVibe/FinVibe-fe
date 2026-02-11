@@ -1,7 +1,7 @@
 import React from "react";
 import { cn } from "@/utils/cn";
 import Chip from "@/components/Chip/Chip";
-import CheckIcon from "@/assets/svgs/CheckIcon";
+import ChallengeCompletedIcon from "@/assets/svgs/ChallengeCompletedIcon";
 import { BADGE_CONFIG, type BadgeType } from "@/components/Badge/badgeConfig";
 
 export interface CompletedChallengeItemProps {
@@ -32,26 +32,20 @@ export const CompletedChallengeItem = ({
     if (type === "challenge") {
       // 챌린지 완료: 체크 아이콘
       return (
-        <div className="h-[45px] w-[47px] overflow-clip relative shrink-0">
-          <div className="absolute h-[39px] left-[3px] top-[4px] w-[38.672px]">
-            <div className="w-full h-full bg-etc-green rounded-full flex items-center justify-center">
-              <CheckIcon className="w-5 h-5 text-white" />
-            </div>
-          </div>
+        <div className="h-[45px] w-[47px] shrink-0">
+          <ChallengeCompletedIcon className="w-full h-full" />
         </div>
       );
     }
     
-    // 배지 획득: 배지 코드에 맞는 아이콘 사용 (작은 크기로 렌더링)
+    // 배지 획득: 배지 코드에 맞는 아이콘 사용 (원 안에 들어가도록)
     if (badgeCode && badgeCode in BADGE_CONFIG) {
       const badgeType = badgeCode as BadgeType;
       const config = BADGE_CONFIG[badgeType];
       
       // 작은 크기 아이콘 렌더링 (달성 완료 섹션용)
       const renderSmallIcon = () => {
-        // 아이콘 컴포넌트를 작은 크기로 직접 렌더링
         const iconElement = config.icon(true);
-        // React.cloneElement을 사용하여 className을 작은 크기로 변경
         if (React.isValidElement(iconElement)) {
           return React.cloneElement(iconElement as React.ReactElement<any>, {
             className: "w-[19px] h-[19px]",
@@ -61,16 +55,11 @@ export const CompletedChallengeItem = ({
       };
       
       return (
-        <div className="grid grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative shrink-0">
-          <div className="col-1 ml-[6.75px] mt-[6.75px] overflow-clip relative row-1 size-[31.5px]">
-            <div className="absolute h-[29.008px] left-[6.25px] top-[0.25px] w-[19px]">
-              <div className="w-full h-full rounded-full flex items-center justify-center">
-                {renderSmallIcon()}
-              </div>
+        <div className="relative shrink-0 size-[45px]">
+          <div className="w-full h-full border-2 border-gray-300 rounded-full flex items-center justify-center relative">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              {renderSmallIcon()}
             </div>
-          </div>
-          <div className="col-1 ml-0 mt-0 relative row-1 size-[45px]">
-            <div className="w-full h-full border-2 border-gray-300 rounded-full" />
           </div>
         </div>
       );
@@ -96,7 +85,7 @@ export const CompletedChallengeItem = ({
   return (
     <article
       className={cn(
-        "flex items-center justify-between p-5 bg-white border border-gray-300 border-solid rounded relative w-full",
+        "flex items-center justify-between p-5 bg-white border border-gray-300 border-solid rounded relative w-full gap-5",
         className
       )}
       role="article"

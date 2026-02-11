@@ -148,7 +148,6 @@ const MyChallengeHistoryPage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // 실제 API 호출
         const { year, month } = formatCurrentYearMonth();
 
         const [challengesResult, completedResult, badgesResult] = await Promise.allSettled([
