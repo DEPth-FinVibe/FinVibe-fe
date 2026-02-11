@@ -44,6 +44,10 @@ export default {
           "light-mint": "#C7F3EB",
           "light-navy": "#A5B5D5",
           "light-purple": "#EEE1FF",
+          "light-pink": "#FFD9EF",
+          "light-cyan": "#CFEEFF",
+          "light-coral": "#FFB1B1",
+          "light-beige": "#DFBCA1",
           red: "#FF0000",
           blue: "#001AFF",
           green: "#00A63E",
@@ -78,6 +82,7 @@ export default {
         Subtitle_L_Medium: ["20px", { lineHeight: "25px", fontWeight: "500" }],
         Subtitle_M_Medium: ["18px", { lineHeight: "23px", fontWeight: "500" }],
         Subtitle_S_Medium: ["16px", { lineHeight: "23px", fontWeight: "500" }],
+        Subtitle_XS_Medium: ["14px", { lineHeight: "18px", fontWeight: "500" }],
 
         // Body (Light, 140%)
         Body_L_Light: ["16px", { lineHeight: "22px", fontWeight: "300" }],

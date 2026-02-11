@@ -8,6 +8,7 @@ import { cn } from "@/utils/cn";
 import {
   BADGE_CONFIG,
   ALL_BADGE_TYPES,
+  type BadgeType,
 } from "@/components/Badge/badgeConfig";
 import type { CourseLevel } from "@/components/Progress/CourseItem";
 import {
@@ -17,7 +18,7 @@ import {
   type LessonDetailResponse,
   type MyStudyMetricResponse,
 } from "@/api/study";
-import { gamificationApi, type BadgeInfo } from "@/api/gamification";
+// import { gamificationApi, type BadgeInfo } from "@/api/gamification"; // 더미 데이터 사용으로 주석 처리
 
 const DIFFICULTY_MAP: Record<CourseDifficulty, CourseLevel> = {
   BEGINNER: "초급",
@@ -59,7 +60,7 @@ const AILearningPage: React.FC = () => {
   const [courses, setCourses] = useState<MyCourseResponse[]>([]);
   const [studyMetric, setStudyMetric] = useState<MyStudyMetricResponse | null>(null);
   const [todayAiRecommend, setTodayAiRecommend] = useState<string | null>(null);
-  const [badges, setBadges] = useState<BadgeInfo[]>([]);
+  // const [badges, setBadges] = useState<BadgeInfo[]>([]); // 더미 데이터 사용으로 주석 처리
   const [loading, setLoading] = useState(true);
 
   // 레슨 학습 모달 상태
@@ -72,11 +73,11 @@ const AILearningPage: React.FC = () => {
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    const [coursesResult, metricResult, recommendResult, badgesResult] = await Promise.allSettled([
+    const [coursesResult, metricResult, recommendResult] = await Promise.allSettled([
       studyApi.getMyCourses(),
       studyApi.getMyStudyMetric(),
       studyApi.getTodayAiStudyRecommend(),
-      gamificationApi.getMyBadges(),
+      // gamificationApi.getMyBadges(), // 더미 데이터 사용으로 주석 처리
     ]);
 
     if (coursesResult.status === "fulfilled") {
@@ -94,9 +95,10 @@ const AILearningPage: React.FC = () => {
       setTodayAiRecommend(null);
     }
 
-    if (badgesResult.status === "fulfilled") {
-      setBadges(badgesResult.value);
-    }
+    // 더미 데이터 사용으로 주석 처리
+    // if (badgesResult.status === "fulfilled") {
+    //   setBadges(badgesResult.value);
+    // }
 
     setLoading(false);
   }, []);
@@ -203,27 +205,61 @@ const AILearningPage: React.FC = () => {
     0
   );
 
-  // 모든 배지 목록 (획득한 것과 미획득한 것 모두 포함, 중복 제거)
-  const allBadges = useMemo(() => {
-    // 획득한 배지 맵 생성 (중복 제거)
-    const acquiredBadgesMap = new Map<string, BadgeInfo>();
-    badges.forEach((badge) => {
-      if (!acquiredBadgesMap.has(badge.badge)) {
-        acquiredBadgesMap.set(badge.badge, badge);
-      }
-    });
+  // AI 투자 학습 페이지에서만 사용하는 배지 이름 (줄바꿈 위치 지정)
+  const aiLearningBadgeNames: Partial<Record<BadgeType, string>> = {
+    KNOWLEDGE_SEEKER: "지식\n탐구자",
+    DILIGENT_INVESTOR: "성실한\n투자자",
+    DIVERSIFICATION_MASTER: "분산 투자의\n정석",
+    BEST_DEBATER: "베스트\n토론왕",
+    PERFECT_SCORE_QUIZ: "퀴즈 백점\n만점",
+    CHALLENGE_MARATHONER: "챌린지\n마라토너",
+    TOP_ONE_PERCENT_TRAINER: "상위 1%\n트레이더",
+    // 줄바꿈이 필요 없는 경우는 지정하지 않으면 원래 이름 사용
+  };
 
-    // 모든 배지 타입에 대해 획득 여부 확인
+  // AI 투자 학습 페이지에서만 사용하는 배지 배경색
+  const aiLearningBadgeBg: Partial<Record<BadgeType, string>> = {
+    KNOWLEDGE_SEEKER: "bg-etc-light-blue", // #DFE2FF
+    DIVERSIFICATION_MASTER: "bg-etc-light-purple", // #EEE1FF
+    BEST_DEBATER: "bg-etc-light-pink", // #FFD9EF
+    PERFECT_SCORE_QUIZ: "bg-etc-light-cyan", // #CFEEFF
+    CHALLENGE_MARATHONER: "bg-etc-light-coral", // #FFB1B1
+    TOP_ONE_PERCENT_TRAINER: "bg-etc-light-beige", // #DFBCA1
+  };
+
+  // 모든 배지 목록 (획득한 것과 미획득한 것 모두 포함, 중복 제거)
+  // TODO: 개발용 더미 데이터 - 모든 배지를 획득 상태로 표시
+  const allBadges = useMemo(() => {
+    // 더미 데이터: 모든 배지를 획득 상태로 표시
     return ALL_BADGE_TYPES.map((badgeType) => {
-      const acquiredBadge = acquiredBadgesMap.get(badgeType);
       return {
         badgeType,
-        isAcquired: !!acquiredBadge,
-        displayName: acquiredBadge?.displayName || BADGE_CONFIG[badgeType].displayName,
-        acquiredAt: acquiredBadge?.acquiredAt,
+        isAcquired: true, // 더미 데이터: 모든 배지 획득
+        displayName: BADGE_CONFIG[badgeType].displayName,
+        acquiredAt: new Date().toISOString(), // 더미 날짜
       };
     });
-  }, [badges]);
+    
+    // 실제 API 데이터 사용 시 아래 코드 사용
+    // // 획득한 배지 맵 생성 (중복 제거)
+    // const acquiredBadgesMap = new Map<string, BadgeInfo>();
+    // badges.forEach((badge) => {
+    //   if (!acquiredBadgesMap.has(badge.badge)) {
+    //     acquiredBadgesMap.set(badge.badge, badge);
+    //   }
+    // });
+    //
+    // // 모든 배지 타입에 대해 획득 여부 확인
+    // return ALL_BADGE_TYPES.map((badgeType) => {
+    //   const acquiredBadge = acquiredBadgesMap.get(badgeType);
+    //   return {
+    //     badgeType,
+    //     isAcquired: !!acquiredBadge,
+    //     displayName: acquiredBadge?.displayName || BADGE_CONFIG[badgeType].displayName,
+    //     acquiredAt: acquiredBadge?.acquiredAt,
+    //   };
+    // });
+  }, []);
 
   return (
     <div className="bg-gray-100 min-h-screen">
@@ -293,24 +329,40 @@ const AILearningPage: React.FC = () => {
             {/* 획득 배지 */}
             <div className="bg-white rounded-lg p-5 flex flex-col gap-5">
               <h2 className="text-Subtitle_L_Medium text-black">획득 배지</h2>
-              <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5 justify-items-center">
+              <div className="grid grid-cols-4 gap-x-[5px] gap-y-[10px] justify-items-center">
                 {allBadges.map((badge) => {
                   const config = BADGE_CONFIG[badge.badgeType];
                   const isAcquired = badge.isAcquired;
+                  
+                  // AI 투자 학습 페이지에서만 아이콘 크기를 작게 조정
+                  const renderIcon = () => {
+                    const iconElement = config.icon(isAcquired);
+                    if (isAcquired && React.isValidElement(iconElement)) {
+                      return React.cloneElement(iconElement, {
+                        className: "w-[26px] h-[25px]",
+                      } as React.HTMLAttributes<SVGElement>);
+                    }
+                    // 미획득 배지는 원래 크기 유지 (26px)
+                    return iconElement;
+                  };
                   
                   return (
                     <div
                       key={badge.badgeType}
                       className={cn(
-                        "bg-white rounded-lg p-4 flex flex-col gap-2 items-center justify-center h-[87px] w-[90px]",
-                        isAcquired ? config.bg : "bg-gray-100"
+                        "rounded-lg px-[10px] py-[10px] flex flex-col gap-1 items-center justify-center h-[87px] w-[98px]",
+                        isAcquired 
+                          ? (aiLearningBadgeBg[badge.badgeType] ?? config.bg)
+                          : "bg-gray-100"
                       )}
                     >
-                      <div className="flex items-center justify-center">
-                        {config.icon(isAcquired)}
+                      <div className="flex items-center justify-center h-[25px] w-[26px]">
+                        {renderIcon()}
                       </div>
-                      <p className="text-Subtitle_S_Regular text-[#4C4C4C] text-center whitespace-pre-wrap leading-tight">
-                        {isAcquired ? badge.displayName : "미획득"}
+                      <p className="text-Subtitle_XS_Medium text-[#4C4C4C] text-center whitespace-pre-wrap leading-[17px]">
+                        {isAcquired 
+                          ? (aiLearningBadgeNames[badge.badgeType] ?? badge.displayName)
+                          : "미획득"}
                       </p>
                     </div>
                   );
