@@ -8,6 +8,7 @@ import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
 import { walletApi } from "@/api/wallet";
 import { assetPortfolioApi, type PortfolioGroup, type AssetAllocationResponse } from "@/api/asset";
+import { assetRankingApi } from "@/api/asset/ranking";
 import { gamificationApi } from "@/api/gamification";
 import { studyApi } from "@/api/study";
 import { ALL_BADGE_TYPES } from "@/components/Badge/badgeConfig";
@@ -170,40 +171,52 @@ const MyPage: React.FC = () => {
     };
   }, []);
 
-  // 커뮤니티 랭킹 정보 조회
+  // 커뮤니티 랭킹 정보 조회 (일간 수익률 랭킹 기준)
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        // XP 랭킹 조회 (주간 기준)
-        const xpRankingData = await gamificationApi.getUserXpRanking("WEEKLY", 50);
+        // 일간 수익률 랭킹 조회
+        const [rankingData, xpData] = await Promise.allSettled([
+          assetRankingApi.getUserProfitRanking("DAILY", 0, 50),
+          gamificationApi.getMyXp(),
+        ]);
+        
         if (!alive) return;
         
-        // 내 랭킹 찾기
-        if (user?.userId) {
-          const myItem = xpRankingData.find((item) => item.userId === user.userId);
+        // 수익률 랭킹에서 내 랭킹 찾기
+        if (rankingData.status === "fulfilled" && user?.userId) {
+          const myItem = rankingData.value.items.find((item) => item.userId === user.userId);
           if (myItem) {
-            setCommunityRank(myItem.ranking);
-            setCommunityXp(myItem.currentXp);
+            setCommunityRank(myItem.rank);
             
             // 상위 퍼센트 계산
-            const topPercent = xpRankingData.length > 0
-              ? Math.round((myItem.ranking / xpRankingData.length) * 100)
+            const topPercent = rankingData.value.items.length > 0
+              ? Math.round((myItem.rank / rankingData.value.items.length) * 100)
               : null;
             setCommunityTopPercent(topPercent);
           } else {
             // 랭킹에 없으면 null로 설정
             setCommunityRank(null);
             setCommunityTopPercent(null);
-            setCommunityXp(null);
           }
+        } else {
+          setCommunityRank(null);
+          setCommunityTopPercent(null);
+        }
+        
+        // XP 정보 가져오기
+        if (xpData.status === "fulfilled") {
+          setCommunityXp(xpData.value.totalXp ?? 0);
+        } else {
+          setCommunityXp(0);
         }
       } catch {
         // 실패 시 null로 유지
         if (!alive) return;
         setCommunityRank(null);
         setCommunityTopPercent(null);
-        setCommunityXp(null);
+        setCommunityXp(0);
       }
     })();
     return () => {
@@ -301,7 +314,7 @@ const MyPage: React.FC = () => {
                     {communityTopPercent !== null ? `상위 ${communityTopPercent}%` : "랭킹 정보 없음"}
                   </p>
                   <p>
-                    {communityXp !== null ? `${communityXp.toLocaleString()} XP` : "-"}
+                    {communityXp !== null ? `${communityXp.toLocaleString()} XP` : "0 XP"}
                   </p>
                 </div>
               </div>
