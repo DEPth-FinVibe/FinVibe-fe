@@ -8,21 +8,27 @@ import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
 import { walletApi } from "@/api/wallet";
 import { assetPortfolioApi, type PortfolioGroup, type AssetAllocationResponse } from "@/api/asset";
-import { gamificationApi } from "@/api/gamification";
+import { gamificationApi, type UserRankingItem } from "@/api/gamification";
+import { studyApi, type MyCourseResponse } from "@/api/study";
 import { ALL_BADGE_TYPES } from "@/components/Badge/badgeConfig";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useRecentActivity, formatRelativeTime } from "@/hooks/useRecentActivity";
 import PortfolioPerformanceWrapper from "./components/PortfolioPerformanceWrapper";
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
-  // TODO: API 연동 시 교체
-  const learningProgress = 65; // %
-  const communityRank = 247;
-  const communityTopPercent = 15;
-  const communityXp = 11_230;
+  const { user } = useAuthStore();
 
   const [allocation, setAllocation] = useState<AssetAllocationResponse | null>(null);
   const [cash, setCash] = useState<number | null>(null);
+  
+  // 커뮤니티 랭킹 정보
+  const [communityRank, setCommunityRank] = useState<number | null>(null);
+  const [communityTopPercent, setCommunityTopPercent] = useState<number | null>(null);
+  const [communityXp, setCommunityXp] = useState<number | null>(null);
+  
+  // 학습 진행률
+  const [learningProgress, setLearningProgress] = useState<number | null>(null);
 
   // 포트폴리오 그룹(폴더) 목록
   // - null: 로딩/미시도
@@ -131,6 +137,80 @@ const MyPage: React.FC = () => {
     };
   }, []);
 
+  // 학습 진행률 계산
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const courses = await studyApi.getMyCourses();
+        if (!alive) return;
+        
+        // 전체 레슨 수와 완료한 레슨 수 계산
+        const totalLessons = courses.reduce((sum, c) => sum + c.totalLessonCount, 0);
+        const completedLessons = courses.reduce(
+          (sum, c) => sum + c.lessons.filter((l) => l.completed).length,
+          0
+        );
+        
+        // 학습할 것이 없으면 (totalLessons === 0) null로 설정하여 "-" 표시
+        // 학습할 것이 있으면 퍼센트 계산
+        const progress = totalLessons > 0 
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : null;
+        
+        setLearningProgress(progress);
+      } catch {
+        // 실패 시 null로 유지 (로딩 상태)
+        if (!alive) return;
+        setLearningProgress(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // 커뮤니티 랭킹 정보 조회
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        // XP 랭킹 조회 (주간 기준)
+        const xpRankingData = await gamificationApi.getUserXpRanking("WEEKLY", 50);
+        if (!alive) return;
+        
+        // 내 랭킹 찾기
+        if (user?.userId) {
+          const myItem = xpRankingData.find((item) => item.userId === user.userId);
+          if (myItem) {
+            setCommunityRank(myItem.ranking);
+            setCommunityXp(myItem.currentXp);
+            
+            // 상위 퍼센트 계산
+            const topPercent = xpRankingData.length > 0
+              ? Math.round((myItem.ranking / xpRankingData.length) * 100)
+              : null;
+            setCommunityTopPercent(topPercent);
+          } else {
+            // 랭킹에 없으면 null로 설정
+            setCommunityRank(null);
+            setCommunityTopPercent(null);
+            setCommunityXp(null);
+          }
+        }
+      } catch {
+        // 실패 시 null로 유지
+        if (!alive) return;
+        setCommunityRank(null);
+        setCommunityTopPercent(null);
+        setCommunityXp(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user?.userId]);
+
   // 최근 활동
   const { data: recentActivities = [], isLoading: isActivityLoading } = useRecentActivity();
 
@@ -172,12 +252,14 @@ const MyPage: React.FC = () => {
             >
               <p className="text-[18px] leading-[17px] font-normal text-black">학습 진행률</p>
               <div className="flex flex-col gap-[25px] w-full">
-                <p className="text-Title_L_Medium text-main-1">{learningProgress}%</p>
+                <p className="text-Title_L_Medium text-main-1">
+                  {learningProgress !== null ? `${learningProgress}%` : "-"}
+                </p>
                 <div className="w-[260px]">
                   <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-main-1 rounded-full"
-                      style={{ width: `${Math.max(0, Math.min(100, learningProgress))}%` }}
+                      style={{ width: `${Math.max(0, Math.min(100, learningProgress ?? 0))}%` }}
                     />
                   </div>
                 </div>
@@ -211,10 +293,16 @@ const MyPage: React.FC = () => {
             >
               <p className="text-[18px] leading-[17px] font-normal text-black">커뮤니티 랭킹</p>
               <div className="flex flex-col gap-2.5 w-full">
-                <p className="text-Title_L_Medium text-main-1">#{communityRank}</p>
+                <p className="text-Title_L_Medium text-main-1">
+                  {communityRank !== null ? `#${communityRank}` : "-"}
+                </p>
                 <div className="flex flex-col gap-1 text-[16px] leading-[17px] font-normal text-[#747474]">
-                  <p>상위 {communityTopPercent}%</p>
-                  <p>{communityXp.toLocaleString()} XP</p>
+                  <p>
+                    {communityTopPercent !== null ? `상위 ${communityTopPercent}%` : "랭킹 정보 없음"}
+                  </p>
+                  <p>
+                    {communityXp !== null ? `${communityXp.toLocaleString()} XP` : "-"}
+                  </p>
                 </div>
               </div>
             </button>
@@ -279,7 +367,7 @@ const MyPage: React.FC = () => {
                   <MyPortfolio
                     key={g.id}
                     title={g.name}
-                    changeRate={0}
+                    changeRate={g.totalReturnRate}
                     chartData={undefined}
                   />
                 ))}

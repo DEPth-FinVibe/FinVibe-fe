@@ -40,12 +40,21 @@ export const MyPortfolio: React.FC<MyPortfolioProps> = ({
 
   // 변화율 포맷팅
   const formatChangeRate = (rate: number): string => {
-    const sign = rate >= 0 ? "+" : "";
-    return `${sign}${rate}%`;
+    // 0.00%일 때는 부호 없이 표시
+    if (rate === 0 || Math.abs(rate) < 0.01) {
+      return "0.00%";
+    }
+    const sign = rate > 0 ? "+" : "";
+    return `${sign}${rate.toFixed(2)}%`;
   };
 
-  // 변화율에 따른 색상 결정
-  const changeRateColor = changeRate >= 0 ? "text-etc-red" : "text-etc-blue";
+  // 변화율에 따른 색상 결정: 0.00%면 검정색, 양수면 빨간색, 음수면 파란색
+  const changeRateColor = 
+    changeRate === 0 || Math.abs(changeRate) < 0.01
+      ? "text-black"
+      : changeRate > 0
+      ? "text-etc-red"
+      : "text-etc-blue";
 
   // 차트 높이 (Figma 근사: 표준 Tailwind 높이와 정렬)
   const chartHeight = 80;

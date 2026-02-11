@@ -42,7 +42,7 @@ export const BADGE_CONFIG: Record<BadgeType, BadgeDisplayConfig> = {
     displayName: "지식 탐구자",
     icon: (isAcquired) =>
       isAcquired ? (
-        <BadgeAwardsIcon className="w-[70px] h-[70px]" color="#FFD166" />
+        <BadgeAwardsIcon className="w-[70px] h-[70px]" color="#001AFF" />
       ) : (
         <LockIcon className="w-[26px] h-[26px]" color="#909193" />
       ),
