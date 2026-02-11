@@ -27,6 +27,10 @@ type TxItem = {
 const MyAssetsPage: React.FC = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const [allocation, setAllocation] = useState<AssetAllocationResponse | null>(null);
   const [cash, setCash] = useState<number | null>(null);
 

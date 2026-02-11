@@ -30,7 +30,6 @@ type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "�
 
 const PAGE_SIZE = 20;
 
-
 // 관심종목 카드 컴포넌트
 interface WatchlistCardProps {
   stockName: string;
@@ -86,19 +85,41 @@ const WatchlistCard = ({
       )}
       <div className="flex flex-col gap-1 flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={cn("text-Subtitle_S_Medium", isFavorited ? "text-white" : "text-sub-blue")}>
+          <span
+            className={cn(
+              "text-Subtitle_S_Medium",
+              isFavorited ? "text-white" : "text-sub-blue",
+            )}
+          >
             {stockName}
           </span>
-          <span className={cn("text-Caption_L_Light", isFavorited ? "text-gray-100" : "text-gray-400")}>
+          <span
+            className={cn(
+              "text-Caption_L_Light",
+              isFavorited ? "text-gray-100" : "text-gray-400",
+            )}
+          >
             {stockCode}
           </span>
         </div>
-        <span className={cn("text-Caption_L_Light", isFavorited ? "text-gray-100" : "text-gray-400")}>
+        <span
+          className={cn(
+            "text-Caption_L_Light",
+            isFavorited ? "text-gray-100" : "text-gray-400",
+          )}
+        >
           {tradingVolume ? `거래량: ${tradingVolume}` : "거래량:"}
         </span>
       </div>
       <div className="flex flex-col items-end gap-1">
-        <span className={cn("text-Body_M_Light", isFavorited ? "text-gray-100" : "text-gray-400")}>{price}</span>
+        <span
+          className={cn(
+            "text-Body_M_Light",
+            isFavorited ? "text-gray-100" : "text-gray-400",
+          )}
+        >
+          {price}
+        </span>
         {changeRate && (
           <div className="flex items-center gap-1">
             <ChangeRateIcon
@@ -125,27 +146,34 @@ interface RealTimeStockItemProps {
   onFavoriteToggle?: () => void;
 }
 
-const RealTimeStockItem = memo(({ stock, onClick, isFavorited, onFavoriteToggle }: RealTimeStockItemProps) => {
-  const quote = useQuote(stock.stockId);
+const RealTimeStockItem = memo(
+  ({
+    stock,
+    onClick,
+    isFavorited,
+    onFavoriteToggle,
+  }: RealTimeStockItemProps) => {
+    const quote = useQuote(stock.stockId);
 
-  // 실시간 데이터가 있으면 사용, 없으면 REST API 데이터 사용
-  const price = quote?.close ?? stock.close;
-  const changePct = quote?.prevDayChangePct ?? stock.prevDayChangePct;
-  const volume = quote?.volume ?? stock.volume;
+    // 실시간 데이터가 있으면 사용, 없으면 REST API 데이터 사용
+    const price = quote?.close ?? stock.close;
+    const changePct = quote?.prevDayChangePct ?? stock.prevDayChangePct;
+    const volume = quote?.volume ?? stock.volume;
 
-  return (
-    <StockListItem
-      stockName={stock.name}
-      stockCode={stock.symbol}
-      tradingVolume={formatVolume(volume)}
-      price={formatPriceWithSymbol(price)}
-      changeRate={formatChangeRate(changePct)}
-      onClick={onClick}
-      isFavorited={isFavorited}
-      onFavoriteToggle={onFavoriteToggle}
-    />
-  );
-});
+    return (
+      <StockListItem
+        stockName={stock.name}
+        stockCode={stock.symbol}
+        tradingVolume={formatVolume(volume)}
+        price={formatPriceWithSymbol(price)}
+        changeRate={formatChangeRate(changePct)}
+        onClick={onClick}
+        isFavorited={isFavorited}
+        onFavoriteToggle={onFavoriteToggle}
+      />
+    );
+  },
+);
 
 // 거래 내역 카드 컴포넌트
 interface TradeHistoryCardProps {
@@ -157,33 +185,47 @@ const TradeHistoryCard = ({ trade, onClick }: TradeHistoryCardProps) => {
   const isBuy = trade.transactionType === "BUY";
   const totalAmount = trade.price * trade.amount;
   const date = new Date(trade.createdAt);
-  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date
+    .getHours()
+    .toString()
+    .padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
 
   return (
     <div
       className={cn(
         "flex items-center justify-between px-4 py-3 rounded-lg border",
         isBuy ? "border-etc-red/30 bg-red-50" : "border-etc-blue/30 bg-blue-50",
-        onClick && "cursor-pointer hover:bg-opacity-70"
+        onClick && "cursor-pointer hover:bg-opacity-70",
       )}
       onClick={onClick}
       role={onClick ? "button" : undefined}
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className={cn(
-            "text-xs px-2 py-0.5 rounded font-medium",
-            isBuy ? "bg-etc-red text-white" : "bg-etc-blue text-white"
-          )}>
+          <span
+            className={cn(
+              "text-xs px-2 py-0.5 rounded font-medium",
+              isBuy ? "bg-etc-red text-white" : "bg-etc-blue text-white",
+            )}
+          >
             {isBuy ? "매수" : "매도"}
           </span>
-          <span className="text-Subtitle_S_Medium">{trade.stockName ?? `종목 #${trade.stockId}`}</span>
+          <span className="text-Subtitle_S_Medium">
+            {trade.stockName ?? `종목 #${trade.stockId}`}
+          </span>
         </div>
         <span className="text-Caption_L_Light text-gray-400">{dateStr}</span>
       </div>
       <div className="flex flex-col items-end gap-1">
-        <span className="text-Body_M_Light">{trade.amount}주 × {trade.price.toLocaleString()}원</span>
-        <span className={cn("text-Subtitle_S_Medium", isBuy ? "text-etc-red" : "text-etc-blue")}>
+        <span className="text-Body_M_Light">
+          {trade.amount}주 × {trade.price.toLocaleString()}원
+        </span>
+        <span
+          className={cn(
+            "text-Subtitle_S_Medium",
+            isBuy ? "text-etc-red" : "text-etc-blue",
+          )}
+        >
           {totalAmount.toLocaleString()}원
         </span>
       </div>
@@ -199,37 +241,53 @@ interface ReservedOrderCardProps {
   isCancelling?: boolean;
 }
 
-const ReservedOrderCard = ({ trade, onCancel, onClick, isCancelling }: ReservedOrderCardProps) => {
+const ReservedOrderCard = ({
+  trade,
+  onCancel,
+  onClick,
+  isCancelling,
+}: ReservedOrderCardProps) => {
   const isBuy = trade.transactionType === "BUY";
   const totalAmount = trade.price * trade.amount;
   const date = new Date(trade.createdAt);
-  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date
+    .getHours()
+    .toString()
+    .padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
 
   return (
     <div
       className={cn(
         "flex items-center justify-between px-4 py-3 rounded-lg border border-yellow-300 bg-yellow-50",
-        onClick && "cursor-pointer"
+        onClick && "cursor-pointer",
       )}
       onClick={onClick}
       role={onClick ? "button" : undefined}
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className={cn(
-            "text-xs px-2 py-0.5 rounded font-medium",
-            isBuy ? "bg-etc-red text-white" : "bg-etc-blue text-white"
-          )}>
+          <span
+            className={cn(
+              "text-xs px-2 py-0.5 rounded font-medium",
+              isBuy ? "bg-etc-red text-white" : "bg-etc-blue text-white",
+            )}
+          >
             예약 {isBuy ? "매수" : "매도"}
           </span>
-          <span className="text-Subtitle_S_Medium">{trade.stockName ?? `종목 #${trade.stockId}`}</span>
+          <span className="text-Subtitle_S_Medium">
+            {trade.stockName ?? `종목 #${trade.stockId}`}
+          </span>
         </div>
         <span className="text-Caption_L_Light text-gray-400">{dateStr}</span>
       </div>
       <div className="flex items-center gap-3">
         <div className="flex flex-col items-end gap-1">
-          <span className="text-Body_M_Light">{trade.amount}주 × {trade.price.toLocaleString()}원</span>
-          <span className="text-Subtitle_S_Medium">{totalAmount.toLocaleString()}원</span>
+          <span className="text-Body_M_Light">
+            {trade.amount}주 × {trade.price.toLocaleString()}원
+          </span>
+          <span className="text-Subtitle_S_Medium">
+            {totalAmount.toLocaleString()}원
+          </span>
         </div>
         {onCancel && (
           <button
@@ -242,7 +300,7 @@ const ReservedOrderCard = ({ trade, onCancel, onClick, isCancelling }: ReservedO
               "text-sm px-3 py-1.5 rounded",
               isCancelling
                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-red-100 text-red-600 hover:bg-red-200"
+                : "bg-red-100 text-red-600 hover:bg-red-200",
             )}
           >
             {isCancelling ? "취소 중..." : "취소"}
@@ -261,15 +319,22 @@ const SimulationPage = () => {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // 관심 종목
-  const [favoriteStocks, setFavoriteStocks] = useState<FavoriteStockResponse[]>([]);
+  const [favoriteStocks, setFavoriteStocks] = useState<FavoriteStockResponse[]>(
+    [],
+  );
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    memberApi.getFavoriteStocks().then((data) => {
-      if (!cancelled) setFavoriteStocks(data);
-    }).catch(() => {});
-    return () => { cancelled = true; };
+    memberApi
+      .getFavoriteStocks()
+      .then((data) => {
+        if (!cancelled) setFavoriteStocks(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // 거래 내역 (현재 월 기준)
@@ -278,7 +343,9 @@ const SimulationPage = () => {
 
   // 예약 주문 취소
   const cancelTrade = useCancelTrade();
-  const [cancellingTradeId, setCancellingTradeId] = useState<number | null>(null);
+  const [cancellingTradeId, setCancellingTradeId] = useState<number | null>(
+    null,
+  );
 
   // 예약 주문 필터링 (tradeType === "RESERVED")
   const reservedOrders = useMemo(() => {
@@ -311,7 +378,10 @@ const SimulationPage = () => {
         setFavoriteStocks((prev) => prev.filter((f) => f.stockId !== stockId));
       } else {
         const added = await memberApi.addFavoriteStock(stockId);
-        setFavoriteStocks((prev) => [...prev, { ...added, name: added.name || stockName }]);
+        setFavoriteStocks((prev) => [
+          ...prev,
+          { ...added, name: added.name || stockName },
+        ]);
       }
     } catch {
       // 실패 시 무시
@@ -443,7 +513,9 @@ const SimulationPage = () => {
       return;
     }
 
-    const renderedStockIdSet = new Set(visibleStocks.map((stock) => stock.stockId));
+    const renderedStockIdSet = new Set(
+      visibleStocks.map((stock) => stock.stockId),
+    );
     const nextSubscribed = new Set(
       inViewStockIds.filter((stockId) => renderedStockIdSet.has(stockId)),
     );
@@ -480,8 +552,6 @@ const SimulationPage = () => {
 
   const handleShowMore = () => {
     setVisibleCount((prev) => prev + PAGE_SIZE);
-
-    
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -590,7 +660,10 @@ const SimulationPage = () => {
           />
 
           {/* 주식 리스트 - 스크롤 영역 */}
-          <div ref={listContainerRef} className="flex flex-col gap-4 overflow-y-auto flex-1 pr-2">
+          <div
+            ref={listContainerRef}
+            className="flex flex-col gap-4 overflow-y-auto flex-1 pr-2"
+          >
             {isLoading && (
               <div className="flex justify-center items-center py-10 text-gray-400 text-sm">
                 로딩중...
@@ -608,14 +681,18 @@ const SimulationPage = () => {
                 <div key={stock.stockId} data-stock-id={stock.stockId}>
                   <RealTimeStockItem
                     stock={stock}
-                    onClick={() => navigate(`/simulation/${stock.stockId}`, {
-                      state: {
-                        stockName: stock.name,
-                        stockCode: stock.symbol,
-                      },
-                    })}
+                    onClick={() =>
+                      navigate(`/simulation/${stock.stockId}`, {
+                        state: {
+                          stockName: stock.name,
+                          stockCode: stock.symbol,
+                        },
+                      })
+                    }
                     isFavorited={favoriteStockIds.has(stock.stockId)}
-                    onFavoriteToggle={() => handleFavoriteToggle(stock.stockId, stock.name)}
+                    onFavoriteToggle={() =>
+                      handleFavoriteToggle(stock.stockId, stock.name)
+                    }
                   />
                 </div>
               ))}
@@ -631,9 +708,9 @@ const SimulationPage = () => {
         </section>
 
         {/* 오른쪽 패널 - 관심 종목 등 */}
-        <aside className="shrink-0 flex flex-col min-h-0">
+        <aside className="w-[445px] shrink-0 flex flex-col min-h-0">
           {/* 상단 탭 */}
-          <div className="flex border-b border-gray-200 mb-4">
+          <div className="flex border-b justify-between border-gray-200 mb-4">
             {rightTabs.map((tab) => (
               <button
                 key={tab}
@@ -653,6 +730,7 @@ const SimulationPage = () => {
           {/* 포트폴리오 탭 */}
           {rightTab === "포트폴리오" && (
             <SimulationPortfolioTab
+              className="flex-1 overflow-y-auto"
               groups={portfolioGroups ?? []}
               isLoading={portfolioGroups === null}
               isCreating={isCreatingPortfolioGroup}
@@ -686,13 +764,17 @@ const SimulationPage = () => {
                     price=""
                     changeRate=""
                     isFavorited
-                    onFavoriteToggle={() => handleFavoriteToggle(item.stockId, item.name)}
-                    onClick={() => navigate(`/simulation/${item.stockId}`, {
-                      state: {
-                        stockName: item.name,
-                        stockCode: String(item.stockId),
-                      },
-                    })}
+                    onFavoriteToggle={() =>
+                      handleFavoriteToggle(item.stockId, item.name)
+                    }
+                    onClick={() =>
+                      navigate(`/simulation/${item.stockId}`, {
+                        state: {
+                          stockName: item.name,
+                          stockCode: String(item.stockId),
+                        },
+                      })
+                    }
                   />
                 ))
               )}
@@ -715,12 +797,14 @@ const SimulationPage = () => {
                   <TradeHistoryCard
                     key={trade.tradeId}
                     trade={trade}
-                    onClick={() => navigate(`/simulation/${trade.stockId}`, {
-                      state: {
-                        stockName: trade.stockName,
-                        stockCode: String(trade.stockId),
-                      },
-                    })}
+                    onClick={() =>
+                      navigate(`/simulation/${trade.stockId}`, {
+                        state: {
+                          stockName: trade.stockName,
+                          stockCode: String(trade.stockId),
+                        },
+                      })
+                    }
                   />
                 ))
               )}
