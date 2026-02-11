@@ -7,16 +7,21 @@ import CalendarIcon from "@/assets/svgs/CalendarIcon";
 import { cn } from "@/utils/cn";
 import { walletApi } from "@/api/wallet";
 import { assetPortfolioApi, type AssetAllocationResponse } from "@/api/asset";
+import { tradeApi } from "@/api/trade";
+import { studyApi } from "@/api/study";
+import { gamificationApi } from "@/api/gamification";
 
 const formatWon = (value: number) => `₩${value.toLocaleString()}`;
 
-type TxType = "리워드" | "매수";
+type TxType = "리워드" | "매수" | "매도";
 
 type TxItem = {
+  id: string;
   title: string;
   type: TxType;
   amountText: string;
   amountTone: "mint" | "blue";
+  timestamp: string;
 };
 
 const MyAssetsPage: React.FC = () => {
@@ -56,22 +61,136 @@ const MyAssetsPage: React.FC = () => {
   const total = allocation?.totalAmount ?? (cashValue + stock);
 
   const [filter, setFilter] = useState<"전체" | "매수/매도" | "리워드">("전체");
+  const [txList, setTxList] = useState<TxItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 3;
 
-  const txList = useMemo<TxItem[]>(
-    () => [
-      { title: "챌린지 리워드", type: "리워드", amountText: "+1,000 XP", amountTone: "mint" },
-      { title: "챌린지 리워드", type: "매수", amountText: "₩720,000", amountTone: "blue" },
-      { title: "챌린지 리워드", type: "리워드", amountText: "+500 XP", amountTone: "mint" },
-    ],
-    []
-  );
+  // 거래 내역 및 리워드 통합 조회
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const monthStr = `${year}-${String(month).padStart(2, "0")}`;
+
+        const [tradesResult, lessonsResult, challengesResult, coursesResult] =
+          await Promise.allSettled([
+            tradeApi.getTradeHistory(year, month),
+            studyApi.getMonthlyLessonCompletions(monthStr),
+            gamificationApi.getCompletedChallenges(
+              String(year),
+              String(month).padStart(2, "0"),
+            ),
+            studyApi.getMyCourses(),
+          ]);
+
+        if (!alive) return;
+
+        const transactions: TxItem[] = [];
+
+        // 거래 내역 (매수/매도)
+        if (tradesResult.status === "fulfilled") {
+          for (const trade of tradesResult.value) {
+            const action = trade.transactionType === "BUY" ? "매수" : "매도";
+            const totalAmount = trade.amount * trade.price;
+            transactions.push({
+              id: `trade-${trade.tradeId}`,
+              title: `${trade.stockName ?? "종목"} ${action}`,
+              type: trade.transactionType === "BUY" ? "매수" : "매도",
+              amountText: formatWon(totalAmount),
+              amountTone: "blue",
+              timestamp: trade.createdAt,
+            });
+          }
+        }
+
+        // 학습 완료 리워드
+        if (lessonsResult.status === "fulfilled" && coursesResult.status === "fulfilled") {
+          const lessonTitleMap = new Map<number, string>();
+          for (const course of coursesResult.value) {
+            for (const lesson of course.lessons) {
+              lessonTitleMap.set(lesson.id, lesson.title);
+            }
+          }
+
+          // 레슨 완료 시 XP는 일반적으로 500 XP
+          // 현재 레슨 완료 API 응답에 XP가 포함되어 있지 않으므로 기본값 사용
+          // 실제 API 응답에 XP가 포함되어 있으면 수정 필요
+          const DEFAULT_LESSON_XP = 500;
+
+          for (const item of lessonsResult.value.items) {
+            const lessonTitle = lessonTitleMap.get(item.lessonId);
+            
+            // 레슨 완료 시 XP는 일반적으로 500 XP
+            // 실제 API 응답에 XP가 포함되어 있으면 수정 필요
+            const xpAmount = DEFAULT_LESSON_XP;
+
+            transactions.push({
+              id: `study-${item.lessonId}-${item.completedAt}`,
+              title: lessonTitle ? `${lessonTitle}` : "학습 완료 리워드",
+              type: "리워드",
+              amountText: `+${xpAmount.toLocaleString()} XP`,
+              amountTone: "mint",
+              timestamp: item.completedAt,
+            });
+          }
+        }
+
+        // 챌린지 완료 리워드
+        if (challengesResult.status === "fulfilled") {
+          for (const challenge of challengesResult.value) {
+            transactions.push({
+              id: `challenge-${challenge.challengeId}`,
+              title: "챌린지 리워드",
+              type: "리워드",
+              amountText: `+${challenge.rewardXp.toLocaleString()} XP`,
+              amountTone: "mint",
+              timestamp: challenge.completedAt,
+            });
+          }
+        }
+
+        // 최신순 정렬
+        transactions.sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
+
+        setTxList(transactions);
+      } catch (error) {
+        console.error("거래 내역 조회 실패:", error);
+        setTxList([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const filteredTx = useMemo(() => {
-    if (filter === "전체") return txList;
-    if (filter === "리워드") return txList.filter((t) => t.type === "리워드");
-    // 매수/매도(현재는 매수만 더미)
-    return txList.filter((t) => t.type === "매수");
+    let filtered: TxItem[] = [];
+    if (filter === "전체") filtered = txList;
+    else if (filter === "리워드") filtered = txList.filter((t) => t.type === "리워드");
+    else filtered = txList.filter((t) => t.type === "매수" || t.type === "매도");
+    
+    return filtered;
   }, [filter, txList]);
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(filteredTx.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedTx = filteredTx.slice(startIndex, endIndex);
+
+  // 필터 변경 시 첫 페이지로 이동
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
 
   const stockRatio = stock / Math.max(1, cashValue + stock); // 0~1
   const cashRatio = 1 - stockRatio;
@@ -215,7 +334,7 @@ const MyAssetsPage: React.FC = () => {
           </div>
 
           {/* 거래 내역 */}
-          <section className="bg-white border border-gray-300 rounded-lg w-full h-[491px] p-10 flex flex-col gap-10">
+          <section className="bg-white border border-gray-300 rounded-lg w-full min-h-[491px] p-10 flex flex-col gap-10">
             <div className="w-full h-11 flex items-center justify-between">
               <div className="flex items-center gap-5">
                 <div className="bg-etc-light-purple rounded-xl h-11 p-2 flex items-center">
@@ -265,40 +384,105 @@ const MyAssetsPage: React.FC = () => {
             </div>
 
             <div className="w-full flex flex-col">
-              {filteredTx.map((tx, idx) => (
-                <div
-                  key={`${tx.title}-${idx}`}
-                  className={cn(
-                    "w-full flex items-center justify-between py-10",
-                    "border-b border-gray-300",
-                    idx === filteredTx.length - 1 && "border-b"
-                  )}
-                >
-                  <div className="flex items-center gap-5">
-                    <p className="text-Body_M_Regular text-black">{tx.title}</p>
-                    <Chip
-                      label={tx.type}
-                      variant="secondary"
-                      className={cn(
-                        tx.type === "리워드"
-                          ? "!border-main-1 !text-main-1 !bg-[#C7F3EB]"
-                          : "!border-sub-blue !text-sub-blue !bg-[#A5B5D5]"
-                      )}
-                    />
+              {loading ? (
+                <div className="w-full py-10 text-center text-Subtitle_L_Regular text-gray-400">
+                  불러오는 중...
+                </div>
+              ) : filteredTx.length === 0 ? (
+                <div className="w-full py-10 text-center text-Subtitle_L_Regular text-gray-400">
+                  거래 내역이 없습니다
+                </div>
+              ) : (
+                <>
+                  <div className="w-full">
+                    {paginatedTx.map((tx, idx) => (
+                      <div
+                        key={tx.id}
+                        className={cn(
+                          "w-full flex items-center justify-between py-10",
+                          "border-b border-gray-300",
+                          idx === paginatedTx.length - 1 && "border-b-0"
+                        )}
+                      >
+                        <div className="flex items-center gap-5">
+                          <p className="text-Body_M_Regular text-black">{tx.title}</p>
+                          <Chip
+                            label={tx.type}
+                            variant="secondary"
+                            className={cn(
+                              tx.type === "리워드"
+                                ? "!border-main-1 !text-main-1 !bg-[#C7F3EB]"
+                                : "!border-sub-blue !text-sub-blue !bg-[#A5B5D5]"
+                            )}
+                          />
+                        </div>
+
+                        <p
+                          className={cn(
+                            "text-Subtitle_L_Regular w-32 text-right",
+                            tx.amountTone === "mint"
+                              ? "text-main-1"
+                              : "text-sub-blue"
+                          )}
+                        >
+                          {tx.amountText}
+                        </p>
+                      </div>
+                    ))}
                   </div>
 
-                  <p
-                    className={cn(
-                      "text-Subtitle_L_Regular w-32 text-right",
-                      tx.amountTone === "mint"
-                        ? "text-main-1"
-                        : "text-sub-blue"
-                    )}
-                  >
-                    {tx.amountText}
-                  </p>
-                </div>
-              ))}
+                  {/* 페이지네이션 */}
+                  {totalPages > 1 && (
+                    <div className="w-full flex items-center justify-center gap-[10px] pt-5 border-t border-gray-300">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage <= 1}
+                        className={cn(
+                          "size-[40px] flex items-center justify-center",
+                          currentPage <= 1 ? "text-gray-300 cursor-not-allowed" : "text-black"
+                        )}
+                        aria-label="이전 페이지"
+                      >
+                        <span className="text-[24px] leading-[1.25]">&lt;</span>
+                      </button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          type="button"
+                          onClick={() => setCurrentPage(page)}
+                          className={cn(
+                            "size-[40px] flex items-center justify-center",
+                            "text-[24px] leading-[1.25] font-medium",
+                            currentPage === page
+                              ? "bg-main-1 text-white rounded-[4px]"
+                              : "text-black"
+                          )}
+                          aria-current={currentPage === page ? "page" : undefined}
+                        >
+                          {page}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage >= totalPages}
+                        className={cn(
+                          "size-[40px] flex items-center justify-center",
+                          currentPage >= totalPages
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "text-black"
+                        )}
+                        aria-label="다음 페이지"
+                      >
+                        <span className="text-[24px] leading-[1.25]">&gt;</span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </section>
         </div>
