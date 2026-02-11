@@ -67,6 +67,27 @@ export type AssetHistoryItem = {
 
 export type AssetHistoryResponse = AssetHistoryItem[];
 
+// 포트폴리오 성과 차트 관련 타입
+export type PerformanceChartPoint = {
+  periodStartDate: string; // "YYYY-MM-DD" 형식
+  totalCurrentValue: number;
+  totalReturnRate: number;
+};
+
+export type PortfolioPerformanceData = {
+  portfolioId: number;
+  portfolioName: string;
+  points: PerformanceChartPoint[];
+};
+
+export type PerformanceChartResponse = {
+  interval: "DAILY" | "WEEKLY" | "MONTHLY";
+  startDate: string;
+  endDate: string;
+  portfolios: PortfolioPerformanceData[];
+  total: PerformanceChartPoint[];
+};
+
 export const assetPortfolioApi = {
   /** 사용자 포트폴리오 그룹 조회: GET /api/asset/portfolios */
   getPortfolios: async (): Promise<PortfolioGroup[]> => {
@@ -223,6 +244,36 @@ export const assetPortfolioApi = {
         const res2 = await api.get<AssetHistoryResponse>("/asset/assets/history", {
           params: { period },
         });
+        return res2.data;
+      }
+      throw error;
+    }
+  },
+
+  /** 포트폴리오 성과 차트 조회: GET /api/asset/portfolios/performance-chart */
+  getPerformanceChart: async (
+    startDate: string,
+    endDate: string,
+    interval: "DAILY" | "WEEKLY" | "MONTHLY" = "WEEKLY"
+  ): Promise<PerformanceChartResponse> => {
+    try {
+      const res = await assetApiClient.get<PerformanceChartResponse>(
+        "/portfolios/performance-chart",
+        {
+          params: { startDate, endDate, interval },
+        }
+      );
+      return res.data;
+    } catch (error: unknown) {
+      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 404) {
+        const res2 = await api.get<PerformanceChartResponse>(
+          "/asset/portfolios/performance-chart",
+          {
+            params: { startDate, endDate, interval },
+          }
+        );
         return res2.data;
       }
       throw error;
