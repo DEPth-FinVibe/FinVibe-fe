@@ -23,7 +23,6 @@ const meta = {
   },
   args: {
     onMenuClick: fn(),
-    onNotificationClick: fn(),
     onProfileClick: fn(),
   },
 } satisfies Meta<typeof Header>;

@@ -29,7 +29,7 @@ const FooterCard: React.FC<FooterCardProps> = ({ title, items }) => {
       <div className="flex flex-col gap-[15px] pl-[50px] pr-[200px] pt-6">
         {items.map((item) => {
           const content = (
-            <span className="text-Subtitle_M_Medium text-black">{item.label}</span>
+            <span className="text-Subtitle_M_Medium text-black whitespace-nowrap">{item.label}</span>
           );
 
           return item.to ? (
@@ -54,9 +54,9 @@ const FooterCard: React.FC<FooterCardProps> = ({ title, items }) => {
 export const Footer: React.FC<FooterProps> = ({ className }) => {
   return (
     <footer className={cn("w-full bg-gray-100", className)}>
-      <div className="mx-auto w-full max-w-[1920px] px-6 py-[10px] md:px-12 xl:px-[300px]">
+      <div className="mx-auto w-full max-w-[1920px] px-6 pt-[10px] pb-[40px] md:px-12 xl:px-[300px]">
         <div className="flex flex-col gap-[25px]">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:gap-[60px]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-[60px]">
             <FooterCard
               title="고객 지원"
               items={[
@@ -73,28 +73,29 @@ export const Footer: React.FC<FooterProps> = ({ className }) => {
                 { label: "운영정책" },
               ]}
             />
-          </div>
+            <div className="w-full rounded-[8px] px-[30px] py-[10px] flex flex-col gap-[25px]">
+              <p className="text-Headline_S_Bold text-main-1">FinVibe</p>
 
-          <div className="w-full border-t border-gray-300" />
+              <div className="flex flex-col gap-[30px]">
+                <div className="flex flex-col gap-[15px] pl-[20px] pr-[200px]">
+                  <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">(주)핀바이브 ㅣ 대표: 000</p>
+                  <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">
+                    사업자등록번호: 123-45-67890 ㅣ
+                  </p>
+                  <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">
+                    00시 00구 00로 000
+                  </p>
+                  <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">
+                    고객센터: 1588-0000 ㅣ 이메일: help@finvibe.com
+                  </p>
+                </div>
 
-          <div className="w-full rounded-[8px] px-[30px] py-[10px] flex flex-col gap-[25px]">
-            <p className="text-Headline_S_Bold text-main-1">FinVibe</p>
-
-            <div className="flex flex-col gap-[30px]">
-              <div className="flex flex-col gap-[15px] pl-[20px] pr-[200px]">
-                <p className="text-Subtitle_M_Medium text-black">(주)핀바이브 ㅣ 대표: 000</p>
-                <p className="text-Subtitle_M_Medium text-black">
-                  사업자등록번호: 123-45-67890 ㅣ 00시 00구 00로 000
-                </p>
-                <p className="text-Subtitle_M_Medium text-black">
-                  고객센터: 1588-0000 ㅣ 이메일: help@finvibe.com
-                </p>
-              </div>
-
-              <div className="px-[20px]">
-                <p className="text-Subtitle_S_Medium text-[#4C4C4C]">
-                  본 서비스는 가상 투자 시뮬레이션이며, 실제 금융 거래가 발생하지 않습니다.
-                </p>
+                <div className="px-[20px]">
+                  <p className="text-Subtitle_S_Medium text-[#4C4C4C]">
+                    본 서비스는 가상 투자 시뮬레이션이며,<br />
+                    실제 금융 거래가 발생하지 않습니다.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
