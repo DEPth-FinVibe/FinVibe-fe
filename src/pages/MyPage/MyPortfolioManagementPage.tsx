@@ -443,7 +443,7 @@ const MyPortfolioManagementPage: React.FC = () => {
                           onPendingChange={setMovePendingFolderId}
                           onClose={() => setOpenMoveRowId(null)}
                           onConfirm={async () => {
-                            if (movePendingFolderId == null || movePendingFolderId === row.folderId) return;
+                            if (movePendingFolderId == null || row.folderId == null || movePendingFolderId === row.folderId) return;
                             try {
                               await assetPortfolioApi.transferAsset(
                                 row.folderId,
