@@ -18,7 +18,7 @@ import {
   type LessonDetailResponse,
   type MyStudyMetricResponse,
 } from "@/api/study";
-// import { gamificationApi, type BadgeInfo } from "@/api/gamification"; // 더미 데이터 사용으로 주석 처리
+import { gamificationApi, type BadgeInfo } from "@/api/gamification";
 
 const DIFFICULTY_MAP: Record<CourseDifficulty, CourseLevel> = {
   BEGINNER: "초급",
@@ -60,7 +60,7 @@ const AILearningPage: React.FC = () => {
   const [courses, setCourses] = useState<MyCourseResponse[]>([]);
   const [studyMetric, setStudyMetric] = useState<MyStudyMetricResponse | null>(null);
   const [todayAiRecommend, setTodayAiRecommend] = useState<string | null>(null);
-  // const [badges, setBadges] = useState<BadgeInfo[]>([]); // 더미 데이터 사용으로 주석 처리
+  const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   // 레슨 학습 모달 상태
@@ -73,11 +73,11 @@ const AILearningPage: React.FC = () => {
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    const [coursesResult, metricResult, recommendResult] = await Promise.allSettled([
+    const [coursesResult, metricResult, recommendResult, badgesResult] = await Promise.allSettled([
       studyApi.getMyCourses(),
       studyApi.getMyStudyMetric(),
       studyApi.getTodayAiStudyRecommend(),
-      // gamificationApi.getMyBadges(), // 더미 데이터 사용으로 주석 처리
+      gamificationApi.getMyBadges(),
     ]);
 
     if (coursesResult.status === "fulfilled") {
@@ -95,10 +95,9 @@ const AILearningPage: React.FC = () => {
       setTodayAiRecommend(null);
     }
 
-    // 더미 데이터 사용으로 주석 처리
-    // if (badgesResult.status === "fulfilled") {
-    //   setBadges(badgesResult.value);
-    // }
+    if (badgesResult.status === "fulfilled") {
+      setBadges(badgesResult.value);
+    }
 
     setLoading(false);
   }, []);
@@ -228,38 +227,26 @@ const AILearningPage: React.FC = () => {
   };
 
   // 모든 배지 목록 (획득한 것과 미획득한 것 모두 포함, 중복 제거)
-  // TODO: 개발용 더미 데이터 - 모든 배지를 획득 상태로 표시
   const allBadges = useMemo(() => {
-    // 더미 데이터: 모든 배지를 획득 상태로 표시
+    // 획득한 배지 맵 생성 (중복 제거)
+    const acquiredBadgesMap = new Map<string, BadgeInfo>();
+    badges.forEach((badge) => {
+      if (!acquiredBadgesMap.has(badge.badge)) {
+        acquiredBadgesMap.set(badge.badge, badge);
+      }
+    });
+
+    // 모든 배지 타입에 대해 획득 여부 확인
     return ALL_BADGE_TYPES.map((badgeType) => {
+      const acquiredBadge = acquiredBadgesMap.get(badgeType);
       return {
         badgeType,
-        isAcquired: true, // 더미 데이터: 모든 배지 획득
-        displayName: BADGE_CONFIG[badgeType].displayName,
-        acquiredAt: new Date().toISOString(), // 더미 날짜
+        isAcquired: !!acquiredBadge,
+        displayName: acquiredBadge?.displayName || BADGE_CONFIG[badgeType].displayName,
+        acquiredAt: acquiredBadge?.acquiredAt,
       };
     });
-    
-    // 실제 API 데이터 사용 시 아래 코드 사용
-    // // 획득한 배지 맵 생성 (중복 제거)
-    // const acquiredBadgesMap = new Map<string, BadgeInfo>();
-    // badges.forEach((badge) => {
-    //   if (!acquiredBadgesMap.has(badge.badge)) {
-    //     acquiredBadgesMap.set(badge.badge, badge);
-    //   }
-    // });
-    //
-    // // 모든 배지 타입에 대해 획득 여부 확인
-    // return ALL_BADGE_TYPES.map((badgeType) => {
-    //   const acquiredBadge = acquiredBadgesMap.get(badgeType);
-    //   return {
-    //     badgeType,
-    //     isAcquired: !!acquiredBadge,
-    //     displayName: acquiredBadge?.displayName || BADGE_CONFIG[badgeType].displayName,
-    //     acquiredAt: acquiredBadge?.acquiredAt,
-    //   };
-    // });
-  }, []);
+  }, [badges]);
 
   return (
     <div className="bg-gray-100 min-h-screen">
