@@ -26,3 +26,7 @@ pnpm-debug.log*
 .mcp.json
 *storybook.log
 storybook-static
+AGENTS.md
+opencode.json
+logs/combined.log
+logs/error.log
