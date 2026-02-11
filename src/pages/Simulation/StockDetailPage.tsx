@@ -344,9 +344,6 @@ const StockDetailPage = () => {
                 )}
               >
                 {period}
-                {period === "분봉" && (
-                  <ChevronIcon className="w-4 h-4" />
-                )}
               </button>
             ))}
           </div>
