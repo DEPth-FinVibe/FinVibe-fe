@@ -78,7 +78,7 @@ export type UserRankingItem = {
   growthRate: number;
 };
 
-export type RankingPeriod = "WEEKLY" | "MONTHLY";
+export type RankingPeriod = "DAILY" | "WEEKLY" | "MONTHLY";
 
 export type BadgeInfo = {
   badge: string;

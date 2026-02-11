@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { formatPrice, formatChangeRate } from "@/utils/formatStock";
 
 type RankingType = "return" | "xp";
-type PeriodType = "weekly" | "monthly";
+type PeriodType = "daily" | "weekly" | "monthly";
 
 const ServiceRankingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,6 +43,7 @@ const ServiceRankingPage: React.FC = () => {
     setError(null);
 
     const periodMap: Record<PeriodType, RankingPeriod | XpRankingPeriod> = {
+      daily: "DAILY",
       weekly: "WEEKLY",
       monthly: "MONTHLY",
     };
@@ -212,6 +213,23 @@ const ServiceRankingPage: React.FC = () => {
             <Button
               variant="secondary"
               size="small"
+              onClick={() => setPeriod("daily")}
+              className={cn(
+                "!rounded-2xl !px-5 !py-2 !min-h-0",
+                "!gap-2.5",
+                "!border !border-sub-blue",
+                "text-[16px] leading-[17px] font-medium",
+                period === "daily"
+                  ? "!bg-sub-blue !text-white"
+                  : "!bg-white !text-sub-blue"
+              )}
+              aria-pressed={period === "daily"}
+            >
+              일간
+            </Button>
+            <Button
+              variant="secondary"
+              size="small"
               onClick={() => setPeriod("weekly")}
               className={cn(
                 // button_S: radius 16px, padding 8px 20px, gap 10px
@@ -330,4 +348,3 @@ const ServiceRankingPage: React.FC = () => {
 };
 
 export default ServiceRankingPage;
-
