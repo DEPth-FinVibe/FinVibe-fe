@@ -1,175 +1,103 @@
-# FinVibe Frontend
+📌 프로젝트 소개
 
-FinVibe 프로젝트의 프론트엔드 컴포넌트 라이브러리입니다.
-Figma 디자인 시스템을 기반으로 구축되었습니다.
+- FinVibe는 사용자가 가상 자산으로 실시간 시세 기반 투자 시뮬레이션을 수행할 수 있는 플랫폼입니다.
+- 사용자는 매수/매도 주문을 실행하고, 포트폴리오 평가금액 및 수익률 변화를 즉시 확인할 수 있습니다.
+- 이 프로젝트에서 저는 **금융 시뮬레이션 환경에서 데이터 정합성과 UI 안정성을 동시에 확보하는 프론트엔드 구조 설계**를 담당했습니다.
+---
+ 🎯 핵심 목표
+- 매수/매도 직후 포트폴리오 상태를 즉시 반영
+- 실시간 시세 변동에 따른 평가 금액 업데이트
+- 차트 데이터와 보유 자산 상태 동기화
+- UI 상태와 서버 상태 충돌 방지
+---
+ 🧱 기술 스택
+- **React**
+  - 복잡한 투자 UI를 컴포넌트 단위로 모듈화
+- **TypeScript**
+  - 금액/수량/수익률 계산 로직의 타입 안정성 확보
+- **TanStack Query**
+  - 서버 상태 조회/캐싱/동기화 표준화
+  - 매매 요청 이후 재동기화 전략 설계
+  - 캐시 정책으로 중복 요청 감소
+- **Zustand**
+  - 종목 선택, 필터, 모달, 인증, 실시간 시세 등 전역 상태 경량 관리
+  - 서버 상태와 분리해 충돌 방지
+- **Lightweight Charts**
+  - 번들 크기와 렌더링 성능을 고려한 시계열 차트 구성
+- **Axios Interceptor**
+  - 토큰 주입/갱신(Refresh)/재시도 정책 일원화
+---
+ 🙋 기여 내용
+- 투자 시뮬레이션 화면 렌더링 구조 설계
+- 매매 후 포트폴리오 상태 동기화 구조 설계
+- React Query 기반 서버 상태 관리 표준화
+- Zustand 기반 전역 클라이언트 상태 구조 설계
+- 도메인별 API 계층 정리 및 에러 처리 일원화
+- 차트 렌더링 최적화
+- Storybook 기반 컴포넌트 개발 환경 구축
+---
+ 🛠 문제 해결
+ 1) 매매 후 포트폴리오 반영 지연 및 UI 불안정
 
-## 기술 스택
+| 문제                   | 해결                       | 결과           |
+| -------------------- | ------------------------ | ------------ |
+| 매수/매도 후 전체 리렌더링      | 영역 단위 상태 분리              | 부분 렌더링 구조 확보 |
+| 매매 반영 전 UI 깜빡임       | `keepPreviousData` 전략 적용 | 체감 지연 최소화    |
+| 시세 데이터와 포트폴리오 동기화 지연 | 재요청 정책 설계                | 데이터 정합성 확보   |
 
-- **React 19.2** - UI 라이브러리
-- **TypeScript** - 타입 안정성
-- **Vite 7** - 빌드 도구
-- **Tailwind CSS 3** - 유틸리티 우선 CSS 프레임워크
-- **Storybook 8** - 컴포넌트 개발 환경
-- **pnpm** - 패키지 매니저
-- **Figma** - 디자인 시스템 소스
+→ 매매가 빈번한 환경에서도 즉각적이고 안정적인 반영 구조를 구현
 
-## 시작하기
+---
+ 2) 서버 상태와 UI 상태 혼재로 인한 충돌
 
-### 설치
+| 문제               | 해결                       | 결과         |
+| ---------------- | ------------------------ | ---------- |
+| 매매 후 중복 API 요청   | React Query 캐싱 전략 적용     | 네트워크 효율 개선 |
+| UI 상태와 서버 데이터 혼재 | Server / Client State 분리 | 상태 책임 명확화  |
+| 기능 확장 시 수정 범위 증가 | axios API 계층 일원화         | 유지보수성 향상   |
 
-```bash
-pnpm install
-```
 
-### 개발 서버 실행
+→ 투자 시뮬레이션에서 중요한 데이터 일관성 강화
 
-```bash
-pnpm dev
-```
+---
 
-### 스토리북 실행
+ 3) 차트 렌더링 부담
 
-```bash
-pnpm storybook
-```
+| 문제           | 해결                    | 결과          |
+| ------------ | --------------------- | ----------- |
+| 무거운 차트 라이브러리 | lightweight-charts 도입 | 초기 로딩 부담 감소 |
+| 불필요한 리렌더링    | 메모이제이션 적용             | 렌더링 안정성 확보  |
 
-### 빌드
 
-```bash
-pnpm build
-```
+→ 시계열 데이터 환경에서 **성능과 가독성의 균형** 확보
 
-## 프로젝트 구조
+---
+ 🏗 아키텍처
+본 프로젝트는 상태를 다음 3계층으로 분리한 하이브리드 구조를 사용합니다.
+- **Local UI State**: 컴포넌트 내부 UI 상태
+- **Global Client State (Zustand)**: 인증/사용자/실시간 시세 등 앱 전역 상태
+- **Server State (TanStack Query)**: REST API 데이터 조회·캐싱·동기화
+또한 도메인별 Axios 클라이언트로 API 계층을 분리해  
+`baseURL`, 토큰 주입, 토큰 갱신(Refresh), 재시도 정책을 일관되게 관리했습니다.
+> **실시간 WebSocket 시세 데이터와 REST 거래 데이터를 분리 관리하여, 매매 이후 데이터 정합성과 UI 반응성을 동시에 확보했습니다.**
 
-```
-src/
-├── components/          # 재사용 가능한 컴포넌트
-│   ├── Button/         # Button 컴포넌트
-│   │   ├── Button.tsx
-│   │   ├── Button.stories.tsx
-│   │   └── index.ts
-│   └── index.ts        # 컴포넌트 export
-├── utils/              # 유틸리티 함수
-│   └── cn.ts          # 클래스 이름 병합 유틸리티
-├── App.tsx            # 메인 앱 컴포넌트
-├── main.tsx           # 엔트리 포인트
-└── index.css          # 글로벌 스타일 (Tailwind)
-```
+설계 의도
+- 매매 요청 후 Server State 재동기화
+- UI 상태 독립 관리로 충돌 방지
+- 단방향 데이터 흐름 유지
+- 낙관적 업데이트를 고려한 확장 가능한 구조
+ 기대 효과
+- 매매 반영 즉시성 확보
+- 포트폴리오 계산 정합성 유지
+- 예측 가능한 상태 전이 구조 확립
+---
+ 📊 다이어그램
+ 
+ 1. 플로우차트
+ <img width="600" height="1200" alt="핀바이브 플로우차트" src="https://github.com/user-attachments/assets/281346b7-4f2f-492d-9047-1e28b39b2bf4" />
+ 
+ 
+ 2. 시퀀스 다이어그램
+ <img width="1200" height="631" alt="핀바이브 시퀀스다이어그램" src="https://github.com/user-attachments/assets/97d4d2e7-f382-47e2-a72a-65be263fd6c3" />
 
-## 컴포넌트
 
-### Button
-
-Figma 디자인 시스템에 기반한 재사용 가능한 버튼 컴포넌트입니다.
-
-**디자인 소스:**
-
-- Figma 파일: `FInVibe`
-- Small (s): Node ID `503-333`
-- Medium (m): Node ID `500-152`
-- Large (l): Node ID `540-161`
-
-**Props:**
-
-- `variant`: "primary" | "secondary"
-  - `primary`: 검은색 배경, 흰색 텍스트 (활성 상태)
-  - `secondary`: 흰색 배경, 회색 테두리, 검은색 텍스트 (비활성 상태)
-- `size`: "small" | "medium" | "large"
-  - `small` (s): 작은 크기 - px-3 py-1.5, text-xs, min-h-28px (Figma: 503-333)
-  - `medium` (m): 중간 크기 - px-[87px] py-3, text-sm, min-h-36px (Figma: 500-152, 기본값)
-  - `large` (l): 큰 크기 - px-6 py-4, text-base, min-h-48px, 틸 색상 (Figma: 540-161)
-- `fullWidth`: boolean - 전체 너비 사용 여부
-- `loading`: boolean - 로딩 상태
-- `disabled`: boolean - 비활성화 상태
-- `leftIcon`: ReactNode - 왼쪽 아이콘
-- `rightIcon`: ReactNode - 오른쪽 아이콘
-
-**디자인 스펙:**
-
-- 폰트: Noto Sans KR Light, 14px
-- 패딩: 12px (상하) × 87px (좌우)
-- 보더 반경: 4px
-- Line height: 20px
-
-**사용 예시:**
-
-```tsx
-import { Button } from "./components";
-
-function App() {
-  return (
-    <div>
-      <Button variant="primary">취소</Button>
-
-      <Button variant="secondary">취소</Button>
-
-      {/* 크기 변형 */}
-      <Button size="small">Small</Button>
-      <Button size="medium">Medium</Button>
-      <Button size="large">Large</Button>
-
-      <Button loading>로딩 중...</Button>
-
-      <Button leftIcon={<span>✓</span>}>확인</Button>
-    </div>
-  );
-}
-```
-
-## 스타일링
-
-이 프로젝트는 Tailwind CSS를 사용합니다. 커스텀 CSS 파일 대신 Tailwind 유틸리티 클래스를 사용하세요.
-
-### cn 유틸리티
-
-`clsx`와 `tailwind-merge`를 결합한 유틸리티 함수로, Tailwind 클래스 충돌을 해결합니다.
-
-```tsx
-import { cn } from "./utils/cn";
-
-const className = cn(
-  "base-classes",
-  condition && "conditional-classes",
-  "override-classes"
-);
-```
-
-## 스토리북
-
-모든 컴포넌트는 Storybook 스토리를 포함해야 합니다.
-
-스토리 파일은 컴포넌트와 같은 디렉토리에 위치합니다:
-
-- `ComponentName.tsx` - 컴포넌트
-- `ComponentName.stories.tsx` - 스토리북 스토리
-
-## 개발 가이드
-
-### 새 컴포넌트 추가
-
-1. `src/components/ComponentName/` 디렉토리 생성
-2. `ComponentName.tsx` 파일 생성 (Tailwind CSS 사용)
-3. `ComponentName.stories.tsx` 파일 생성
-4. `index.ts`에서 export
-5. `src/components/index.ts`에 추가
-
-### 코드 스타일
-
-- TypeScript 사용
-- Tailwind CSS 유틸리티 클래스 사용
-- 컴포넌트는 재사용 가능하게 설계
-- Props는 명확하게 타입 정의
-- JSDoc 주석으로 문서화
-
-## 스크립트
-
-- `pnpm dev` - 개발 서버 실행
-- `pnpm build` - 프로덕션 빌드
-- `pnpm preview` - 빌드 미리보기
-- `pnpm lint` - ESLint 실행
-- `pnpm storybook` - 스토리북 개발 서버
-- `pnpm build-storybook` - 스토리북 빌드
-
-## 라이선스
-
-Private
