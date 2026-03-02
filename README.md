@@ -100,4 +100,40 @@
  2. 시퀀스 다이어그램
  <img width="1200" height="631" alt="핀바이브 시퀀스다이어그램" src="https://github.com/user-attachments/assets/97d4d2e7-f382-47e2-a72a-65be263fd6c3" />
 
+---
+🖼️ 서비스 주요 화면
 
+1️⃣ 메인 페이지
+<p align="center"> <img src="https://github.com/user-attachments/assets/6f767d49-823e-42ee-a71e-df83592605b4" width="800"/> </p>
+
+📌 실시간 시장 요약, 주요 자산 현황, 빠른 투자 진입을 위한 대시보드 구성
+
+2️⃣ 투자 시뮬레이터
+<p align="center"> <img src="https://github.com/user-attachments/assets/b4476184-d1b9-48d6-8ccc-979288b13b28" width="1000"/> </p>
+
+📊 실시간 시세 기반 가상 매매 시뮬레이션
+
+- 차트 중심 정보 구조
+- 매수/매도 즉시 반영
+- 포트폴리오 변동 실시간 확인
+
+3️⃣ AI 투자 학습
+<p align="center"> <img src="https://github.com/user-attachments/assets/6c816f53-1a1e-447d-9d50-fb299e8d7af4" width="1000"/> </p>
+
+🤖 AI 기반 투자 학습 콘텐츠
+
+- 시장 흐름 분석
+- 전략 이해 지원
+- 사용자 맞춤 학습 흐름 제공
+
+4️⃣ 챌린지 시스템
+🏅 개인 챌린지
+<p align="center"> <img src="https://github.com/user-attachments/assets/0f956ea9-a7e2-47e0-aae4-a33753969892" width="1000"/> </p>
+👥 스쿼드 챌린지
+<p align="center"> <img src="https://github.com/user-attachments/assets/49664310-f3be-4436-81bf-933ac5d3edf7" width="1000"/> </p>
+
+🎯 수익률 기반 경쟁 및 참여형 투자 경험
+
+- 개인 랭킹 시스템
+- 팀 기반 스쿼드 경쟁
+- 투자 동기 강화 구조
