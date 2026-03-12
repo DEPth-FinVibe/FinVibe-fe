@@ -1,73 +1,58 @@
-name: CI - Build & Deploy (Auto)
+name: Deploy Frontend via SSH
 
 on:
   push:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      HOST: ${{ secrets.HOST }}
+      USERNAME: ${{ secrets.USERNAME }}
+      PORT: ${{ secrets.PORT }}
 
     steps:
-      # 1️⃣ Frontend Repo Checkout
-      - name: Checkout frontend repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Docker Hub 로그인
-      - name: Docker login
-        uses: docker/login-action@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          node-version: 20
+          cache: pnpm
 
-      # 3️⃣ 이미지 태그 (commit sha 7자리)
-      - name: Set image tag
-        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
-
-      # 4️⃣ Buildx 설정
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # 5️⃣ Docker 이미지 빌드 & Push
-      - name: Build & Push Docker image
-        uses: docker/build-push-action@v5
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          context: .
-          file: deploy/Dockerfile
-          push: true
-          platforms: linux/amd64
-          tags: cmh1448/finvibe-fe:${{ env.IMAGE_TAG }}
-          cache-from: type=gha,scope=finvibe-fe
-          cache-to: type=gha,mode=max,scope=finvibe-fe
-          provenance: false
+          version: 10
 
-      # 6️⃣ manifest repo checkout
-      - name: Checkout manifest repo
-        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          repository: DEPth-FinVibe/Finvibe_Backend_Manifest
-          token: ${{ secrets.MANIFEST_REPO_TOKEN }}
-          path: manifest
+          ssh-private-key: ${{ secrets.KEY }}
 
-      # 7️⃣ deployment.yaml 이미지 태그 갱신
-      - name: Update image tag in manifest
+      - name: Add host to known_hosts
         run: |
-          if [ -d "manifest/frontend" ]; then
-            cd manifest/frontend
-            sed -i "s|image: .*|image: cmh1448/finvibe-fe:${{ env.IMAGE_TAG }}|" deployment.yaml
-          else
-            echo "Error: manifest/frontend directory not found"
-            exit 1
-          fi
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
-      # 8️⃣ manifest repo 커밋 & 푸시
-      - name: Commit & Push manifest
+      - name: Ensure remote directory exists
+        run: ssh -p "$PORT" "$USERNAME@$HOST" "mkdir -p /var/www/finvibe"
+
+      - name: Sync dist to server
         run: |
-          cd manifest
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add frontend/deployment.yaml
-          git commit -m "deploy(frontend): ${{ env.IMAGE_TAG }}"
-          git push
+          rsync -az --delete \
+            -e "ssh -p $PORT -o StrictHostKeyChecking=yes" \
+            dist/ "$USERNAME@$HOST:/var/www/finvibe/"
