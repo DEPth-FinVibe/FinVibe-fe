@@ -2,13 +2,12 @@ import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
 import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
-// 자산(Asset) 서비스 전용 baseURL
-const ASSET_BASE =
-  import.meta.env.VITE_API_ASSET_BASE ??
-  (import.meta.env.DEV ? "/api/asset" : "https://finvibe.space/api/asset");
+const API_BASE =
+  import.meta.env.VITE_API_BASE ??
+  (import.meta.env.DEV ? "/api" : "https://finvibe.space/api");
 
 export const assetApiClient = axios.create({
-  baseURL: ASSET_BASE,
+  baseURL: API_BASE,
 });
 
 let refreshPromise: Promise<string> | null = null;
@@ -45,11 +44,7 @@ async function refreshTokens() {
   }
 
   try {
-    const userBase =
-      import.meta.env.VITE_API_BASE ??
-      (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user");
-
-    const res = await axios.post(`${userBase}/auth/refresh`, {
+    const res = await axios.post(`${API_BASE}/auth/refresh`, {
       refreshToken: tokens.refreshToken,
     });
 

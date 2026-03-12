@@ -47,9 +47,9 @@ export const memberApi = {
     return res.data;
   },
 
-  /** 회원 정보 수정: PATCH /members/{userId} */
-  updateUser: async (userId: string, data: UpdateUserRequest): Promise<UserResponse> => {
-    const res = await api.patch<UserResponse>(`/members/${userId}`, data);
+  /** 회원 정보 수정: PATCH /members */
+  updateUser: async (_userId: string, data: UpdateUserRequest): Promise<UserResponse> => {
+    const res = await api.patch<UserResponse>("/members", data);
     return res.data;
   },
 
@@ -58,9 +58,9 @@ export const memberApi = {
     await api.delete(`/members/${userId}`);
   },
 
-  /** 닉네임 변경: PATCH /members/{userId}/nickname */
-  changeNickname: async (userId: string, nickname: string): Promise<UserResponse> => {
-    const res = await api.patch<UserResponse>(`/members/${userId}/nickname`, { nickname });
+  /** 닉네임 변경: PATCH /members/nickname */
+  changeNickname: async (_userId: string, nickname: string): Promise<UserResponse> => {
+    const res = await api.patch<UserResponse>("/members/nickname", { nickname });
     return res.data;
   },
 

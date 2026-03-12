@@ -3,7 +3,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import type { Tokens } from "@/store/useAuthStore";
 import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user");
+const API_BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? "/api" : "https://finvibe.space/api");
 
 export const api = axios.create({
   baseURL: API_BASE,

@@ -2,12 +2,12 @@ import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
 import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
-const STUDY_BASE =
-  import.meta.env.VITE_API_STUDY_BASE ??
-  (import.meta.env.DEV ? "/api/study" : "https://finvibe.space/api/study");
+const API_BASE =
+  import.meta.env.VITE_API_BASE ??
+  (import.meta.env.DEV ? "/api" : "https://finvibe.space/api");
 
 export const studyApiClient = axios.create({
-  baseURL: STUDY_BASE,
+  baseURL: API_BASE,
 });
 
 let refreshPromise: Promise<string> | null = null;
@@ -44,7 +44,7 @@ async function refreshTokens() {
   }
 
   try {
-    const res = await axios.post(`${import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user")}/auth/refresh`, {
+    const res = await axios.post(`${API_BASE}/auth/refresh`, {
       refreshToken: tokens.refreshToken,
     });
     setTokens(res.data);

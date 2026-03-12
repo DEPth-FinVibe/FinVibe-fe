@@ -2,13 +2,12 @@ import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
 import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
-// 지갑 서비스 전용 baseURL
-const WALLET_BASE =
-  import.meta.env.VITE_API_WALLET_BASE ??
-  (import.meta.env.DEV ? "/api/wallet" : "https://finvibe.space/api/wallet");
+const API_BASE =
+  import.meta.env.VITE_API_BASE ??
+  (import.meta.env.DEV ? "/api" : "https://finvibe.space/api");
 
 export const walletApiClient = axios.create({
-  baseURL: WALLET_BASE,
+  baseURL: API_BASE,
 });
 
 let refreshPromise: Promise<string> | null = null;
@@ -45,16 +44,9 @@ async function refreshTokens() {
   }
 
   try {
-    // NOTE: refresh는 user 서비스에서 수행
-    const res = await axios.post(
-      `${
-        import.meta.env.VITE_API_BASE ??
-        (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user")
-      }/auth/refresh`,
-      {
-        refreshToken: tokens.refreshToken,
-      },
-    );
+    const res = await axios.post(`${API_BASE}/auth/refresh`, {
+      refreshToken: tokens.refreshToken,
+    });
     setTokens(res.data);
     return res.data.accessToken as string;
   } catch (error) {

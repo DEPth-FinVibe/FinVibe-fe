@@ -1,5 +1,3 @@
-import axios from "axios";
-import { api } from "@/api/axios";
 import { assetApiClient } from "@/api/asset/client";
 
 export type PortfolioGroup = {
@@ -93,220 +91,93 @@ export type TransferAssetBody = {
 };
 
 export const assetPortfolioApi = {
-  /** 사용자 포트폴리오 그룹 조회: GET /api/asset/portfolios */
+  /** 사용자 포트폴리오 그룹 조회: GET /api/portfolios */
   getPortfolios: async (): Promise<PortfolioGroup[]> => {
-    try {
-      // 1) 문서 기준: /api/asset/portfolios
-      const res = await assetApiClient.get<PortfolioGroup[]>("/portfolios");
-      return res.data;
-    } catch (error: unknown) {
-      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도(게이트웨이 구성 차이 대응)
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        const res2 = await api.get<PortfolioGroup[]>("/asset/portfolios");
-        return res2.data;
-      }
-      throw error;
-    }
+    const res = await assetApiClient.get<PortfolioGroup[]>("/portfolios");
+    return res.data;
   },
 
-  /** 포트폴리오 그룹 생성: POST /api/asset/portfolios */
+  /** 포트폴리오 그룹 생성: POST /api/portfolios */
   createPortfolio: async (body: CreatePortfolioGroupBody): Promise<void> => {
-    try {
-      await assetApiClient.post("/portfolios", body);
-    } catch (error: unknown) {
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        await api.post("/asset/portfolios", body);
-        return;
-      }
-      throw error;
-    }
+    await assetApiClient.post("/portfolios", body);
   },
 
-  /** 포트폴리오 그룹 수정: PATCH /api/asset/portfolios/{portfolioGroupId} */
+  /** 포트폴리오 그룹 수정: PATCH /api/portfolios/{portfolioGroupId} */
   updatePortfolio: async (
     portfolioGroupId: number,
     body: UpdatePortfolioGroupBody
   ): Promise<void> => {
-    try {
-      await assetApiClient.patch(`/portfolios/${portfolioGroupId}`, body);
-    } catch (error: unknown) {
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        await api.patch(`/asset/portfolios/${portfolioGroupId}`, body);
-        return;
-      }
-      throw error;
-    }
+    await assetApiClient.patch(`/portfolios/${portfolioGroupId}`, body);
   },
 
-  /** 포트폴리오 그룹 삭제: DELETE /api/asset/portfolios/{portfolioGroupId} */
+  /** 포트폴리오 그룹 삭제: DELETE /api/portfolios/{portfolioGroupId} */
   deletePortfolio: async (portfolioGroupId: number): Promise<void> => {
-    try {
-      await assetApiClient.delete(`/portfolios/${portfolioGroupId}`);
-    } catch (error: unknown) {
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        await api.delete(`/asset/portfolios/${portfolioGroupId}`);
-        return;
-      }
-      throw error;
-    }
+    await assetApiClient.delete(`/portfolios/${portfolioGroupId}`);
   },
 
-  /** 포트폴리오별 자산 조회: GET /api/asset/portfolios/{portfolioId}/assets */
+  /** 포트폴리오별 자산 조회: GET /api/portfolios/{portfolioId}/assets */
   getAssetsByPortfolio: async (portfolioId: number): Promise<PortfolioAsset[]> => {
-    try {
-      const res = await assetApiClient.get<PortfolioAsset[]>(
-        `/portfolios/${portfolioId}/assets`
-      );
-      return res.data;
-    } catch (error: unknown) {
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        const res2 = await api.get<PortfolioAsset[]>(
-          `/asset/portfolios/${portfolioId}/assets`
-        );
-        return res2.data;
-      }
-      throw error;
-    }
+    const res = await assetApiClient.get<PortfolioAsset[]>(
+      `/portfolios/${portfolioId}/assets`
+    );
+    return res.data;
   },
 
-  /** 자산 등록: POST /api/asset/portfolios/{portfolioId}/assets */
+  /** 자산 등록: POST /api/portfolios/{portfolioId}/assets */
   createAsset: async (portfolioId: number, body: CreatePortfolioAssetBody): Promise<void> => {
-    try {
-      await assetApiClient.post(`/portfolios/${portfolioId}/assets`, body);
-    } catch (error: unknown) {
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        await api.post(`/asset/portfolios/${portfolioId}/assets`, body);
-        return;
-      }
-      throw error;
-    }
+    await assetApiClient.post(`/portfolios/${portfolioId}/assets`, body);
   },
 
-  /** 자산 등록 해제: DELETE /api/asset/portfolios/{portfolioId}/assets */
+  /** 자산 등록 해제: DELETE /api/portfolios/{portfolioId}/assets */
   deleteAsset: async (portfolioId: number, body: DeletePortfolioAssetBody): Promise<void> => {
-    try {
-      await assetApiClient.delete(`/portfolios/${portfolioId}/assets`, { data: body });
-    } catch (error: unknown) {
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        await api.delete(`/asset/portfolios/${portfolioId}/assets`, { data: body });
-        return;
-      }
-      throw error;
-    }
+    await assetApiClient.delete(`/portfolios/${portfolioId}/assets`, { data: body });
   },
 
-  /** 포트폴리오별 수익 비교 조회: GET /api/asset/portfolios/comparison */
+  /** 포트폴리오별 수익 비교 조회: GET /api/portfolios/comparison */
   getPortfolioComparison: async (): Promise<PortfolioComparisonItem[]> => {
-    try {
-      const res = await assetApiClient.get<PortfolioComparisonItem[]>("/portfolios/comparison");
-      return res.data;
-    } catch (error: unknown) {
-      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        const res2 = await api.get<PortfolioComparisonItem[]>("/asset/portfolios/comparison");
-        return res2.data;
-      }
-      throw error;
-    }
+    const res = await assetApiClient.get<PortfolioComparisonItem[]>("/portfolios/comparison");
+    return res.data;
   },
 
-  /** 전체 자산 배분 조회: GET /api/asset/assets/allocation */
+  /** 전체 자산 배분 조회: GET /api/assets/allocation */
   getAssetAllocation: async (): Promise<AssetAllocationResponse> => {
-    try {
-      const res = await assetApiClient.get<AssetAllocationResponse>("/assets/allocation");
-      return res.data;
-    } catch (error: unknown) {
-      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        const res2 = await api.get<AssetAllocationResponse>("/asset/assets/allocation");
-        return res2.data;
-      }
-      throw error;
-    }
+    const res = await assetApiClient.get<AssetAllocationResponse>("/assets/allocation");
+    return res.data;
   },
 
-  /** 자산 히스토리 조회: GET /api/asset/assets/history */
+  /** 자산 히스토리 조회: GET /api/assets/history */
   getAssetHistory: async (period: "WEEKLY" | "MONTHLY" = "WEEKLY"): Promise<AssetHistoryResponse> => {
-    try {
-      const res = await assetApiClient.get<AssetHistoryResponse>("/assets/history", {
-        params: { period },
-      });
-      return res.data;
-    } catch (error: unknown) {
-      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        const res2 = await api.get<AssetHistoryResponse>("/asset/assets/history", {
-          params: { period },
-        });
-        return res2.data;
-      }
-      throw error;
-    }
+    const res = await assetApiClient.get<AssetHistoryResponse>("/assets/history", {
+      params: { period },
+    });
+    return res.data;
   },
 
-  /** 자산 이동: PATCH /api/asset/portfolios/{sourcePortfolioId}/assets/{assetId}/transfer */
+  /** 자산 이동: PATCH /api/portfolios/{sourcePortfolioId}/assets/{assetId}/transfer */
   transferAsset: async (
     sourcePortfolioId: number,
     assetId: number,
     body: TransferAssetBody
   ): Promise<void> => {
-    try {
-      await assetApiClient.patch(
-        `/portfolios/${sourcePortfolioId}/assets/${assetId}/transfer`,
-        body
-      );
-    } catch (error: unknown) {
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        await api.patch(
-          `/asset/portfolios/${sourcePortfolioId}/assets/${assetId}/transfer`,
-          body
-        );
-        return;
-      }
-      throw error;
-    }
+    await assetApiClient.patch(
+      `/portfolios/${sourcePortfolioId}/assets/${assetId}/transfer`,
+      body
+    );
   },
 
-  /** 포트폴리오 성과 차트 조회: GET /api/asset/portfolios/performance-chart */
+  /** 포트폴리오 성과 차트 조회: GET /api/portfolios/performance-chart */
   getPerformanceChart: async (
     startDate: string,
     endDate: string,
     interval: "DAILY" | "WEEKLY" | "MONTHLY" = "WEEKLY"
   ): Promise<PerformanceChartResponse> => {
-    try {
-      const res = await assetApiClient.get<PerformanceChartResponse>(
-        "/portfolios/performance-chart",
-        {
-          params: { startDate, endDate, interval },
-        }
-      );
-      return res.data;
-    } catch (error: unknown) {
-      // 404 Not Found 발생 시, /api/user/asset 경로로 재시도
-      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (status === 404) {
-        const res2 = await api.get<PerformanceChartResponse>(
-          "/asset/portfolios/performance-chart",
-          {
-            params: { startDate, endDate, interval },
-          }
-        );
-        return res2.data;
+    const res = await assetApiClient.get<PerformanceChartResponse>(
+      "/portfolios/performance-chart",
+      {
+        params: { startDate, endDate, interval },
       }
-      throw error;
-    }
+    );
+    return res.data;
   },
 };
-
 

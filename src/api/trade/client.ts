@@ -2,13 +2,12 @@ import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
 import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
-// Trade 서비스 전용 baseURL
-const TRADE_BASE =
-  import.meta.env.VITE_API_TRADE_BASE ??
-  (import.meta.env.DEV ? "/api/trade" : "https://finvibe.space/api/trade");
+const API_BASE =
+  import.meta.env.VITE_API_BASE ??
+  (import.meta.env.DEV ? "/api" : "https://finvibe.space/api");
 
 export const tradeApiClient = axios.create({
-  baseURL: TRADE_BASE,
+  baseURL: API_BASE,
 });
 
 let refreshPromise: Promise<string> | null = null;
@@ -45,15 +44,9 @@ async function refreshTokens() {
   }
 
   try {
-    const res = await axios.post(
-      `${
-        import.meta.env.VITE_API_BASE ??
-        (import.meta.env.DEV ? "/api/user" : "https://finvibe.space/api/user")
-      }/auth/refresh`,
-      {
-        refreshToken: tokens.refreshToken,
-      },
-    );
+    const res = await axios.post(`${API_BASE}/auth/refresh`, {
+      refreshToken: tokens.refreshToken,
+    });
     setTokens(res.data);
     return res.data.accessToken as string;
   } catch (error) {

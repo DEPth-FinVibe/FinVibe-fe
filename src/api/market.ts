@@ -5,10 +5,7 @@ import { DateTime } from "luxon";
 import type { ChartPeriod } from "@/pages/Simulation/components/StockChart";
 
 const API_BASE = import.meta.env.VITE_API_BASE
-  ? import.meta.env.VITE_API_BASE.replace(/\/user$/, "/market")
-  : import.meta.env.DEV
-    ? "/api/market"
-    : "https://finvibe.space/api/market";
+  ?? (import.meta.env.DEV ? "/api" : "https://finvibe.space/api");
 
 const marketApi = axios.create({
   baseURL: API_BASE,

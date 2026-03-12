@@ -89,7 +89,7 @@ const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              window.location.href = "https://finvibe.space/api/user/oauth2/authorization/naver";
+              window.location.href = "https://finvibe.space/api/oauth2/authorization/naver";
             }}
             className="flex items-center justify-center gap-[10px] w-full bg-[#03c75a] py-[10px] rounded-[8px] text-white text-Body_M_Light hover:opacity-90 transition-opacity"
           >
@@ -101,7 +101,7 @@ const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              window.location.href = "https://finvibe.space/api/user/oauth2/authorization/google";
+              window.location.href = "https://finvibe.space/api/oauth2/authorization/google";
             }}
             className="flex items-center justify-center gap-[10px] w-full bg-white border border-gray-300 py-[10px] rounded-[8px] text-black text-Body_M_Light hover:bg-gray-50 transition-colors"
           >
@@ -132,4 +132,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-
