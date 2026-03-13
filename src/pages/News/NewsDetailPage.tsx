@@ -14,9 +14,11 @@ const NEWS_ALLOWED_TAGS = new Set([
   "p", "br", "strong", "b", "em", "i", "u", "s",
   "ul", "ol", "li", "blockquote", "a",
   "h1", "h2", "h3", "h4", "h5", "h6",
+  "span", "div", "img",
 ]);
 const NEWS_ALLOWED_ATTRS: Record<string, Set<string>> = {
   a: new Set(["href", "target", "rel"]),
+  img: new Set(["src", "alt", "title"]),
 };
 
 const hasHtmlTag = (value: string) => /<\/?[a-z][\s\S]*>/i.test(value);
@@ -55,6 +57,15 @@ const sanitizeNewsHtml = (raw: string) => {
       }
 
       const allowedAttrs = NEWS_ALLOWED_ATTRS[tag] ?? new Set<string>();
+
+      if (tag === "img") {
+        const src = el.getAttribute("src")?.trim();
+        const dataSrc = el.getAttribute("data-src")?.trim();
+        if (!src && dataSrc) {
+          el.setAttribute("src", dataSrc);
+        }
+      }
+
       for (const attr of Array.from(el.attributes)) {
         const name = attr.name.toLowerCase();
         const value = attr.value;
@@ -67,6 +78,10 @@ const sanitizeNewsHtml = (raw: string) => {
           el.removeAttribute("href");
         }
 
+        if (name === "src" && !isSafeUrl(value)) {
+          el.removeAttribute("src");
+        }
+
         if (tag === "a" && name === "target" && value !== "_blank") {
           el.removeAttribute("target");
         }
@@ -74,6 +89,11 @@ const sanitizeNewsHtml = (raw: string) => {
 
       if (tag === "a" && el.getAttribute("target") === "_blank") {
         el.setAttribute("rel", "noopener noreferrer");
+      }
+
+      if (tag === "img" && !el.getAttribute("src")) {
+        root.removeChild(el);
+        continue;
       }
 
       walk(el);
@@ -398,7 +418,7 @@ const NewsDetailPage = () => {
                   </span>
                 </div>
 
-                <div className="mb-6 text-Body_L_Light text-black leading-7 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-3 [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-200 [&_blockquote]:pl-4 [&_blockquote]:text-gray-700 [&_a]:text-blue-600 [&_a]:underline">
+                <div className="mb-6 text-Body_L_Light text-black leading-7 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-3 [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-200 [&_blockquote]:pl-4 [&_blockquote]:text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-semibold [&_em]:text-sm [&_em]:text-gray-500 [&_img]:my-4 [&_img]:w-full [&_img]:h-auto [&_img]:rounded-lg">
                   {hasDetailHtml ? (
                     <div dangerouslySetInnerHTML={{ __html: sanitizedDetailHtml }} />
                   ) : (
