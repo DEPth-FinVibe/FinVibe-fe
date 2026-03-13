@@ -10,6 +10,80 @@ import { cn } from "@/utils/cn";
 import { newsApi, KEYWORD_LABEL_MAP, type NewsDetailResponse, discussionApi, type DiscussionResponse } from "@/api/news";
 import { useAuthStore } from "@/store/useAuthStore";
 
+const NEWS_ALLOWED_TAGS = new Set([
+  "p", "br", "strong", "b", "em", "i", "u", "s",
+  "ul", "ol", "li", "blockquote", "a",
+  "h1", "h2", "h3", "h4", "h5", "h6",
+]);
+const NEWS_ALLOWED_ATTRS: Record<string, Set<string>> = {
+  a: new Set(["href", "target", "rel"]),
+};
+
+const hasHtmlTag = (value: string) => /<\/?[a-z][\s\S]*>/i.test(value);
+
+const isSafeUrl = (value: string) => {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return false;
+  if (normalized.startsWith("javascript:")) return false;
+  if (normalized.startsWith("data:")) return false;
+  return true;
+};
+
+const sanitizeNewsHtml = (raw: string) => {
+  if (!raw || typeof window === "undefined") return "";
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(raw, "text/html");
+
+  const walk = (root: Node) => {
+    for (const child of Array.from(root.childNodes)) {
+      if (child.nodeType === Node.COMMENT_NODE) {
+        root.removeChild(child);
+        continue;
+      }
+
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+
+      const el = child as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+      if (!NEWS_ALLOWED_TAGS.has(tag)) {
+        while (el.firstChild) {
+          root.insertBefore(el.firstChild, el);
+        }
+        root.removeChild(el);
+        continue;
+      }
+
+      const allowedAttrs = NEWS_ALLOWED_ATTRS[tag] ?? new Set<string>();
+      for (const attr of Array.from(el.attributes)) {
+        const name = attr.name.toLowerCase();
+        const value = attr.value;
+        if (!allowedAttrs.has(name)) {
+          el.removeAttribute(attr.name);
+          continue;
+        }
+
+        if (name === "href" && !isSafeUrl(value)) {
+          el.removeAttribute("href");
+        }
+
+        if (tag === "a" && name === "target" && value !== "_blank") {
+          el.removeAttribute("target");
+        }
+      }
+
+      if (tag === "a" && el.getAttribute("target") === "_blank") {
+        el.setAttribute("rel", "noopener noreferrer");
+      }
+
+      walk(el);
+    }
+  };
+
+  walk(doc.body);
+  return doc.body.innerHTML;
+};
+
 // 상대 시간 표시
 function formatRelativeTime(dateStr: string): string {
   const time = new Date(dateStr).getTime();
@@ -268,7 +342,13 @@ const NewsDetailPage = () => {
   };
 
   const detailTitle = detail?.title ?? detail?.categoryName ?? "제목 없음";
-  const detailContent = detail?.content ?? "뉴스 본문이 없습니다.";
+  const rawDetailContent = detail?.content?.trim() ?? "";
+  const hasDetailHtml = hasHtmlTag(rawDetailContent);
+  const sanitizedDetailHtml = useMemo(
+    () => sanitizeNewsHtml(rawDetailContent),
+    [rawDetailContent]
+  );
+  const detailContent = rawDetailContent || "뉴스 본문이 없습니다.";
   const detailProvider = detail?.provider ?? "출처 정보 없음";
   const detailPublishedAt = detail?.publishedAt ?? detail?.createdAt;
   const detailTimeLabel = detailPublishedAt ? formatRelativeTime(detailPublishedAt) : "생성일 없음";
@@ -318,8 +398,12 @@ const NewsDetailPage = () => {
                   </span>
                 </div>
 
-                <div className="mb-6 whitespace-pre-wrap text-Body_L_Light text-black">
-                  {detailContent}
+                <div className="mb-6 text-Body_L_Light text-black leading-7 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-3 [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-200 [&_blockquote]:pl-4 [&_blockquote]:text-gray-700 [&_a]:text-blue-600 [&_a]:underline">
+                  {hasDetailHtml ? (
+                    <div dangerouslySetInnerHTML={{ __html: sanitizedDetailHtml }} />
+                  ) : (
+                    <div className="whitespace-pre-wrap">{detailContent}</div>
+                  )}
                 </div>
 
                 {/* AI 분석 */}
