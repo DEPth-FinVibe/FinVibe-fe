@@ -123,13 +123,9 @@ function buildWsUrl(): string {
   const envUrl = import.meta.env.VITE_WS_MARKET_URL;
   if (envUrl) return envUrl;
 
-  if (import.meta.env.DEV) {
-    return "wss://finvibe.space/market/ws";
-  }
-
   const { protocol, host } = window.location;
   const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
-  return `${wsProtocol}//${host}/market/ws`;
+  return `${wsProtocol}//${host}/api/market/ws`;
 }
 
 function send(data: object) {

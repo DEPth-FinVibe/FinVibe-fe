@@ -75,14 +75,9 @@ function buildWsUrl(): string {
   const envUrl = import.meta.env.VITE_WS_MARKET_URL;
   if (envUrl) return envUrl;
 
-  // 개발 환경에서는 직접 백엔드 WebSocket 연결
-  if (import.meta.env.DEV) {
-    return "wss://finvibe.space/market/ws";
-  }
-
   const { protocol, host } = window.location;
   const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
-  return `${wsProtocol}//${host}/market/ws`;
+  return `${wsProtocol}//${host}/api/market/ws`;
 }
 
 export function useMarketWebSocket(options: UseMarketWebSocketOptions = {}) {
