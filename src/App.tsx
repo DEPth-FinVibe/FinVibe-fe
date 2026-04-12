@@ -11,6 +11,7 @@ import ChallengePage from "@/pages/Challenge/ChallengePage";
 import AILearningPage from "@/pages/AILearning/AILearningPage";
 import MyPage from "@/pages/MyPage/MyPage";
 import MyPageSettingsPage from "@/pages/MyPage/MyPageSettingsPage";
+import LoginDeviceManagementPage from "@/pages/MyPage/LoginDeviceManagementPage";
 import TermsPage from "@/pages/MyPage/TermsPage";
 import PrivacyPolicyPage from "@/pages/MyPage/PrivacyPolicyPage";
 import MyAssetsPage from "@/pages/MyPage/MyAssetsPage";
@@ -87,6 +88,7 @@ function App() {
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/mypage/challenge-history" element={<MyChallengeHistoryPage />} />
           <Route path="/mypage/settings" element={<MyPageSettingsPage />} />
+          <Route path="/mypage/settings/login-devices" element={<LoginDeviceManagementPage />} />
           <Route path="/mypage/terms" element={<TermsPage />} />
           <Route path="/mypage/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/mypage/assets" element={<MyAssetsPage />} />

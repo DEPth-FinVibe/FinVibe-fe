@@ -144,6 +144,11 @@ const MyPageSettingsPage: React.FC = () => {
                 </Button>
               }
             />
+            <Row
+              left={<p className="text-Title_M_Medium text-black">로그인 기기 관리</p>}
+              right={<span className="text-[18px] text-[#4C4C4C]">&gt;</span>}
+              onClick={() => navigate("/mypage/settings/login-devices")}
+            />
           </Section>
 
           {/* 정보 */}
@@ -220,5 +225,4 @@ const MyPageSettingsPage: React.FC = () => {
 };
 
 export default MyPageSettingsPage;
-
 

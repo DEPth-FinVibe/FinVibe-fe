@@ -28,21 +28,6 @@ export type PortfolioAsset = {
   stockId: number;
 };
 
-export type CreatePortfolioAssetBody = {
-  stockId: number;
-  amount: number;
-  stockPrice: number;
-  name: string;
-  currency: string; // "USD" | "KRW"
-};
-
-export type DeletePortfolioAssetBody = {
-  stockId: number;
-  amount: number;
-  stockPrice: number;
-  currency?: string; // 문서상 optional
-};
-
 export type PortfolioComparisonItem = {
   name: string;
   totalAssetAmount: number;
@@ -57,13 +42,6 @@ export type AssetAllocationResponse = {
   changeAmount: number;
   changeRate: number;
 };
-
-export type AssetHistoryItem = {
-  date: string; // "YYYY-MM-DD" 형식
-  totalAmount: number;
-};
-
-export type AssetHistoryResponse = AssetHistoryItem[];
 
 // 포트폴리오 성과 차트 관련 타입
 export type PerformanceChartPoint = {
@@ -123,16 +101,6 @@ export const assetPortfolioApi = {
     return res.data;
   },
 
-  /** 자산 등록: POST /api/portfolios/{portfolioId}/assets */
-  createAsset: async (portfolioId: number, body: CreatePortfolioAssetBody): Promise<void> => {
-    await assetApiClient.post(`/portfolios/${portfolioId}/assets`, body);
-  },
-
-  /** 자산 등록 해제: DELETE /api/portfolios/{portfolioId}/assets */
-  deleteAsset: async (portfolioId: number, body: DeletePortfolioAssetBody): Promise<void> => {
-    await assetApiClient.delete(`/portfolios/${portfolioId}/assets`, { data: body });
-  },
-
   /** 포트폴리오별 수익 비교 조회: GET /api/portfolios/comparison */
   getPortfolioComparison: async (): Promise<PortfolioComparisonItem[]> => {
     const res = await assetApiClient.get<PortfolioComparisonItem[]>("/portfolios/comparison");
@@ -142,14 +110,6 @@ export const assetPortfolioApi = {
   /** 전체 자산 배분 조회: GET /api/assets/allocation */
   getAssetAllocation: async (): Promise<AssetAllocationResponse> => {
     const res = await assetApiClient.get<AssetAllocationResponse>("/assets/allocation");
-    return res.data;
-  },
-
-  /** 자산 히스토리 조회: GET /api/assets/history */
-  getAssetHistory: async (period: "WEEKLY" | "MONTHLY" = "WEEKLY"): Promise<AssetHistoryResponse> => {
-    const res = await assetApiClient.get<AssetHistoryResponse>("/assets/history", {
-      params: { period },
-    });
     return res.data;
   },
 
@@ -180,4 +140,3 @@ export const assetPortfolioApi = {
     return res.data;
   },
 };
-
