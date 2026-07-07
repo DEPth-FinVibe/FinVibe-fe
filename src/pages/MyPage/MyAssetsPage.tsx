@@ -5,11 +5,11 @@ import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
 import BagIcon from "@/assets/svgs/BagIcon";
 import CalendarIcon from "@/assets/svgs/CalendarIcon";
 import { cn } from "@/utils/cn";
-import { walletApi } from "@/api/wallet";
-import { assetPortfolioApi, type AssetAllocationResponse } from "@/api/asset";
 import { tradeApi } from "@/api/trade";
 import { studyApi } from "@/api/study";
 import { gamificationApi } from "@/api/gamification";
+import { useAssetAllocation } from "@/hooks/usePortfolioQueries";
+import { useWalletBalance } from "@/hooks/useWalletQueries";
 
 const formatWon = (value: number) => `₩${value.toLocaleString()}`;
 
@@ -31,32 +31,13 @@ const MyAssetsPage: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const [allocation, setAllocation] = useState<AssetAllocationResponse | null>(null);
-  const [cash, setCash] = useState<number | null>(null);
-
-  // 자산 배분 데이터 조회
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [allocationData, balanceData] = await Promise.all([
-          assetPortfolioApi.getAssetAllocation(),
-          walletApi.getBalance(),
-        ]);
-        if (!alive) return;
-        setAllocation(allocationData);
-        setCash(Number.isFinite(balanceData.balance) ? Math.max(0, balanceData.balance) : 0);
-      } catch {
-        // 실패 시 기본값 유지
-        if (!alive) return;
-        setAllocation(null);
-        setCash(null);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const allocationQuery = useAssetAllocation();
+  const walletBalance = useWalletBalance();
+  const allocation = allocationQuery.data ?? null;
+  const cash =
+    walletBalance.data && Number.isFinite(walletBalance.data.balance)
+      ? Math.max(0, walletBalance.data.balance)
+      : null;
 
   // API 데이터 또는 기본값
   const stock = allocation?.stockAmount ?? 0;
@@ -496,4 +477,3 @@ const MyAssetsPage: React.FC = () => {
 };
 
 export default MyAssetsPage;
-

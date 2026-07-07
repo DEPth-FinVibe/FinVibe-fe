@@ -30,7 +30,7 @@ const MainLayout: React.FC = () => {
   };
 
   // 현재 경로에 맞는 활성화된 메뉴 찾기
-  const activeMenu = Object.entries(MENU_ROUTES).find(([_, route]) => {
+  const activeMenu = Object.entries(MENU_ROUTES).find(([, route]) => {
     if (route === "/") return location.pathname === "/";
     return location.pathname.startsWith(route);
   })?.[0] || "홈";

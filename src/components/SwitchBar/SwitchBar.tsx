@@ -1,7 +1,5 @@
 import React from "react";
 import { cn } from "@/utils/cn";
-import ChartIcon from "@/assets/svgs/ChartIcon";
-import CommentIcon from "@/assets/svgs/CommentIcon";
 
 export interface TabOption<T extends string> {
   id: T;
@@ -15,21 +13,6 @@ export interface SwitchBarProps<T extends string> {
   tabs: [TabOption<T>, TabOption<T>]; // 고정된 2개 탭
   className?: string;
 }
-
-// 뉴스 페이지용 기본 탭 설정
-export type NewsTabType = "news" | "discussion";
-export const NEWS_TABS: [TabOption<NewsTabType>, TabOption<NewsTabType>] = [
-  {
-    id: "news",
-    label: "경제 뉴스",
-    icon: (color) => <ChartIcon className="w-5 h-5" color={color} />,
-  },
-  {
-    id: "discussion",
-    label: "토론 게시판",
-    icon: (color) => <CommentIcon className="w-5 h-5" color={color} />,
-  },
-];
 
 export const SwitchBar = <T extends string>({
   activeTab,

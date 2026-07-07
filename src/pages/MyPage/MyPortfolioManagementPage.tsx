@@ -4,8 +4,15 @@ import { cn } from "@/utils/cn";
 import FolderReturnComparisonSection from "@/pages/MyPage/components/FolderReturnComparisonSection";
 import CreateFolderPopover from "@/pages/MyPage/components/CreateFolderPopover";
 import MoveToFolderPopover from "@/pages/MyPage/components/MoveToFolderPopover";
-import { assetPortfolioApi, type PortfolioAsset, type PortfolioGroup, type PortfolioComparisonItem } from "@/api/asset";
+import type { PortfolioAsset } from "@/api/asset";
 import { formatPrice, formatChangeRate } from "@/utils/formatStock";
+import {
+  useCreatePortfolioGroup,
+  usePortfolioAssetsQueries,
+  usePortfolioComparison,
+  usePortfolioGroups,
+  useTransferPortfolioAsset,
+} from "@/hooks/usePortfolioQueries";
 
 type FolderMeta = {
   id: number;
@@ -106,95 +113,35 @@ const MyPortfolioManagementPage: React.FC = () => {
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const showFolderColumn = tab === "folder";
-  const [portfolioGroups, setPortfolioGroups] = useState<PortfolioGroup[] | null>(null);
-  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [createFolderError, setCreateFolderError] = useState<string | null>(null);
   const [openMoveRowId, setOpenMoveRowId] = useState<string | null>(null);
   const [movePendingFolderId, setMovePendingFolderId] = useState<number | null>(null);
 
-  const [rows, setRows] = useState<StockRow[]>([]);
-  const [comparisonData, setComparisonData] = useState<PortfolioComparisonItem[]>([]);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const groups = await assetPortfolioApi.getPortfolios();
-        if (!alive) return;
-        setPortfolioGroups(Array.isArray(groups) ? groups : []);
-      } catch {
-        // 실패 시 더미 대신 비어있게
-        if (!alive) return;
-        setPortfolioGroups([]);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // 포트폴리오 비교 데이터 조회
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const data = await assetPortfolioApi.getPortfolioComparison();
-        if (!alive) return;
-        setComparisonData(Array.isArray(data) ? data : []);
-      } catch {
-        // 실패 시 빈 배열
-        if (!alive) return;
-        setComparisonData([]);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      if (portfolioGroups === null) return; // 그룹 로딩 전
-      if (portfolioGroups.length === 0) {
-        setRows([]);
-        return;
-      }
-
-      try {
-        const results = await Promise.all(
-          portfolioGroups.map(async (g) => {
-            try {
-              const assets = await assetPortfolioApi.getAssetsByPortfolio(g.id);
-              return (Array.isArray(assets) ? assets : []).map((a) => toStockRow(a, g.id));
-            } catch {
-              // 한 포트폴리오 조회 실패해도 나머지는 최대한 표시
-              return [] as StockRow[];
-            }
-          })
-        );
-        if (!alive) return;
-        setRows(results.flat());
-      } catch {
-        if (!alive) return;
-        // 실패 시 더미 대신 비어있게
-        setRows([]);
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [portfolioGroups]);
-
-  const refetchGroups = async () => {
-    const groups = await assetPortfolioApi.getPortfolios();
-    setPortfolioGroups(Array.isArray(groups) ? groups : []);
-  };
+  const portfolioGroupsQuery = usePortfolioGroups();
+  const comparisonQuery = usePortfolioComparison();
+  const createPortfolioGroup = useCreatePortfolioGroup();
+  const transferPortfolioAsset = useTransferPortfolioAsset();
+  const groupsForUi = useMemo(
+    () => portfolioGroupsQuery.data ?? [],
+    [portfolioGroupsQuery.data],
+  );
+  const portfolioIds = useMemo(
+    () => groupsForUi.map((group) => group.id),
+    [groupsForUi],
+  );
+  const assetQueries = usePortfolioAssetsQueries(portfolioIds);
+  const rows = useMemo(() => {
+    return assetQueries.flatMap((query, index) => {
+      const groupId = portfolioIds[index];
+      return (query.data ?? []).map((asset) => toStockRow(asset, groupId));
+    });
+  }, [assetQueries, portfolioIds]);
+  const comparisonData = useMemo(
+    () => comparisonQuery.data ?? [],
+    [comparisonQuery.data],
+  );
 
   // 제한 없이 그대로 사용 (비어있으면 빈 상태 유지)
-  const groupsForUi = portfolioGroups ?? [];
-
   const folderOptions: FolderMeta[] = groupsForUi.map((g, index) => ({
     id: g.id,
     label: g.name,
@@ -333,28 +280,24 @@ const MyPortfolioManagementPage: React.FC = () => {
                 value={newFolderName}
                 onChange={setNewFolderName}
                 onClose={() => setIsCreateFolderOpen(false)}
-                isSubmitting={isCreatingFolder}
+                isSubmitting={createPortfolioGroup.isPending}
                 errorMessage={createFolderError}
                 onSubmit={async () => {
                   const name = newFolderName.trim();
                   if (name.length === 0) return;
 
                   setCreateFolderError(null);
-                  setIsCreatingFolder(true);
                   try {
                     // NOTE: iconCode 선택 UI가 없어서 기본값 사용 (후속 UI에서 교체)
-                    await assetPortfolioApi.createPortfolio({
+                    await createPortfolioGroup.mutateAsync({
                       name,
                       iconCode: "ICON_01",
                     });
 
-                    await refetchGroups();
                     setNewFolderName("");
                     setIsCreateFolderOpen(false);
                   } catch {
                     setCreateFolderError("포트폴리오 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
-                  } finally {
-                    setIsCreatingFolder(false);
                   }
                 }}
               />
@@ -445,16 +388,12 @@ const MyPortfolioManagementPage: React.FC = () => {
                           onConfirm={async () => {
                             if (movePendingFolderId == null || row.folderId == null || movePendingFolderId === row.folderId) return;
                             try {
-                              await assetPortfolioApi.transferAsset(
-                                row.folderId,
-                                row.assetId,
-                                { targetPortfolioId: movePendingFolderId }
-                              );
-                              setRows((prev) =>
-                                prev.map((r) =>
-                                  r.id === row.id ? { ...r, folderId: movePendingFolderId } : r
-                                )
-                              );
+                              await transferPortfolioAsset.mutateAsync({
+                                sourcePortfolioId: row.folderId,
+                                assetId: row.assetId,
+                                body: { targetPortfolioId: movePendingFolderId },
+                              });
+                              setOpenMoveRowId(null);
                             } catch {
                               alert("자산 이동에 실패했습니다.");
                             }
@@ -490,5 +429,3 @@ const MyPortfolioManagementPage: React.FC = () => {
 };
 
 export default MyPortfolioManagementPage;
-
-

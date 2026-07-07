@@ -39,8 +39,12 @@ const ServiceRankingPage: React.FC = () => {
   // API 호출
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    const loadingTimer = window.setTimeout(() => {
+      if (!cancelled) {
+        setLoading(true);
+        setError(null);
+      }
+    }, 0);
 
     const periodMap: Record<PeriodType, RankingPeriod | XpRankingPeriod> = {
       daily: "DAILY",
@@ -108,6 +112,7 @@ const ServiceRankingPage: React.FC = () => {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(loadingTimer);
     };
   }, [rankingType, period, user?.userId]);
 

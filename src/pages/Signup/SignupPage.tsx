@@ -12,6 +12,7 @@ import type { SignupRequest } from "@/api/auth";
 import { memberApi } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
 import { cn } from "@/utils/cn";
+import { isAxiosError } from "axios";
 
 // Steps
 import SchoolStep from "./steps/SchoolStep";
@@ -181,10 +182,15 @@ const SignupPage: React.FC = () => {
       setTokens(response.data.tokens);
       // 개인화(학교/관심종목/투자스타일) 단계는 건너뛰고 바로 완료 단계로 이동
       setCurrentStep("complete");
-    } catch (error: any) {
-      console.error("Signup failed details:", error.response?.data);
-      
-      const serverError = error.response?.data;
+    } catch (error: unknown) {
+      const serverError = isAxiosError<{
+        message?: string;
+        fieldErrors?: { field: string; message: string }[];
+      }>(error)
+        ? error.response?.data
+        : undefined;
+      console.error("Signup failed details:", serverError);
+
       let errorMessage = serverError?.message || "회원가입에 실패했습니다.";
       
       // 상세 필드 에러가 있는 경우 첫 번째 에러 메시지를 표시

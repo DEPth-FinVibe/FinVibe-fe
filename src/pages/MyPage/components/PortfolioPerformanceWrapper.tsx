@@ -1,84 +1,48 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { PortfolioPerformance } from "@/components/PortfolioPerformance";
-import { assetPortfolioApi, type PerformanceChartResponse } from "@/api/asset";
+import {
+  usePortfolioComparison,
+  usePortfolioPerformanceChart,
+} from "@/hooks/usePortfolioQueries";
 
 const PortfolioPerformanceWrapper: React.FC = () => {
-  const [performanceChart, setPerformanceChart] = useState<PerformanceChartResponse | null>(null);
   const [historyPeriod, setHistoryPeriod] = useState<"WEEKLY" | "MONTHLY">("WEEKLY");
-  const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<{ startDate: string; endDate: string } | null>(null);
-  const [currentTotalAsset, setCurrentTotalAsset] = useState<number | null>(null);
 
-  // 현재 시점의 총 평가금 가져오기
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const comparison = await assetPortfolioApi.getPortfolioComparison();
-        if (!alive) return;
-        const total = Array.isArray(comparison) 
-          ? comparison.reduce((sum, item) => sum + item.totalAssetAmount, 0)
-          : 0;
-        setCurrentTotalAsset(total);
-      } catch (error) {
-        if (!alive) return;
-        console.error("[PortfolioPerformance] 현재 총 평가금 조회 실패:", error);
-        setCurrentTotalAsset(null);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const dateRange = useMemo(() => {
+    // 날짜 범위 계산: WEEKLY는 최근 7일, MONTHLY는 최근 7개월
+    const today = new Date();
+    // 시간대 문제 방지를 위해 UTC 기준으로 날짜 설정
+    const endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const endDateStr = endDate.toISOString().split("T")[0]; // YYYY-MM-DD
 
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    (async () => {
-      try {
-        // 날짜 범위 계산: WEEKLY는 최근 7일, MONTHLY는 최근 7개월
-        const today = new Date();
-        // 시간대 문제 방지를 위해 UTC 기준으로 날짜 설정
-        const endDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
-        const endDateStr = endDate.toISOString().split("T")[0]; // YYYY-MM-DD
-        
-        const startDate = new Date(endDate);
-        if (historyPeriod === "WEEKLY") {
-          // 최근 7일간 일별 성과 (오늘 포함 7일)
-          startDate.setUTCDate(endDate.getUTCDate() - 6); // 오늘 포함해서 7일
-        } else {
-          // 최근 7개월간 월별 성과 (이번 달 포함 7개월)
-          startDate.setUTCMonth(endDate.getUTCMonth() - 6); // 이번 달 포함해서 7개월
-          startDate.setUTCDate(1); // 월의 첫 날로 설정
-        }
-        const startDateStr = startDate.toISOString().split("T")[0]; // YYYY-MM-DD
+    const startDate = new Date(endDate);
+    if (historyPeriod === "WEEKLY") {
+      // 최근 7일간 일별 성과 (오늘 포함 7일)
+      startDate.setUTCDate(endDate.getUTCDate() - 6); // 오늘 포함해서 7일
+    } else {
+      // 최근 7개월간 월별 성과 (이번 달 포함 7개월)
+      startDate.setUTCMonth(endDate.getUTCMonth() - 6); // 이번 달 포함해서 7개월
+      startDate.setUTCDate(1); // 월의 첫 날로 설정
+    }
+    const startDateStr = startDate.toISOString().split("T")[0]; // YYYY-MM-DD
 
-        // WEEKLY는 최근 7일간 일별 데이터를 요청해야 하므로 interval은 DAILY
-        // MONTHLY는 최근 7개월간 월별 데이터를 요청하므로 interval은 MONTHLY
-        const apiInterval = historyPeriod === "WEEKLY" ? "DAILY" : "MONTHLY";
-        
-        const chart = await assetPortfolioApi.getPerformanceChart(
-          startDateStr,
-          endDateStr,
-          apiInterval
-        );
-        if (!alive) return;
-        setPerformanceChart(chart);
-        setDateRange({ startDate: startDateStr, endDate: endDateStr });
-      } catch (error) {
-        if (!alive) return;
-        console.error("[PortfolioPerformance] API 호출 실패:", error);
-        setPerformanceChart(null);
-      } finally {
-        if (alive) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      alive = false;
-    };
+    // WEEKLY는 최근 7일간 일별 데이터를 요청해야 하므로 interval은 DAILY
+    // MONTHLY는 최근 7개월간 월별 데이터를 요청하므로 interval은 MONTHLY
+    const apiInterval: "DAILY" | "MONTHLY" =
+      historyPeriod === "WEEKLY" ? "DAILY" : "MONTHLY";
+
+    return { startDate: startDateStr, endDate: endDateStr, apiInterval };
   }, [historyPeriod]);
+  const comparisonQuery = usePortfolioComparison();
+  const performanceChartQuery = usePortfolioPerformanceChart(
+    dateRange.startDate,
+    dateRange.endDate,
+    dateRange.apiInterval,
+  );
+  const performanceChart = performanceChartQuery.data ?? null;
+  const currentTotalAsset = comparisonQuery.data
+    ? comparisonQuery.data.reduce((sum, item) => sum + item.totalAssetAmount, 0)
+    : null;
 
   // 그래프 데이터 변환
   const chartData = useMemo(() => {
@@ -255,7 +219,7 @@ const PortfolioPerformanceWrapper: React.FC = () => {
     return { xLabels, values: chartValues, yMax, yStep };
   }, [performanceChart, historyPeriod, dateRange, currentTotalAsset]);
 
-  if (loading) {
+  if (performanceChartQuery.isLoading) {
     return (
       <div className="bg-white border border-gray-300 rounded-lg px-10 py-8 flex items-center justify-center h-96">
         <p className="text-Subtitle_L_Regular text-gray-400">로딩 중...</p>
@@ -311,4 +275,3 @@ const PortfolioPerformanceWrapper: React.FC = () => {
 };
 
 export default PortfolioPerformanceWrapper;
-

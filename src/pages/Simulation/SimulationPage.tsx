@@ -20,11 +20,16 @@ import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 import type { StockWithPrice } from "@/api/market";
 import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPortfolioTab";
-import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset";
 import { memberApi, type FavoriteStockResponse } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTradeHistory, useCancelTrade } from "@/hooks/useTradeQueries";
 import type { TradeHistoryResponse } from "@/api/trade";
+import {
+  useCreatePortfolioGroup,
+  useDeletePortfolioGroup,
+  usePortfolioGroups,
+  useUpdatePortfolioGroup,
+} from "@/hooks/usePortfolioQueries";
 
 type RightTab = "관심 종목" | "거래 종목" | "예약/자동 주문" | "포트폴리오";
 
@@ -402,9 +407,11 @@ const SimulationPage = () => {
   );
 
   const { subscribe, unsubscribe } = useMarketStore();
-  const [portfolioGroups, setPortfolioGroups] = useState<
-    PortfolioGroup[] | null
-  >(null);
+  const portfolioGroupsQuery = usePortfolioGroups();
+  const portfolioGroups = portfolioGroupsQuery.data ?? [];
+  const createPortfolioGroup = useCreatePortfolioGroup();
+  const updatePortfolioGroup = useUpdatePortfolioGroup();
+  const deletePortfolioGroup = useDeletePortfolioGroup();
   const [isCreatingPortfolioGroup, setIsCreatingPortfolioGroup] =
     useState(false);
   const [createPortfolioGroupError, setCreatePortfolioGroupError] = useState<
@@ -560,36 +567,12 @@ const SimulationPage = () => {
     setVisibleCount(PAGE_SIZE);
   };
 
-  const fetchPortfolioGroups = async (opts?: { showLoading?: boolean }) => {
-    if (opts?.showLoading) setPortfolioGroups(null);
-    const groups = await assetPortfolioApi.getPortfolios();
-    setPortfolioGroups(Array.isArray(groups) ? groups : []);
-  };
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const groups = await assetPortfolioApi.getPortfolios();
-        if (!alive) return;
-        setPortfolioGroups(Array.isArray(groups) ? groups : []);
-      } catch {
-        if (!alive) return;
-        setPortfolioGroups([]);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   const handleCreatePortfolioGroup = async (name: string) => {
     setCreatePortfolioGroupError(null);
     setIsCreatingPortfolioGroup(true);
     try {
       // NOTE: 아이콘 선택 UI는 아직 없어서 기본값 사용 (후속 단계에서 교체)
-      await assetPortfolioApi.createPortfolio({ name, iconCode: "ICON_01" });
-      await fetchPortfolioGroups({ showLoading: true });
+      await createPortfolioGroup.mutateAsync({ name, iconCode: "ICON_01" });
     } catch (e) {
       setCreatePortfolioGroupError(
         "폴더 생성에 실패했어요. 잠시 후 다시 시도해주세요.",
@@ -612,8 +595,10 @@ const SimulationPage = () => {
     const iconCode = current?.iconCode ?? "ICON_01";
 
     try {
-      await assetPortfolioApi.updatePortfolio(groupId, { name, iconCode });
-      await fetchPortfolioGroups({ showLoading: true });
+      await updatePortfolioGroup.mutateAsync({
+        portfolioGroupId: groupId,
+        body: { name, iconCode },
+      });
       setUpdatingPortfolioGroupId(null);
     } catch (e) {
       setUpdatePortfolioGroupError(
@@ -630,8 +615,7 @@ const SimulationPage = () => {
     setIsDeletingPortfolioGroup(true);
     setDeletingPortfolioGroupId(groupId);
     try {
-      await assetPortfolioApi.deletePortfolio(groupId);
-      await fetchPortfolioGroups({ showLoading: true });
+      await deletePortfolioGroup.mutateAsync(groupId);
       setDeletingPortfolioGroupId(null);
     } catch (e) {
       setDeletePortfolioGroupError(
@@ -731,8 +715,8 @@ const SimulationPage = () => {
           {rightTab === "포트폴리오" && (
             <SimulationPortfolioTab
               className="flex-1 overflow-y-auto"
-              groups={portfolioGroups ?? []}
-              isLoading={portfolioGroups === null}
+              groups={portfolioGroups}
+              isLoading={portfolioGroupsQuery.isLoading}
               isCreating={isCreatingPortfolioGroup}
               createErrorMessage={createPortfolioGroupError}
               onSubmitCreateFolder={handleCreatePortfolioGroup}

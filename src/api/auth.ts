@@ -17,10 +17,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface AuthResponse {
+  user: unknown;
+  tokens: Tokens;
+}
+
 export const authApi = {
   // 로컬 회원가입
   signup: (data: SignupRequest) =>
-    api.post<{ user: any; tokens: Tokens }>("/auth/signup", data),
+    api.post<AuthResponse>("/auth/signup", data),
 
   // 로컬 로그인
   login: (data: LoginRequest) => api.post<Tokens>("/auth/login", data),
@@ -30,5 +35,5 @@ export const authApi = {
 
   // OAuth 회원가입 완료
   oauthSignup: (data: SignupRequest) =>
-    api.post<{ user: any; tokens: Tokens }>("/auth/oauth-signup", data),
+    api.post<AuthResponse>("/auth/oauth-signup", data),
 };

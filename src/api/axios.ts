@@ -67,14 +67,19 @@ function refreshTokensOnce(): Promise<string> {
 // Response Interceptor: Handle Token Expiration
 api.interceptors.response.use(
   (res) => res,
-  async (err: AxiosError<any>) => {
+  async (err: AxiosError<{ code?: string }>) => {
     const status = err.response?.status;
     const code = err.response?.data?.code;
     const originalRequest = err.config;
 
     // INVALID_REFRESH_TOKEN or other auth errors that require refresh
-    if (status === 401 && code === "INVALID_REFRESH_TOKEN" && originalRequest && !(originalRequest as any)._retry) {
-      (originalRequest as any)._retry = true;
+    if (
+      status === 401 &&
+      code === "INVALID_REFRESH_TOKEN" &&
+      originalRequest &&
+      !(originalRequest as { _retry?: boolean })._retry
+    ) {
+      (originalRequest as { _retry?: boolean })._retry = true;
       try {
         const newAccessToken = await refreshTokensOnce();
         if (originalRequest.headers) {

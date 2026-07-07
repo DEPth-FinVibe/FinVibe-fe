@@ -114,7 +114,9 @@ const DiscussionDetailPage = () => {
       const wasLiked = liked;
       setLiked(!wasLiked);
       setLikeCount((prev) => Math.max(0, prev + (wasLiked ? -1 : 1)));
-    } catch {} finally {
+    } catch {
+      // 좋아요 실패 시 낙관적 변경 없이 현재 상태 유지
+    } finally {
       setLikingDiscussion(false);
     }
   };
@@ -152,7 +154,9 @@ const DiscussionDetailPage = () => {
             : c
         )
       );
-    } catch {} finally {
+    } catch {
+      // 좋아요 실패 시 낙관적 변경 없이 현재 상태 유지
+    } finally {
       setLikingCommentIds((prev) => { const next = new Set(prev); next.delete(commentId); return next; });
     }
   };
@@ -162,7 +166,9 @@ const DiscussionDetailPage = () => {
     try {
       await discussionApi.deleteDiscussion(Number(discussionId));
       navigate("/news");
-    } catch {}
+    } catch {
+      // 삭제 실패 시 현재 화면 유지
+    }
   };
 
   const handleDeleteComment = async (commentId: number) => {
@@ -170,7 +176,9 @@ const DiscussionDetailPage = () => {
     try {
       await discussionApi.deleteComment(commentId);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
-    } catch {}
+    } catch {
+      // 삭제 실패 시 현재 댓글 목록 유지
+    }
   };
 
   const authorName = (userId: string) => {

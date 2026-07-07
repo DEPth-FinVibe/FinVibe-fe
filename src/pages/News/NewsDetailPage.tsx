@@ -277,7 +277,9 @@ const NewsDetailPage = () => {
             : d
         )
       );
-    } catch {} finally {
+    } catch {
+      // 좋아요 실패 시 낙관적 변경 없이 현재 상태 유지
+    } finally {
       setLikingIds((prev) => { const next = new Set(prev); next.delete(key); return next; });
     }
   };
@@ -310,7 +312,9 @@ const NewsDetailPage = () => {
             : d
         )
       );
-    } catch {} finally {
+    } catch {
+      // 좋아요 실패 시 낙관적 변경 없이 현재 상태 유지
+    } finally {
       setLikingIds((prev) => { const next = new Set(prev); next.delete(key); return next; });
     }
   };
@@ -321,7 +325,9 @@ const NewsDetailPage = () => {
     try {
       await discussionApi.deleteDiscussion(discussionId);
       setDiscussions((prev) => prev.filter((d) => d.id !== discussionId));
-    } catch {}
+    } catch {
+      // 삭제 실패 시 현재 토론 목록 유지
+    }
   };
 
   // 댓글 삭제
@@ -336,7 +342,9 @@ const NewsDetailPage = () => {
             : d
         )
       );
-    } catch {}
+    } catch {
+      // 삭제 실패 시 현재 댓글 목록 유지
+    }
   };
 
   // 정렬된 토론 목록

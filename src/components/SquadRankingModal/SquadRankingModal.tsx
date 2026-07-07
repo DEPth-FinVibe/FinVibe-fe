@@ -3,7 +3,7 @@ import { cn } from "@/utils/cn";
 import CloseIcon from "@/assets/svgs/CloseIcon";
 import SearchIcon from "@/assets/svgs/SearchIcon";
 import type { SquadRankingItem, SquadContributionItem } from "@/api/gamification";
-import { getRankMedal } from "@/components/SquadRanking/SquadRanking";
+import { getRankMedal } from "@/components/SquadRanking/rankingUtils";
 
 type SquadRankingModalVariant = "university" | "contribution";
 
@@ -55,10 +55,10 @@ export const SquadRankingModal: React.FC<SquadRankingModalProps> = ({
     };
   }, [isOpen]);
 
-  // 모달 닫힐 때 검색어 초기화
-  useEffect(() => {
-    if (!isOpen) setSearchQuery("");
-  }, [isOpen]);
+  const handleClose = useCallback(() => {
+    setSearchQuery("");
+    onClose();
+  }, [onClose]);
 
   const handleScrollToMe = useCallback(() => {
     myItemRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -81,7 +81,7 @@ export const SquadRankingModal: React.FC<SquadRankingModalProps> = ({
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"
         style={{ backgroundColor: "rgba(0, 0, 0, 0.43)" }}
-        onClick={onClose}
+        onClick={handleClose}
       >
         <div
           className="bg-white rounded-lg shadow-[0px_5px_15px_0px_rgba(0,0,0,0.25)] w-[520px] max-w-[90vw] max-h-[80vh] flex flex-col"
@@ -93,7 +93,7 @@ export const SquadRankingModal: React.FC<SquadRankingModalProps> = ({
               {config.title}
             </h2>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="flex items-center justify-center w-6 h-6 text-gray-500 hover:text-gray-700 transition-colors"
               aria-label="닫기"
             >

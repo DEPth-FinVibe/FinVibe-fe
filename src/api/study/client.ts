@@ -1,5 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
+import type { Tokens } from "@/store/useAuthStore";
 import { isTokenExpiredOrExpiring } from "@/utils/tokenExpiry";
 
 const API_BASE =
@@ -44,11 +45,11 @@ async function refreshTokens() {
   }
 
   try {
-    const res = await axios.post(`${API_BASE}/auth/refresh`, {
+    const res = await axios.post<Tokens>(`${API_BASE}/auth/refresh`, {
       refreshToken: tokens.refreshToken,
     });
     setTokens(res.data);
-    return res.data.accessToken as string;
+    return res.data.accessToken;
   } catch (error) {
     clearAuth();
     throw error;
@@ -68,13 +69,18 @@ function refreshTokensOnce(): Promise<string> {
 // Response: Handle token refresh
 studyApiClient.interceptors.response.use(
   (res) => res,
-  async (err: AxiosError<any>) => {
+  async (err: AxiosError<{ code?: string }>) => {
     const status = err.response?.status;
     const code = err.response?.data?.code;
     const originalRequest = err.config;
 
-    if (status === 401 && code === "INVALID_REFRESH_TOKEN" && originalRequest && !(originalRequest as any)._retry) {
-      (originalRequest as any)._retry = true;
+    if (
+      status === 401 &&
+      code === "INVALID_REFRESH_TOKEN" &&
+      originalRequest &&
+      !(originalRequest as { _retry?: boolean })._retry
+    ) {
+      (originalRequest as { _retry?: boolean })._retry = true;
       try {
         const newAccessToken = await refreshTokensOnce();
         if (originalRequest.headers) {

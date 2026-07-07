@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { tradeApi } from "@/api/trade";
 import type { TransactionRequest, TradeResponse, TradeHistoryResponse } from "@/api/trade";
+import { portfolioKeys } from "@/hooks/usePortfolioQueries";
+import { walletKeys } from "@/hooks/useWalletQueries";
 
 // --- Query Keys ---
 
@@ -49,6 +51,8 @@ export function useCreateTrade() {
   return useMutation({
     mutationFn: (request: TransactionRequest) => tradeApi.createTrade(request),
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      queryClient.invalidateQueries({ queryKey: portfolioKeys.all });
       // 예약 종목 목록 갱신
       if (data.tradeType === "RESERVED") {
         queryClient.invalidateQueries({ queryKey: tradeKeys.reservedStockIds() });

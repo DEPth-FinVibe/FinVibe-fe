@@ -86,7 +86,11 @@ const RealTimeStockRow = memo(({ stock, rank, isSelected, isMarketOpen, onSelect
 
     const prevChangePct = prevChangePctRef.current;
     if (prevChangePct != null && prevChangePct !== quote.prevDayChangePct) {
-      setChangeFlashToken((token) => token + 1);
+      const id = window.setTimeout(() => {
+        setChangeFlashToken((token) => token + 1);
+      }, 0);
+      prevChangePctRef.current = quote.prevDayChangePct;
+      return () => window.clearTimeout(id);
     }
     prevChangePctRef.current = quote.prevDayChangePct;
   }, [isMarketOpen, quote]);
@@ -268,25 +272,29 @@ const HomePage: React.FC = () => {
 
   // 첫 카테고리 자동 선택
   useEffect(() => {
+    let nextCategoryId: number | null = null;
     if (visibleCategories.length > 0 && selectedCategoryId == null) {
-      setSelectedCategoryId(visibleCategories[0].categoryId);
-      return;
-    }
-
-    if (
+      nextCategoryId = visibleCategories[0].categoryId;
+    } else if (
       selectedCategoryId != null &&
       visibleCategories.length > 0 &&
       !visibleCategories.some((c) => c.categoryId === selectedCategoryId)
     ) {
-      setSelectedCategoryId(visibleCategories[0].categoryId);
+      nextCategoryId = visibleCategories[0].categoryId;
     }
+
+    if (nextCategoryId == null) return;
+    const id = window.setTimeout(() => setSelectedCategoryId(nextCategoryId), 0);
+    return () => window.clearTimeout(id);
   }, [visibleCategories, selectedCategoryId]);
 
   // 선택된 카테고리의 오늘의 테마 AI 분석 로드
   useEffect(() => {
     if (selectedCategoryId == null) return;
     let cancelled = false;
-    setLatestNewsLoading(true);
+    const loadingTimer = window.setTimeout(() => {
+      if (!cancelled) setLatestNewsLoading(true);
+    }, 0);
     newsApi.getTodayThemeDetail(selectedCategoryId).then((data) => {
       if (!cancelled) {
         setThemeAnalysis(data.analysis ?? "");
@@ -299,7 +307,10 @@ const HomePage: React.FC = () => {
     }).finally(() => {
       if (!cancelled) setLatestNewsLoading(false);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      window.clearTimeout(loadingTimer);
+    };
   }, [selectedCategoryId]);
 
   // 카테고리 종목에서 거래대금 1위 추출

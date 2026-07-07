@@ -9,6 +9,7 @@ import LockIcon from "@/assets/svgs/LockIcon";
 import EyeIcon from "@/assets/svgs/EyeIcon";
 import { authApi } from "@/api/auth";
 import { useAuthStore } from "@/store/useAuthStore";
+import { isAxiosError } from "axios";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,8 +27,12 @@ const LoginPage: React.FC = () => {
       const response = await authApi.login({ loginId, password });
       setTokens(response.data);
       navigate("/");
-    } catch (error: any) {
-      alert(error.response?.data?.message || "로그인에 실패했습니다.");
+    } catch (error: unknown) {
+      const message =
+        isAxiosError<{ message?: string }>(error) && error.response?.data?.message
+          ? error.response.data.message
+          : "로그인에 실패했습니다.";
+      alert(message);
     } finally {
       setIsLoading(false);
     }

@@ -216,7 +216,6 @@ export function useMarketWebSocket(options: UseMarketWebSocketOptions = {}) {
     ws.onerror = (error) => {
       console.error("[MarketWS] Error:", error);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [send, scheduleReconnect]);
 
   const disconnect = useCallback(() => {

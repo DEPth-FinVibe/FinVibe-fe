@@ -1,8 +1,8 @@
-import { assetPortfolioApi, type PortfolioGroup } from "@/api/asset/portfolio";
 import type { TransactionRequest } from "@/api/trade";
-import { walletApi } from "@/api/wallet";
 import ChevronIcon from "@/assets/svgs/ChevronIcon";
+import { usePortfolioGroups } from "@/hooks/usePortfolioQueries";
 import { useCreateTrade } from "@/hooks/useTradeQueries";
+import { useWalletBalance } from "@/hooks/useWalletQueries";
 import { cn } from "@/utils/cn";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
@@ -27,14 +27,12 @@ const OrderPanel = ({
   const [orderType, setOrderType] = useState<OrderType>("지정가");
   const [price, setPrice] = useState(currentPrice);
   const [quantity, setQuantity] = useState(1);
-  const [balance, setBalance] = useState<number | null>(null);
   const [orderStatus, setOrderStatus] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
 
   // 포트폴리오 관리
-  const [portfolios, setPortfolios] = useState<PortfolioGroup[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(
     null,
   );
@@ -42,47 +40,18 @@ const OrderPanel = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const createTrade = useCreateTrade();
+  const walletBalance = useWalletBalance();
+  const portfolioGroups = usePortfolioGroups();
 
-  // 보유잔액 api
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const data = await walletApi.getBalance();
-        if (!alive) return;
-        setBalance(
-          Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0,
-        );
-      } catch {
-        // 실패 시 로딩 표시 유지
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // 포트폴리오 목록 조회
-  useEffect(() => {
-    let cancelled = false;
-    assetPortfolioApi
-      .getPortfolios()
-      .then((data) => {
-        if (!cancelled) {
-          setPortfolios(data);
-          // 첫 번째 포트폴리오를 기본 선택
-          if (data.length > 0) {
-            setSelectedPortfolioId(data[0].id);
-          }
-        }
-      })
-      .catch(() => {
-        // 실패 시 무시
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const balance =
+    walletBalance.data && Number.isFinite(walletBalance.data.balance)
+      ? Math.max(0, walletBalance.data.balance)
+      : null;
+  const portfolios = portfolioGroups.data ?? [];
+  const selectedPortfolio =
+    portfolios.find((portfolio) => portfolio.id === selectedPortfolioId) ??
+    portfolios[0];
+  const activePortfolioId = selectedPortfolio?.id ?? null;
 
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -106,9 +75,9 @@ const OrderPanel = ({
 
   // 현재가 변경 시 주문 가격 업데이트 (지정가일 때만)
   useEffect(() => {
-    if (orderType === "시장가" && currentPrice > 0) {
-      setPrice(currentPrice);
-    }
+    if (orderType !== "시장가" || currentPrice <= 0) return;
+    const id = window.setTimeout(() => setPrice(currentPrice), 0);
+    return () => window.clearTimeout(id);
   }, [currentPrice, orderType]);
 
   const handlePriceChange = (delta: number) => {
@@ -138,7 +107,7 @@ const OrderPanel = ({
 
   // 주문 실행
   const handleOrder = async () => {
-    if (!selectedPortfolioId || !stockId || price <= 0 || quantity <= 0) {
+    if (!activePortfolioId || !stockId || price <= 0 || quantity <= 0) {
       setOrderStatus({ type: "error", message: "주문 정보를 확인해주세요." });
       return;
     }
@@ -156,7 +125,7 @@ const OrderPanel = ({
       stockId,
       amount: quantity,
       price,
-      portfolioId: selectedPortfolioId,
+      portfolioId: activePortfolioId,
       tradeType: orderType === "예약" ? "RESERVED" : "NORMAL",
       transactionType: tradeType === "buy" ? "BUY" : "SELL",
     };
@@ -166,12 +135,6 @@ const OrderPanel = ({
       setOrderStatus({
         type: "success",
         message: `${tradeType === "buy" ? "매수" : "매도"} 주문이 완료되었습니다.`,
-      });
-      // 잔액 갱신
-      walletApi.getBalance().then((data) => {
-        setBalance(
-          Number.isFinite(data.balance) ? Math.max(0, data.balance) : 0,
-        );
       });
       onTradeSuccess?.();
     } catch (error) {
@@ -270,8 +233,7 @@ const OrderPanel = ({
             <span className="truncate">
               {portfolios.length === 0
                 ? "포트폴리오 없음"
-                : (portfolios.find((p) => p.id === selectedPortfolioId)?.name ??
-                  "선택하세요")}
+                : (selectedPortfolio?.name ?? "선택하세요")}
             </span>
             <ChevronIcon
               className={cn(
@@ -295,7 +257,7 @@ const OrderPanel = ({
                     }}
                     className={cn(
                       "w-full px-4 py-2.5 text-left text-Body_M_Light transition-colors",
-                      selectedPortfolioId === portfolio.id
+                      activePortfolioId === portfolio.id
                         ? "bg-main-1/10 text-main-1 font-medium"
                         : "text-black hover:bg-gray-50",
                     )}

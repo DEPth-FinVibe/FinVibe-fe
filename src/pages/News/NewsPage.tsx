@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewsCard, Discussion, TrendSection, PopularDiscussionSection, Button, SwitchBar } from "@/components";
-import { NEWS_TABS, type NewsTabType } from "@/components/SwitchBar/SwitchBar";
+import { NEWS_TABS, type NewsTabType } from "@/components/SwitchBar";
 import TextField from "@/components/TextField";
 import { cn } from "@/utils/cn";
 import SearchIcon from "@/assets/svgs/SearchIcon";
@@ -159,7 +159,9 @@ const NewsPage = () => {
             : d
         )
       );
-    } catch {} finally {
+    } catch {
+      // 좋아요 실패 시 낙관적 변경 없이 현재 상태 유지
+    } finally {
       setLikingIds((prev) => { const next = new Set(prev); next.delete(discussionId); return next; });
     }
   };
@@ -169,7 +171,9 @@ const NewsPage = () => {
     try {
       await discussionApi.deleteDiscussion(discussionId);
       setDiscussions((prev) => prev.filter((d) => d.id !== discussionId));
-    } catch {}
+    } catch {
+      // 삭제 실패 시 현재 목록 유지
+    }
   };
 
 

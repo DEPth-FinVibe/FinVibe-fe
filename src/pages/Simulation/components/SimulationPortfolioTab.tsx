@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState, memo } from "react";
+import React, { useEffect, useMemo, useRef, useState, memo } from "react";
 import { cn } from "@/utils/cn";
 import PortfolioCloseIcon from "@/assets/svgs/PortfolioCloseIcon";
 import ChangeRateIcon from "@/assets/svgs/ChangeRateIcon";
-import { assetPortfolioApi, type PortfolioAsset } from "@/api/asset";
+import type { PortfolioAsset } from "@/api/asset";
+import { usePortfolioAssetsQueries } from "@/hooks/usePortfolioQueries";
 import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { formatPriceWithSymbol, formatChangeRate } from "@/utils/formatStock";
 
@@ -186,45 +187,24 @@ const SimulationPortfolioTab: React.FC<Props> = ({
   const [editingName, setEditingName] = useState("");
   const editInputRef = useRef<HTMLInputElement | null>(null);
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<number>>(new Set());
-  const [portfolioAssets, setPortfolioAssets] = useState<Record<number, PortfolioAsset[]>>({});
-  const [loadingAssets, setLoadingAssets] = useState<Set<number>>(new Set());
-
-  // 포트폴리오 그룹이 변경될 때마다 각 포트폴리오의 자산 개수 미리 로드
-  useEffect(() => {
-    if (groups.length === 0) return;
-    
-    let cancelled = false;
-    const loadAssetCounts = async () => {
-      const assetCounts: Record<number, PortfolioAsset[]> = {};
-      
-      // 모든 포트폴리오의 자산 개수를 병렬로 로드
-      await Promise.all(
-        groups.map(async (group) => {
-          try {
-            const assets = await assetPortfolioApi.getAssetsByPortfolio(group.id);
-            if (!cancelled) {
-              assetCounts[group.id] = assets;
-            }
-          } catch {
-            // 에러 발생 시 빈 배열로 설정
-            if (!cancelled) {
-              assetCounts[group.id] = [];
-            }
-          }
-        })
-      );
-      
-      if (!cancelled) {
-        setPortfolioAssets((prev) => ({ ...prev, ...assetCounts }));
+  const portfolioIds = useMemo(() => groups.map((group) => group.id), [groups]);
+  const assetQueries = usePortfolioAssetsQueries(portfolioIds);
+  const portfolioAssets = useMemo(() => {
+    const next: Record<number, PortfolioAsset[]> = {};
+    portfolioIds.forEach((portfolioId, index) => {
+      next[portfolioId] = assetQueries[index]?.data ?? [];
+    });
+    return next;
+  }, [assetQueries, portfolioIds]);
+  const loadingAssets = useMemo(() => {
+    const next = new Set<number>();
+    portfolioIds.forEach((portfolioId, index) => {
+      if (assetQueries[index]?.isLoading) {
+        next.add(portfolioId);
       }
-    };
-
-    loadAssetCounts();
-    
-    return () => {
-      cancelled = true;
-    };
-  }, [groups]);
+    });
+    return next;
+  }, [assetQueries, portfolioIds]);
 
   useEffect(() => {
     if (!isCreateOpen) return;
@@ -287,11 +267,6 @@ const SimulationPortfolioTab: React.FC<Props> = ({
         next.delete(groupId);
         return next;
       });
-      setPortfolioAssets((prev) => {
-        const next = { ...prev };
-        delete next[groupId];
-        return next;
-      });
     } catch {
       // parent에서 에러 메시지 내려주면 표시
     }
@@ -312,25 +287,6 @@ const SimulationPortfolioTab: React.FC<Props> = ({
     } else {
       // 확장
       setExpandedGroupIds((prev) => new Set(prev).add(groupId));
-
-      // 이미 로드된 데이터가 있으면 스킵
-      if (portfolioAssets[groupId]) return;
-
-      // 자산 데이터 로드
-      setLoadingAssets((prev) => new Set(prev).add(groupId));
-      try {
-        const assets = await assetPortfolioApi.getAssetsByPortfolio(groupId);
-        setPortfolioAssets((prev) => ({ ...prev, [groupId]: assets }));
-      } catch {
-        // 에러 발생 시 빈 배열로 설정
-        setPortfolioAssets((prev) => ({ ...prev, [groupId]: [] }));
-      } finally {
-        setLoadingAssets((prev) => {
-          const next = new Set(prev);
-          next.delete(groupId);
-          return next;
-        });
-      }
     }
   };
 
@@ -647,5 +603,4 @@ const SimulationPortfolioTab: React.FC<Props> = ({
 };
 
 export default SimulationPortfolioTab;
-
 

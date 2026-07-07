@@ -6,22 +6,28 @@ import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import BookIcon from "@/assets/svgs/BookIcon";
 import BadgeAwardsIcon from "@/assets/svgs/BadgeAwardsIcon";
 import CartIcon from "@/assets/svgs/CartIcon";
-import { walletApi } from "@/api/wallet";
-import { assetPortfolioApi, type PortfolioGroup, type AssetAllocationResponse } from "@/api/asset";
 import { assetRankingApi } from "@/api/asset/ranking";
 import { gamificationApi } from "@/api/gamification";
 import { studyApi } from "@/api/study";
 import { ALL_BADGE_TYPES } from "@/components/Badge/badgeConfig";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRecentActivity, formatRelativeTime } from "@/hooks/useRecentActivity";
+import { useAssetAllocation, usePortfolioGroups } from "@/hooks/usePortfolioQueries";
+import { useWalletBalance } from "@/hooks/useWalletQueries";
 import PortfolioPerformanceWrapper from "./components/PortfolioPerformanceWrapper";
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
-  const [allocation, setAllocation] = useState<AssetAllocationResponse | null>(null);
-  const [cash, setCash] = useState<number | null>(null);
+  const allocationQuery = useAssetAllocation();
+  const walletBalance = useWalletBalance();
+  const portfolioGroupsQuery = usePortfolioGroups();
+  const allocation = allocationQuery.data ?? null;
+  const cash =
+    walletBalance.data && Number.isFinite(walletBalance.data.balance)
+      ? Math.max(0, walletBalance.data.balance)
+      : null;
   
   // 커뮤니티 랭킹 정보
   const [communityRank, setCommunityRank] = useState<number | null>(null);
@@ -30,11 +36,6 @@ const MyPage: React.FC = () => {
   
   // 학습 진행률
   const [learningProgress, setLearningProgress] = useState<number | null>(null);
-
-  // 포트폴리오 그룹(폴더) 목록
-  // - null: 로딩/미시도
-  // - []: 실패 또는 데이터 없음 (요청: 더미 대신 비어있게)
-  const [portfolioGroups, setPortfolioGroups] = useState<PortfolioGroup[] | null>(null);
 
   // 챌린지 데이터
   const [challenges, setChallenges] = useState<number[] | null>(null); // [달성완료 수, 진행중+달성완료 수]
@@ -45,47 +46,6 @@ const MyPage: React.FC = () => {
   // API 데이터 또는 기본값
   const totalAssets = allocation?.totalAmount ?? (cash !== null ? (cash + (allocation?.stockAmount ?? 0)) : null);
   const totalChangeRate = allocation?.changeRate ?? null;
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [allocationData, balanceData] = await Promise.all([
-          assetPortfolioApi.getAssetAllocation(),
-          walletApi.getBalance(),
-        ]);
-        if (!alive) return;
-        setAllocation(allocationData);
-        setCash(Number.isFinite(balanceData.balance) ? Math.max(0, balanceData.balance) : 0);
-      } catch {
-        // 실패 시 로딩 표시 유지
-        if (!alive) return;
-        setAllocation(null);
-        setCash(null);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const groups = await assetPortfolioApi.getPortfolios();
-        if (!alive) return;
-        setPortfolioGroups(Array.isArray(groups) ? groups : []);
-      } catch {
-        // 실패 시 더미 대신 비어있게
-        if (!alive) return;
-        setPortfolioGroups([]);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -228,7 +188,7 @@ const MyPage: React.FC = () => {
   const { data: recentActivities = [], isLoading: isActivityLoading } = useRecentActivity();
 
   // 제한 없이 그대로 노출
-  const myPortfolioGroups = portfolioGroups ?? [];
+  const myPortfolioGroups = portfolioGroupsQuery.data ?? [];
 
   // NOTE: 그룹 조회 API에는 수익률/차트 데이터가 없어서 임시로 0/undefined 처리
 
@@ -394,4 +354,3 @@ const MyPage: React.FC = () => {
 };
 
 export default MyPage;
-

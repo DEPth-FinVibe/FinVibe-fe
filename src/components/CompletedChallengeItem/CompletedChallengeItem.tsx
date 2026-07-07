@@ -46,8 +46,8 @@ export const CompletedChallengeItem = ({
       // 작은 크기 아이콘 렌더링 (달성 완료 섹션용)
       const renderSmallIcon = () => {
         const iconElement = config.icon(true);
-        if (React.isValidElement(iconElement)) {
-          return React.cloneElement(iconElement as React.ReactElement<any>, {
+        if (React.isValidElement<{ className?: string }>(iconElement)) {
+          return React.cloneElement(iconElement, {
             className: "w-[19px] h-[19px]",
           });
         }
@@ -119,4 +119,3 @@ export const CompletedChallengeItem = ({
     </article>
   );
 };
-

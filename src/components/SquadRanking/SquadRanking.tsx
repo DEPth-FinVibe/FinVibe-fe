@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "@/utils/cn";
 import type { SquadRankingItem } from "@/api/gamification";
+import { getRankMedal } from "./rankingUtils";
 
 export interface SquadRankingProps {
   items: SquadRankingItem[];
@@ -10,13 +11,6 @@ export interface SquadRankingProps {
 }
 
 const INITIAL_DISPLAY_COUNT = 3;
-
-export const getRankMedal = (rank: number): string | null => {
-  if (rank === 1) return "🥇";
-  if (rank === 2) return "🥈";
-  if (rank === 3) return "🥉";
-  return null;
-};
 
 const getRankChangeDisplay = (change: number) => {
   if (change > 0) return { text: `▲${change}`, className: "text-etc-red" };
