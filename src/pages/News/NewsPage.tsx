@@ -40,7 +40,8 @@ const NewsPage = () => {
   const user = useAuthStore((s) => s.user);
   const { isLoggedIn, requireAuth } = useRequireAuth();
   const [activeTab, setActiveTab] = useState<NewsTabType>("news");
-  const [sortOrder, setSortOrder] = useState<"인기순" | "최신순">("인기순");
+  // 좋아요가 대부분 0이라 인기순은 사실상 오래된 순으로 정렬돼, 기본값을 최신순으로 둔다
+  const [sortOrder, setSortOrder] = useState<"인기순" | "최신순">("최신순");
   const [searchQuery, setSearchQuery] = useState("");
   const [discussionContent, setDiscussionContent] = useState("");
   const [posting, setPosting] = useState(false);
