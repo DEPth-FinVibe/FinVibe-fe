@@ -28,12 +28,17 @@ export function formatTradingValue(value: number): string {
   return value.toLocaleString("ko-KR");
 }
 
+/**
+ * 거래량 표기. formatTradingValue와 동일하게 만/억 단위를 쓴다.
+ * (K/M 영문 축약을 쓰면 같은 화면에서 "억"과 "10.7K"가 섞여 보인다)
+ */
 export function formatVolume(volume: number): string {
-  if (volume >= 1_000_000) {
-    return `${(volume / 1_000_000).toFixed(1)}M`;
+  if (volume >= 1_0000_0000) {
+    return `${(volume / 1_0000_0000).toFixed(1)}억`;
   }
-  if (volume >= 1_000) {
-    return `${(volume / 1_000).toFixed(1)}K`;
+  // 10만 주 미만은 만 단위로 뭉치면 정보 손실이 커서 원래 수치를 보여준다
+  if (volume >= 10_0000) {
+    return `${Math.round(volume / 1_0000).toLocaleString("ko-KR")}만`;
   }
-  return volume.toString();
+  return volume.toLocaleString("ko-KR");
 }
