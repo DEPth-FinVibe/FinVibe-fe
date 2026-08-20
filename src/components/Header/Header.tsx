@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import LogoIcon from "@/assets/svgs/LogoIcon";
 import UserIcon from "@/assets/svgs/UserIcon";
@@ -7,6 +8,12 @@ export interface HeaderProps {
   activeMenu?: string;
   menus?: string[];
   onMenuClick?: (menu: string) => void;
+  /**
+   * 메뉴 라벨 -> 경로 매핑. 전달하면 각 메뉴를 실제 <a> 링크로 렌더링해
+   * 새 탭으로 열기, 링크 복사, 스크린리더 탐색이 가능해진다.
+   * 전달하지 않으면 기존처럼 button으로 렌더링한다(Storybook 등 Router 밖 사용).
+   */
+  menuRoutes?: Record<string, string>;
   onProfileClick?: () => void;
   /** 로그인 여부. false면 프로필 대신 로그인 버튼을 노출 */
   isLoggedIn?: boolean;
@@ -25,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeMenu = "홈",
   menus = DEFAULT_MENUS,
   onMenuClick,
+  menuRoutes,
   onProfileClick,
   isLoggedIn = true,
   className,
@@ -36,27 +44,46 @@ export const Header: React.FC<HeaderProps> = ({
         className
       )}
     >
-      {/* 로고 섹션 */}
-      <div className="flex items-center justify-center gap-2.5 cursor-pointer shrink-0">
-        <LogoIcon />
-        <span className="text-Headline_S_Bold text-black">FinVibe</span>
+      <div className="flex items-center gap-2.5 shrink-0">
+        {/* 로고 섹션 */}
+        <div className="flex items-center gap-2.5">
+          <LogoIcon />
+          <span className="text-Headline_S_Bold text-black">FinVibe</span>
+        </div>
+
         {/* 네비게이션 메뉴 섹션 */}
         <nav className="flex items-center gap-10 mx-10 overflow-x-auto no-scrollbar">
-          {menus.map((menu) => (
-            <button
-              key={menu}
-              type="button"
-              onClick={() => onMenuClick?.(menu)}
-              className={cn(
-                "text-Subtitle_S_Medium whitespace-nowrap transition-colors py-2",
-                activeMenu === menu
-                  ? "text-black font-bold"
-                  : "text-gray-2 hover:text-black"
-              )}
-            >
-              {menu}
-            </button>
-          ))}
+          {menus.map((menu) => {
+            const menuClassName = cn(
+              "text-Subtitle_S_Medium whitespace-nowrap transition-colors py-2",
+              activeMenu === menu
+                ? "text-black font-bold"
+                : "text-gray-2 hover:text-black"
+            );
+            const route = menuRoutes?.[menu];
+
+            // 경로를 알면 실제 링크로 렌더링한다
+            return route ? (
+              <Link
+                key={menu}
+                to={route}
+                aria-current={activeMenu === menu ? "page" : undefined}
+                onClick={() => onMenuClick?.(menu)}
+                className={menuClassName}
+              >
+                {menu}
+              </Link>
+            ) : (
+              <button
+                key={menu}
+                type="button"
+                onClick={() => onMenuClick?.(menu)}
+                className={menuClassName}
+              >
+                {menu}
+              </button>
+            );
+          })}
         </nav>
       </div>
 

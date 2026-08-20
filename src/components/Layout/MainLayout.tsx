@@ -18,11 +18,11 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const { tokens } = useAuthStore();
 
+  // Header가 menuRoutes를 받으면 <Link>가 이동을 처리하므로 여기서는 별도 navigate가 필요 없다.
+  // menuRoutes 없이 쓰는 경우(Storybook 등)를 위해 핸들러는 유지한다.
   const handleMenuClick = (menu: string) => {
-    const route = MENU_ROUTES[menu];
-    if (route) {
-      navigate(route);
-    }
+    if (MENU_ROUTES[menu]) return;
+    navigate("/");
   };
 
   const handleProfileClick = () => {
@@ -46,6 +46,7 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen bg-white">
       <Header 
         activeMenu={activeMenu} 
+        menuRoutes={MENU_ROUTES}
         onMenuClick={handleMenuClick} 
         onProfileClick={handleProfileClick}
         isLoggedIn={!!tokens}
