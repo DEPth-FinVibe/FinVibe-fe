@@ -17,8 +17,9 @@ interface AuthState {
   clearAuth: () => void;
 }
 
-// 개발 환경 전용 mock token (프로덕션에서는 null)
-const DEV_MOCK_TOKENS: Tokens | null = import.meta.env.DEV
+// 개발 환경 전용 mock token (VITE_DEV_MOCK_AUTH=true 일 때만 사용, 기본값은 비로그인)
+const DEV_MOCK_TOKENS: Tokens | null =
+  import.meta.env.DEV && import.meta.env.VITE_DEV_MOCK_AUTH === "true"
   ? {
       accessToken: "dev-mock-token",
       accessExpiresAt: "2099-12-31T23:59:59Z",
@@ -41,3 +42,6 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+/** 로그인 여부 (토큰 보유 여부) */
+export const useIsLoggedIn = () => useAuthStore((state) => !!state.tokens);

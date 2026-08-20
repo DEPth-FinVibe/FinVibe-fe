@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import LogoIcon from "@/assets/svgs/LogoIcon";
 import NaverIcon from "@/assets/svgs/NaverIcon";
 import GoogleIcon from "@/assets/svgs/GoogleIcon";
@@ -10,11 +10,19 @@ import EyeIcon from "@/assets/svgs/EyeIcon";
 import { authApi } from "@/api/auth";
 import { useAuthStore } from "@/store/useAuthStore";
 import { isAxiosError } from "axios";
+import { POST_LOGIN_REDIRECT_KEY } from "@/hooks/useRequireAuth";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const setTokens = useAuthStore((state) => state.setTokens);
-  
+
+  // 로그인 필요 액션 때문에 넘어온 경우 원래 있던 경로로 복귀
+  const redirectTo =
+    (location.state as { from?: string } | null)?.from ??
+    sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY) ??
+    "/";
+
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +34,8 @@ const LoginPage: React.FC = () => {
     try {
       const response = await authApi.login({ loginId, password });
       setTokens(response.data);
-      navigate("/");
+      sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+      navigate(redirectTo, { replace: true });
     } catch (error: unknown) {
       const message =
         isAxiosError<{ message?: string }>(error) && error.response?.data?.message
@@ -94,6 +103,7 @@ const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, redirectTo);
               window.location.href = "https://finvibe.space/api/oauth2/authorization/naver";
             }}
             className="flex items-center justify-center gap-[10px] w-full bg-[#03c75a] py-[10px] rounded-[8px] text-white text-Body_M_Light hover:opacity-90 transition-opacity"
@@ -106,6 +116,7 @@ const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, redirectTo);
               window.location.href = "https://finvibe.space/api/oauth2/authorization/google";
             }}
             className="flex items-center justify-center gap-[10px] w-full bg-white border border-gray-300 py-[10px] rounded-[8px] text-black text-Body_M_Light hover:bg-gray-50 transition-colors"
@@ -123,6 +134,16 @@ const LoginPage: React.FC = () => {
             className="text-main-1 text-Body_M_Regular hover:underline"
           >
             아직 계정이 없으신가요? 회원가입하기
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+              navigate("/");
+            }}
+            className="text-gray-400 text-Body_M_Regular hover:underline"
+          >
+            로그인 없이 둘러보기
           </button>
         </div>
 

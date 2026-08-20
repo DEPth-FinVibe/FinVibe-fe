@@ -8,6 +8,7 @@ import SearchIcon from "@/assets/svgs/SearchIcon";
 import UserIcon from "@/assets/svgs/UserIcon";
 import { newsApi, KEYWORD_LABEL_MAP, type NewsListItem, type NewsSortType, discussionApi, type DiscussionResponse, type DiscussionSortType } from "@/api/news";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 // 상대 시간 표시 유틸
 function formatRelativeTime(dateStr?: string | null): string {
@@ -37,6 +38,7 @@ function signalToSentiment(signal: string): "success" | "error" | "neutral" {
 const NewsPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const { isLoggedIn, requireAuth } = useRequireAuth();
   const [activeTab, setActiveTab] = useState<NewsTabType>("news");
   const [sortOrder, setSortOrder] = useState<"인기순" | "최신순">("인기순");
   const [searchQuery, setSearchQuery] = useState("");
@@ -121,6 +123,8 @@ const NewsPage = () => {
   };
 
   const handlePostDiscussion = async () => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "토론을 작성하려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
     if (!discussionContent.trim() || posting) return;
     setPosting(true);
     try {
@@ -141,6 +145,8 @@ const NewsPage = () => {
   const [likingIds, setLikingIds] = useState<Set<number>>(new Set());
 
   const handleDiscussionLike = async (discussionId: number) => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "좋아요를 누르려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
     if (likingIds.has(discussionId)) return;
     setLikingIds((prev) => new Set(prev).add(discussionId));
     try {
@@ -263,16 +269,22 @@ const NewsPage = () => {
                   <textarea
                     value={discussionContent}
                     onChange={(e) => setDiscussionContent(e.target.value)}
-                    placeholder="투자 아이디어나 궁금한 점.."
+                    onFocus={() => requireAuth()}
+                    readOnly={!isLoggedIn}
+                    placeholder={
+                      isLoggedIn
+                        ? "투자 아이디어나 궁금한 점.."
+                        : "로그인 후 토론을 작성할 수 있습니다"
+                    }
                     className="w-full h-32 p-4 border border-main-1 rounded-lg resize-none focus:outline-none text-Body_M_Light"
                   />
                   <div className="flex justify-end mt-4">
                     <Button
                       onClick={handlePostDiscussion}
-                      disabled={posting || !discussionContent.trim()}
+                      disabled={isLoggedIn && (posting || !discussionContent.trim())}
                       className="bg-main-1 text-white px-10 py-2 rounded-lg text-Body_M_Medium hover:bg-main-2 transition-colors border-none"
                     >
-                      {posting ? "게시 중..." : "게시하기"}
+                      {!isLoggedIn ? "로그인하고 게시하기" : posting ? "게시 중..." : "게시하기"}
                     </Button>
                   </div>
                 </div>

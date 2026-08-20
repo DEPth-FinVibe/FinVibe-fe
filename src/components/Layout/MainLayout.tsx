@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components";
 import { useAuthStore } from "@/store/useAuthStore";
+import { POST_LOGIN_REDIRECT_KEY } from "@/hooks/useRequireAuth";
 
 const MENU_ROUTES: Record<string, string> = {
   "홈": "/",
@@ -25,8 +26,14 @@ const MainLayout: React.FC = () => {
   };
 
   const handleProfileClick = () => {
-    // 로그인 상태면 마이페이지, 아니면 로그인으로 유도
-    navigate(tokens ? "/mypage" : "/login");
+    // 로그인 상태면 마이페이지, 아니면 로그인으로 유도 (로그인 후 현재 경로로 복귀)
+    if (tokens) {
+      navigate("/mypage");
+      return;
+    }
+    const from = `${location.pathname}${location.search}`;
+    sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, from);
+    navigate("/login", { state: { from } });
   };
 
   // 현재 경로에 맞는 활성화된 메뉴 찾기
@@ -41,6 +48,7 @@ const MainLayout: React.FC = () => {
         activeMenu={activeMenu} 
         onMenuClick={handleMenuClick} 
         onProfileClick={handleProfileClick}
+        isLoggedIn={!!tokens}
       />
       <Outlet />
       <Footer />

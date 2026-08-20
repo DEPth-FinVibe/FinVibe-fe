@@ -21,6 +21,8 @@ interface MarketState {
   // Connection state
   isConnected: boolean;
   isAuthenticated: boolean;
+  /** 구독 요청을 보낼 수 있는 상태 (로그인 세션은 auth ack 이후, 비로그인 세션은 연결 직후) */
+  canSubscribe: boolean;
 
   // Real-time quote data by stockId
   quotes: Record<number, QuoteData>;
@@ -134,6 +136,15 @@ function send(data: object) {
   }
 }
 
+function resubscribeTopics() {
+  const { subscribedStockIds } = useMarketStore.getState();
+  if (subscribedStockIds.size === 0) return;
+
+  const topics = Array.from(subscribedStockIds).map((id) => `quote:${id}`);
+  console.log("[MarketStore] Re-subscribing to:", topics);
+  send({ type: "subscribe", topics });
+}
+
 function ensureAuthTokenSubscription() {
   if (authStoreUnsubscribe) return;
 
@@ -144,8 +155,11 @@ function ensureAuthTokenSubscription() {
 
     if (!nextAccessToken) {
       lastAuthToken = null;
+      // 로그아웃 시에는 연결을 끊지 않고, 익명 세션으로 다시 연결한다.
+      // (구독 목록은 유지되고 onclose 재연결 로직이 재구독까지 처리)
       if (ws && ws.readyState === WebSocket.OPEN) {
-        useMarketStore.getState().disconnect();
+        console.log("[MarketStore] Signed out, reconnecting as guest");
+        ws.close();
       }
       return;
     }
@@ -172,6 +186,7 @@ function ensureAuthTokenSubscription() {
 export const useMarketStore = create<MarketState>((set, get) => ({
   isConnected: false,
   isAuthenticated: false,
+  canSubscribe: false,
   quotes: {},
   subscribedStockIds: new Set(),
 
@@ -207,7 +222,13 @@ export const useMarketStore = create<MarketState>((set, get) => ({
         console.log("[MarketStore] Sending auth");
         send({ type: "auth", token: tokens.accessToken });
         lastAuthToken = tokens.accessToken;
+        return;
       }
+
+      // 비로그인 세션: 서버가 익명 구독을 허용하므로 auth 없이 바로 구독한다.
+      console.log("[MarketStore] Connected as guest");
+      set({ canSubscribe: true });
+      resubscribeTopics();
     };
 
     ws.onmessage = (event) => {
@@ -239,17 +260,10 @@ export const useMarketStore = create<MarketState>((set, get) => ({
         case "auth":
           if (message.ok) {
             console.log("[MarketStore] Authenticated");
-            set({ isAuthenticated: true });
+            set({ isAuthenticated: true, canSubscribe: true });
 
             // Re-subscribe to topics
-            const { subscribedStockIds } = get();
-            if (subscribedStockIds.size > 0) {
-              const topics = Array.from(subscribedStockIds).map(
-                (id) => `quote:${id}`,
-              );
-              console.log("[MarketStore] Re-subscribing to:", topics);
-              send({ type: "subscribe", topics });
-            }
+            resubscribeTopics();
           } else {
             console.warn("[MarketStore] Auth failed - stopping reconnect");
             set({ isAuthenticated: false });
@@ -295,7 +309,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
 
     ws.onclose = (event) => {
       console.log("[MarketStore] Closed:", event.code, event.reason);
-      set({ isConnected: false, isAuthenticated: false });
+      set({ isConnected: false, isAuthenticated: false, canSubscribe: false });
       ws = null;
 
       // Reconnect if not intentional
@@ -327,13 +341,14 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     set({
       isConnected: false,
       isAuthenticated: false,
+      canSubscribe: false,
       quotes: {},
       subscribedStockIds: new Set(),
     });
   },
 
   subscribe: (stockIds: number[]) => {
-    const { subscribedStockIds, isAuthenticated } = get();
+    const { subscribedStockIds, canSubscribe } = get();
     const newIds = stockIds.filter((id) => !subscribedStockIds.has(id));
 
     if (newIds.length === 0) return;
@@ -343,8 +358,8 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     newIds.forEach((id) => updated.add(id));
     set({ subscribedStockIds: updated });
 
-    // Send subscribe message if authenticated
-    if (isAuthenticated) {
+    // 연결이 준비된 상태에서만 전송 (준비되면 onopen/auth ack 시점에 일괄 재구독)
+    if (canSubscribe) {
       const topics = newIds.map((id) => `quote:${id}`);
       console.log("[MarketStore] Subscribing to:", topics);
       send({ type: "subscribe", topics });
@@ -352,7 +367,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
   },
 
   unsubscribe: (stockIds: number[]) => {
-    const { subscribedStockIds, isAuthenticated } = get();
+    const { subscribedStockIds, canSubscribe } = get();
     const toRemove = stockIds.filter((id) => subscribedStockIds.has(id));
 
     if (toRemove.length === 0) return;
@@ -362,8 +377,7 @@ export const useMarketStore = create<MarketState>((set, get) => ({
     toRemove.forEach((id) => updated.delete(id));
     set({ subscribedStockIds: updated });
 
-    // Send unsubscribe message if authenticated
-    if (isAuthenticated) {
+    if (canSubscribe) {
       const topics = toRemove.map((id) => `quote:${id}`);
       console.log("[MarketStore] Unsubscribing from:", topics);
       send({ type: "unsubscribe", topics });
@@ -393,6 +407,7 @@ export function useMarketConnection() {
   return useMarketStore((state) => ({
     isConnected: state.isConnected,
     isAuthenticated: state.isAuthenticated,
+    canSubscribe: state.canSubscribe,
     connect: state.connect,
     disconnect: state.disconnect,
   }));

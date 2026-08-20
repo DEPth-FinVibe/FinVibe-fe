@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "@/store/useAuthStore";
+import { POST_LOGIN_REDIRECT_KEY } from "@/hooks/useRequireAuth";
 
 const OAuthCallbackPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -40,7 +41,10 @@ const OAuthCallbackPage: React.FC = () => {
 
       console.log("Existing user detected, saving tokens...");
       setTokens(tokens);
-      navigate("/", { replace: true });
+      // 로그인 필요 액션 때문에 넘어온 경우 원래 있던 경로로 복귀
+      const redirectTo = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY) ?? "/";
+      sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+      navigate(redirectTo, { replace: true });
     }
     // 3. 에러 케이스
     else {

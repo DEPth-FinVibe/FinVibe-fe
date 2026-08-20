@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "@/pages/Login/LoginPage";
 import SignupPage from "@/pages/Signup/SignupPage";
 import HomePage from "@/pages/Home/HomePage";
@@ -28,6 +28,7 @@ import { useMarketStore } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 import { memberApi } from "@/api/member";
 import MainLayout from "@/components/Layout/MainLayout";
+import { RequireAuth } from "@/components";
 
 // 차트 라이브러리를 사용하는 페이지는 lazy loading
 const SimulationPage = lazy(() => import("@/pages/Simulation/SimulationPage"));
@@ -40,14 +41,14 @@ function App() {
   const { isMarketOpen } = useMarketStatus();
   const didSyncMeRef = useRef(false);
 
-  // 장 열림 + 로그인 시 웹소켓 연결, 장 닫힘 or 로그아웃 시 연결 해제
+  // 장 열림 시 웹소켓 연결 (비로그인은 익명 세션으로 시세 구독), 장 닫힘 시 연결 해제
   useEffect(() => {
-    if (tokens && isMarketOpen) {
+    if (isMarketOpen) {
       connect();
     } else {
       disconnect();
     }
-  }, [tokens, isMarketOpen, connect, disconnect]);
+  }, [isMarketOpen, connect, disconnect]);
 
   // 홈 첫 접근 시점(로그인 세션당 1회)에 내 정보 동기화
   useEffect(() => {
@@ -74,10 +75,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<MainLayout />}>
-          <Route
-            path="/"
-            element={tokens ? <HomePage /> : <Navigate to="/login" replace />}
-          />
+          <Route path="/" element={<HomePage />} />
           <Route path="/simulation" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><SimulationPage /></Suspense>} />
           <Route path="/simulation/:stockId" element={<Suspense fallback={<div className="flex justify-center items-center h-full">로딩중...</div>}><StockDetailPage /></Suspense>} />
           <Route path="/ai-learning" element={<AILearningPage />} />
@@ -85,17 +83,20 @@ function App() {
           <Route path="/news/:newsId" element={<NewsDetailPage />} />
           <Route path="/discussion/:discussionId" element={<DiscussionDetailPage />} />
           <Route path="/challenge" element={<ChallengePage />} />
-          <Route path="/mypage" element={<MyPage />} />
-          <Route path="/mypage/challenge-history" element={<MyChallengeHistoryPage />} />
-          <Route path="/mypage/settings" element={<MyPageSettingsPage />} />
-          <Route path="/mypage/settings/login-devices" element={<LoginDeviceManagementPage />} />
+          {/* 개인 정보가 필요한 페이지는 로그인 필수 (약관/개인정보처리방침은 공개) */}
           <Route path="/mypage/terms" element={<TermsPage />} />
           <Route path="/mypage/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/mypage/assets" element={<MyAssetsPage />} />
-          <Route path="/mypage/portfolio" element={<MyPortfolioManagementPage />} />
-          <Route path="/mypage/service-ranking" element={<ServiceRankingPage />} />
-          <Route path="/mypage/service-ranking/user" element={<ServiceRankingUserPage />} />
-          <Route path="/inquiry" element={<InquiryPage />} />
+          <Route element={<RequireAuth />}>
+            <Route path="/mypage" element={<MyPage />} />
+            <Route path="/mypage/challenge-history" element={<MyChallengeHistoryPage />} />
+            <Route path="/mypage/settings" element={<MyPageSettingsPage />} />
+            <Route path="/mypage/settings/login-devices" element={<LoginDeviceManagementPage />} />
+            <Route path="/mypage/assets" element={<MyAssetsPage />} />
+            <Route path="/mypage/portfolio" element={<MyPortfolioManagementPage />} />
+            <Route path="/mypage/service-ranking" element={<ServiceRankingPage />} />
+            <Route path="/mypage/service-ranking/user" element={<ServiceRankingUserPage />} />
+            <Route path="/inquiry" element={<InquiryPage />} />
+          </Route>
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/notice" element={<NoticePage />} />
           <Route path="/notice/:noticeId" element={<NoticeDetailPage />} />

@@ -11,6 +11,7 @@ import {
   SquadRanking,
   SquadMVP,
   SquadInfoPanel,
+  LoginPrompt,
 } from "@/components";
 import { SquadRankingModal } from "@/components/SquadRankingModal";
 import {
@@ -23,6 +24,7 @@ import {
   type UserRankingItem,
   type SquadItem,
 } from "@/api/gamification";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 type ChallengeTab = "personal" | "squad";
 
@@ -164,6 +166,7 @@ const ChallengePage = () => {
   // 스쿼드 탭 상태
   const [squadRanking, setSquadRanking] = useState<SquadRankingItem[]>([]);
   const [squadList, setSquadList] = useState<SquadItem[]>([]);
+  const { isLoggedIn, requireAuth } = useRequireAuth();
   const [squadSearchKeyword, setSquadSearchKeyword] = useState("");
   const [squadContributions, setSquadContributions] = useState<SquadContributionItem[]>([]);
   const [_myXp, setMyXp] = useState<MyXpInfo | null>(null);
@@ -201,6 +204,8 @@ const ChallengePage = () => {
   // 스쿼드 탭 활성화 시 API 호출
   useEffect(() => {
     if (activeTab !== "squad") return;
+    // 비로그인 상태에서는 개인화 데이터를 호출하지 않음 (401 방지)
+    if (!isLoggedIn) return;
     if (squadLoaded) return;
 
     let cancelled = false;
@@ -271,9 +276,11 @@ const ChallengePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, squadLoaded]);
+  }, [activeTab, squadLoaded, isLoggedIn]);
 
   const handleJoinSquad = async (squadId: number) => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "스쿼드에 가입하려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
     setJoiningSquadId(squadId);
     setSquadJoinError(null);
 
@@ -291,6 +298,8 @@ const ChallengePage = () => {
   // 개인 탭 활성화 시 API 호출
   useEffect(() => {
     if (activeTab !== "personal") return;
+    // 비로그인 상태에서는 개인화 데이터를 호출하지 않음 (401 방지)
+    if (!isLoggedIn) return;
     if (personalLoaded) return;
 
     let cancelled = false;
@@ -332,7 +341,7 @@ const ChallengePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, personalLoaded]);
+  }, [activeTab, personalLoaded, isLoggedIn]);
 
   // ─── 파생 데이터 ───
 
@@ -700,6 +709,10 @@ const ChallengePage = () => {
     <div className="bg-gray-100 min-h-screen">
       <main className="flex flex-col px-32 py-10 gap-10">
 
+
+        {!isLoggedIn && (
+          <LoginPrompt message="로그인하면 나의 챌린지 진행 상황과 랭킹을 확인할 수 있어요" />
+        )}
 
         <div className="flex gap-10">
           {/* 탭 스위치 + 콘텐츠를 감싸는 래퍼 */}

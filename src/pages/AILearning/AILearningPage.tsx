@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { CourseItem, Button } from "@/components";
+import { CourseItem, Button, LoginPrompt } from "@/components";
 import { AILearningInsight } from "@/components/AILearningInsight";
 import { LearningStats } from "@/components/LearningStats";
 import { AICourseCreateModal } from "@/components/AICourseCreateModal";
@@ -19,6 +19,7 @@ import {
   type MyStudyMetricResponse,
 } from "@/api/study";
 import { gamificationApi, type BadgeInfo } from "@/api/gamification";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 const DIFFICULTY_MAP: Record<CourseDifficulty, CourseLevel> = {
   BEGINNER: "초급",
@@ -53,6 +54,7 @@ const SkeletonCourseList = () => (
 );
 
 const AILearningPage: React.FC = () => {
+  const { isLoggedIn, requireAuth } = useRequireAuth();
   const [expandedCourses, setExpandedCourses] = useState<Set<number>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -72,6 +74,12 @@ const AILearningPage: React.FC = () => {
   const [lessonErrorMessage, setLessonErrorMessage] = useState<string | null>(null);
 
   const fetchCourses = useCallback(async () => {
+    // 비로그인 상태에서는 개인화 데이터를 호출하지 않음 (401 방지)
+    if (!isLoggedIn) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const [coursesResult, metricResult, recommendResult, badgesResult] = await Promise.allSettled([
       studyApi.getMyCourses(),
@@ -100,7 +108,7 @@ const AILearningPage: React.FC = () => {
     }
 
     setLoading(false);
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     fetchCourses();
@@ -140,6 +148,9 @@ const AILearningPage: React.FC = () => {
   };
 
   const openLessonModal = async (lessonId: number) => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "학습을 시작하려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
+
     setIsLessonModalOpen(true);
     setSelectedLessonId(lessonId);
     setLessonLoading(true);
@@ -164,6 +175,7 @@ const AILearningPage: React.FC = () => {
   };
 
   const handleCompleteLesson = async () => {
+    if (!requireAuth()) return;
     if (!selectedLesson || lessonCompleting || selectedLesson.completed) return;
 
     setLessonCompleting(true);
@@ -255,6 +267,10 @@ const AILearningPage: React.FC = () => {
         <div className="max-w-full mx-auto flex gap-5 px-8 justify-center">
           {/* 왼쪽 영역 */}
           <div className="flex flex-col gap-5 w-[978px] max-w-full">
+            {!isLoggedIn && (
+              <LoginPrompt message="로그인하면 나만의 AI 학습 코스를 만들고 진도를 관리할 수 있어요" />
+            )}
+
             {/* AI 학습 인사이트 */}
             <AILearningInsight description={todayAiRecommend ?? undefined} />
 
@@ -268,7 +284,12 @@ const AILearningPage: React.FC = () => {
                   <h2 className="text-Subtitle_L_Medium text-black">학습 코스</h2>
                   <Button
                     variant="primary"
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() =>
+                      requireAuth(
+                        () => setIsModalOpen(true),
+                        "AI 코스를 생성하려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?",
+                      )
+                    }
                     className="!bg-main-1 !text-white !px-2.5 !py-2.5 rounded-lg text-Subtitle_S_Regular !w-[122px] !h-[34px] !min-h-0 border-main-1 !justify-center"
                   >
                     +AI 코스 생성

@@ -3,6 +3,7 @@ import ChevronIcon from "@/assets/svgs/ChevronIcon";
 import { usePortfolioGroups } from "@/hooks/usePortfolioQueries";
 import { useCreateTrade } from "@/hooks/useTradeQueries";
 import { useWalletBalance } from "@/hooks/useWalletQueries";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { cn } from "@/utils/cn";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
@@ -39,6 +40,7 @@ const OrderPanel = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const { isLoggedIn, requireAuth } = useRequireAuth();
   const createTrade = useCreateTrade();
   const walletBalance = useWalletBalance();
   const portfolioGroups = usePortfolioGroups();
@@ -107,6 +109,9 @@ const OrderPanel = ({
 
   // 주문 실행
   const handleOrder = async () => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "주문하려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
+
     if (!activePortfolioId || !stockId || price <= 0 || quantity <= 0) {
       setOrderStatus({ type: "error", message: "주문 정보를 확인해주세요." });
       return;
@@ -478,19 +483,21 @@ const OrderPanel = ({
       {/* 주문 실행 버튼 */}
       <button
         onClick={handleOrder}
-        disabled={createTrade.isPending || !selectedPortfolioId}
+        disabled={isLoggedIn && (createTrade.isPending || !selectedPortfolioId)}
         className={cn(
           "w-full py-4 rounded-lg text-Subtitle_S_Medium transition-colors",
-          createTrade.isPending || !selectedPortfolioId
+          isLoggedIn && (createTrade.isPending || !selectedPortfolioId)
             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
             : tradeType === "buy"
               ? "bg-etc-red text-white hover:bg-red-600"
               : "bg-etc-blue text-white hover:bg-blue-600",
         )}
       >
-        {createTrade.isPending
-          ? "주문 처리중..."
-          : `${tradeType === "buy" ? "매수" : "매도"} 주문`}
+        {!isLoggedIn
+          ? "로그인하고 주문하기"
+          : createTrade.isPending
+            ? "주문 처리중..."
+            : `${tradeType === "buy" ? "매수" : "매도"} 주문`}
       </button>
     </div>
   );

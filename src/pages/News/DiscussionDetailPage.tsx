@@ -7,6 +7,7 @@ import CommentIcon from "@/assets/svgs/CommentIcon";
 import { discussionApi, type DiscussionResponse, type CommentResponse } from "@/api/news";
 import { newsApi, KEYWORD_LABEL_MAP } from "@/api/news";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 function formatRelativeTime(dateStr: string): string {
   const time = new Date(dateStr).getTime();
@@ -26,6 +27,7 @@ const DiscussionDetailPage = () => {
   const navigate = useNavigate();
   const { discussionId } = useParams<{ discussionId: string }>();
   const user = useAuthStore((s) => s.user);
+  const { isLoggedIn, requireAuth } = useRequireAuth();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -107,6 +109,8 @@ const DiscussionDetailPage = () => {
   const [likingCommentIds, setLikingCommentIds] = useState<Set<number>>(new Set());
 
   const handleToggleLike = async () => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "좋아요를 누르려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
     if (!discussionId || likingDiscussion) return;
     setLikingDiscussion(true);
     try {
@@ -122,6 +126,8 @@ const DiscussionDetailPage = () => {
   };
 
   const handlePostComment = async () => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "댓글을 작성하려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
     if (!commentInput.trim() || postingComment || !discussionId) return;
     setPostingComment(true);
     try {
@@ -136,6 +142,8 @@ const DiscussionDetailPage = () => {
   };
 
   const handleCommentLike = async (commentId: number) => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "좋아요를 누르려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
     if (likingCommentIds.has(commentId)) return;
     setLikingCommentIds((prev) => new Set(prev).add(commentId));
     try {
@@ -280,7 +288,11 @@ const DiscussionDetailPage = () => {
                     type="text"
                     value={commentInput}
                     onChange={(e) => setCommentInput(e.target.value)}
-                    placeholder="댓글을 남겨주세요"
+                    onFocus={() => requireAuth()}
+                    readOnly={!isLoggedIn}
+                    placeholder={
+                      isLoggedIn ? "댓글을 남겨주세요" : "로그인 후 댓글을 남길 수 있습니다"
+                    }
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-Body_M_Light focus:outline-none focus:border-main-1"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.nativeEvent.isComposing) handlePostComment();
@@ -288,10 +300,10 @@ const DiscussionDetailPage = () => {
                   />
                   <button
                     onClick={handlePostComment}
-                    disabled={postingComment || !commentInput.trim()}
+                    disabled={isLoggedIn && (postingComment || !commentInput.trim())}
                     className="px-6 py-3 bg-main-1 text-white rounded-lg text-Body_M_Light hover:bg-main-2 transition-colors flex items-center gap-2 disabled:opacity-50"
                   >
-                    {postingComment ? "게시 중..." : "게시하기"}
+                    {!isLoggedIn ? "로그인하고 게시하기" : postingComment ? "게시 중..." : "게시하기"}
                   </button>
                 </div>
 

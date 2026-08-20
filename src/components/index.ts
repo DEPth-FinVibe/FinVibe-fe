@@ -43,3 +43,5 @@ export { default as SquadInfoPanel, type SquadInfoPanelProps } from "./SquadInfo
 export { default as SquadRankingModal, type SquadRankingModalProps } from "./SquadRankingModal";
 export { MyChallengeHistoryItem, type MyChallengeHistoryItemProps } from "./MyChallengeHistoryItem";
 export { CompletedChallengeItem, type CompletedChallengeItemProps } from "./CompletedChallengeItem";
+export { RequireAuth } from "./RequireAuth";
+export { LoginPrompt, type LoginPromptProps } from "./LoginPrompt";

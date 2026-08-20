@@ -8,6 +8,8 @@ export interface HeaderProps {
   menus?: string[];
   onMenuClick?: (menu: string) => void;
   onProfileClick?: () => void;
+  /** 로그인 여부. false면 프로필 대신 로그인 버튼을 노출 */
+  isLoggedIn?: boolean;
   className?: string;
 }
 
@@ -24,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   menus = DEFAULT_MENUS,
   onMenuClick,
   onProfileClick,
+  isLoggedIn = true,
   className,
 }) => {
   return (
@@ -59,8 +62,18 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 오른쪽 유틸리티 섹션 */}
       <div className="flex items-center gap-4 shrink-0">
-        {/* 프로필 버튼 */}
-        <UserIcon onClick={onProfileClick} ariaLabel="프로필" className="text-gray-500" />
+        {/* 로그인 상태: 프로필 버튼 / 비로그인 상태: 로그인 버튼 */}
+        {isLoggedIn ? (
+          <UserIcon onClick={onProfileClick} ariaLabel="프로필" className="text-gray-500" />
+        ) : (
+          <button
+            type="button"
+            onClick={onProfileClick}
+            className="px-4 py-2 rounded-lg bg-main-1 text-white text-Body_M_Light hover:bg-main-2 transition-colors whitespace-nowrap"
+          >
+            로그인
+          </button>
+        )}
       </div>
     </header>
   );

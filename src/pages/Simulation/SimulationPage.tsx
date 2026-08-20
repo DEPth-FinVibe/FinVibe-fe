@@ -22,6 +22,7 @@ import type { StockWithPrice } from "@/api/market";
 import SimulationPortfolioTab from "@/pages/Simulation/components/SimulationPortfolioTab";
 import { memberApi, type FavoriteStockResponse } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useTradeHistory, useCancelTrade } from "@/hooks/useTradeQueries";
 import type { TradeHistoryResponse } from "@/api/trade";
 import {
@@ -319,6 +320,7 @@ const ReservedOrderCard = ({
 const SimulationPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const { isLoggedIn, requireAuth, redirectToLogin } = useRequireAuth();
   const [rightTab, setRightTab] = useState<RightTab>("관심 종목");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -359,6 +361,7 @@ const SimulationPage = () => {
   }, [tradeHistory.data]);
 
   const handleCancelReservedOrder = async (tradeId: number) => {
+    if (!requireAuth()) return;
     setCancellingTradeId(tradeId);
     try {
       await cancelTrade.mutateAsync(tradeId);
@@ -375,6 +378,8 @@ const SimulationPage = () => {
   );
 
   const handleFavoriteToggle = async (stockId: number, stockName: string) => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "관심 종목에 담으려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
     if (!user) return;
     const isFav = favoriteStockIds.has(stockId);
     try {
@@ -568,6 +573,7 @@ const SimulationPage = () => {
   };
 
   const handleCreatePortfolioGroup = async (name: string) => {
+    if (!requireAuth()) return;
     setCreatePortfolioGroupError(null);
     setIsCreatingPortfolioGroup(true);
     try {
@@ -587,6 +593,7 @@ const SimulationPage = () => {
     groupId: number,
     name: string,
   ) => {
+    if (!requireAuth()) return;
     setUpdatePortfolioGroupError(null);
     setIsUpdatingPortfolioGroup(true);
     setUpdatingPortfolioGroupId(groupId);
@@ -611,6 +618,7 @@ const SimulationPage = () => {
   };
 
   const handleDeletePortfolioGroup = async (groupId: number) => {
+    if (!requireAuth()) return;
     setDeletePortfolioGroupError(null);
     setIsDeletingPortfolioGroup(true);
     setDeletingPortfolioGroupId(groupId);
@@ -734,7 +742,19 @@ const SimulationPage = () => {
           {/* 관심 종목 탭 */}
           {rightTab === "관심 종목" && (
             <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-              {favoriteStocks.length === 0 ? (
+              {!isLoggedIn ? (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <p className="text-center text-gray-400 text-Body_M_Light">
+                    로그인하면 관심 종목을 담을 수 있어요
+                  </p>
+                  <button
+                    onClick={redirectToLogin}
+                    className="px-5 py-2 rounded-lg bg-main-1 text-white text-Body_M_Light hover:bg-main-2 transition-colors"
+                  >
+                    로그인하기
+                  </button>
+                </div>
+              ) : favoriteStocks.length === 0 ? (
                 <p className="text-center text-gray-400 py-8 text-Body_M_Light">
                   관심 종목이 없습니다
                 </p>

@@ -12,6 +12,7 @@ import { useMarketStore, useQuote } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
 import { memberApi } from "@/api/member";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 const StockDetailSkeleton = () => {
   return (
@@ -64,6 +65,7 @@ const StockDetailPage = () => {
   const { stockId } = useParams<{ stockId: string }>();
   const navigationState = location.state as { stockName?: string; stockCode?: string } | null;
   const user = useAuthStore((s) => s.user);
+  const { requireAuth } = useRequireAuth();
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("분봉");
   const [isFavorited, setIsFavorited] = useState(false);
 
@@ -84,6 +86,8 @@ const StockDetailPage = () => {
   }, [user, stockId]);
 
   const handleFavoriteToggle = async () => {
+    // 비로그인 상태면 로그인 페이지로 유도
+    if (!requireAuth(undefined, "관심 종목에 담으려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?")) return;
     if (!user || !stockId) return;
     const sid = Number(stockId);
     try {

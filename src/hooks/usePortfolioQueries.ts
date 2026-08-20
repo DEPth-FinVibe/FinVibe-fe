@@ -10,6 +10,7 @@ import {
   type TransferAssetBody,
   type UpdatePortfolioGroupBody,
 } from "@/api/asset";
+import { useIsLoggedIn } from "@/store/useAuthStore";
 
 export const portfolioKeys = {
   all: ["portfolio"] as const,
@@ -27,10 +28,14 @@ export const portfolioKeys = {
 };
 
 export function usePortfolioGroups() {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQuery({
     queryKey: portfolioKeys.list(),
     queryFn: assetPortfolioApi.getPortfolios,
     staleTime: 30_000,
+    // 비로그인 상태에서는 호출하지 않음 (401 방지)
+    enabled: isLoggedIn,
   });
 }
 
@@ -38,37 +43,48 @@ export function usePortfolioAssets(
   portfolioId: number | undefined,
   enabled = true,
 ) {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQuery({
     queryKey: portfolioKeys.assets(portfolioId ?? 0),
     queryFn: () => assetPortfolioApi.getAssetsByPortfolio(portfolioId!),
-    enabled: enabled && portfolioId != null,
+    enabled: isLoggedIn && enabled && portfolioId != null,
     staleTime: 30_000,
   });
 }
 
 export function usePortfolioAssetsQueries(portfolioIds: number[]) {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQueries({
     queries: portfolioIds.map((portfolioId) => ({
       queryKey: portfolioKeys.assets(portfolioId),
       queryFn: () => assetPortfolioApi.getAssetsByPortfolio(portfolioId),
       staleTime: 30_000,
+      enabled: isLoggedIn,
     })),
   });
 }
 
 export function usePortfolioComparison() {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQuery({
     queryKey: portfolioKeys.comparison(),
     queryFn: assetPortfolioApi.getPortfolioComparison,
     staleTime: 30_000,
+    enabled: isLoggedIn,
   });
 }
 
 export function useAssetAllocation() {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQuery({
     queryKey: portfolioKeys.allocation(),
     queryFn: assetPortfolioApi.getAssetAllocation,
     staleTime: 30_000,
+    enabled: isLoggedIn,
   });
 }
 
@@ -77,11 +93,14 @@ export function usePortfolioPerformanceChart(
   endDate: string,
   interval: "DAILY" | "WEEKLY" | "MONTHLY",
 ) {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQuery({
     queryKey: portfolioKeys.performanceChart(startDate, endDate, interval),
     queryFn: () =>
       assetPortfolioApi.getPerformanceChart(startDate, endDate, interval),
     staleTime: 30_000,
+    enabled: isLoggedIn,
   });
 }
 

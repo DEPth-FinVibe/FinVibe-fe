@@ -3,6 +3,7 @@ import { tradeApi } from "@/api/trade";
 import type { TransactionRequest, TradeResponse, TradeHistoryResponse } from "@/api/trade";
 import { portfolioKeys } from "@/hooks/usePortfolioQueries";
 import { walletKeys } from "@/hooks/useWalletQueries";
+import { useIsLoggedIn } from "@/store/useAuthStore";
 
 // --- Query Keys ---
 
@@ -17,28 +18,37 @@ export const tradeKeys = {
 
 /** 거래 상태 조회 */
 export function useTradeStatus(tradeId: number | undefined) {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQuery({
     queryKey: tradeKeys.status(tradeId!),
     queryFn: () => tradeApi.getTradeStatus(tradeId!),
-    enabled: tradeId != null,
+    enabled: isLoggedIn && tradeId != null,
   });
 }
 
 /** 예약 종목 ID 목록 조회 */
 export function useReservedStockIds() {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQuery({
     queryKey: tradeKeys.reservedStockIds(),
     queryFn: tradeApi.getReservedStockIds,
     staleTime: 30_000,
+    enabled: isLoggedIn,
   });
 }
 
 /** 거래 기록 조회 (월별) */
 export function useTradeHistory(year: number, month: number) {
+  const isLoggedIn = useIsLoggedIn();
+
   return useQuery({
     queryKey: tradeKeys.history(year, month),
     queryFn: () => tradeApi.getTradeHistory(year, month),
     staleTime: 60_000,
+    // 비로그인 상태에서는 호출하지 않음 (401 방지)
+    enabled: isLoggedIn,
   });
 }
 
