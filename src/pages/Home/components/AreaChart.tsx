@@ -20,6 +20,8 @@ const AreaChart = ({ data, height = 250, className }: AreaChartProps) => {
       layout: {
         background: { color: "transparent" },
         textColor: "#999",
+        // 차트 좌하단에 겹쳐 그려지는 라이브러리 attribution 로고 제거
+        attributionLogo: false,
       },
       grid: {
         vertLines: { visible: false },
