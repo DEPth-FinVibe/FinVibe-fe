@@ -23,7 +23,7 @@ const FooterCard: React.FC<FooterCardProps> = ({ title, items }) => {
   return (
     <div className="rounded-[8px] px-[30px] py-[10px] w-full">
       <div className="w-full border-b border-[#717478] px-[50px] py-[10px]">
-        <p className="text-Headline_S_Bold text-main-1">{title}</p>
+        <p className="text-Headline_S_Bold text-main-1 whitespace-nowrap">{title}</p>
       </div>
 
       <div className="flex flex-col gap-[15px] pl-[50px] pr-[200px] pt-6">
