@@ -74,26 +74,24 @@ export const ChallengeStatus = ({
   return (
     <article
       className={cn(
-        "flex flex-col w-full items-start gap-5 py-[30px] px-5 relative border border-gray-300 border-solid rounded-lg",
+        "flex flex-col w-full items-start gap-5 p-5 relative border border-gray-300 border-solid rounded-lg",
         className
       )}
       role="article"
       aria-label={`챌린지: ${title}`}
     >
-      {/* 상단 헤더 (핀 아이콘) */}
-      <div className="flex h-6 items-center justify-end relative self-stretch w-full">
-        <button
-          type="button"
-          onClick={onPinClick}
-          aria-label={isPinned ? "핀 해제" : "핀 고정"}
-          className="flex items-center justify-center"
-        >
-          <PinIcon className="w-6 h-6" ariaLabel={isPinned ? "핀 해제" : "핀 고정"} />
-        </button>
-      </div>
+      {/* 핀 아이콘. 별도 행을 차지하면 카드 상단에 빈 띠가 생겨 우상단에 겹쳐 배치한다 */}
+      <button
+        type="button"
+        onClick={onPinClick}
+        aria-label={isPinned ? "핀 해제" : "핀 고정"}
+        className="absolute top-5 right-5 flex items-center justify-center"
+      >
+        <PinIcon className="w-6 h-6" ariaLabel={isPinned ? "핀 해제" : "핀 고정"} />
+      </button>
 
-      {/* 챌린지 정보 */}
-      <div className="flex flex-col items-start gap-4 relative self-stretch w-full">
+      {/* 챌린지 정보 (핀과 겹치지 않도록 우측 여백 확보) */}
+      <div className="flex flex-col items-start gap-4 relative self-stretch w-full pr-10">
         {/* 제목과 난이도 */}
         <div className="flex gap-5 items-center relative">
           <h2 className="text-Title_M_Medium text-black">{title}</h2>
