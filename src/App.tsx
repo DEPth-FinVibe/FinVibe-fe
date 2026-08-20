@@ -23,6 +23,7 @@ import FAQPage from "@/pages/FAQ/FAQPage";
 import NoticePage from "@/pages/Notice/NoticePage";
 import NoticeDetailPage from "@/pages/Notice/NoticeDetailPage";
 import MyChallengeHistoryPage from "@/pages/MyChallengeHistory/MyChallengeHistoryPage";
+import NotFoundPage from "@/pages/NotFound/NotFoundPage";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMarketStore } from "@/store/useMarketStore";
 import { useMarketStatus } from "@/hooks/useMarketQueries";
@@ -100,6 +101,8 @@ function App() {
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/notice" element={<NoticePage />} />
           <Route path="/notice/:noticeId" element={<NoticeDetailPage />} />
+          {/* 매칭되는 라우트가 없을 때 빈 화면 대신 404를 보여준다 */}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
         
         <Route path="/login" element={<LoginPage />} />
