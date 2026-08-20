@@ -420,7 +420,8 @@ const HomePage: React.FC = () => {
           </div>
 
           {/* 종목 리스트 테이블 헤더 (TradingVolumeRank 너비에 맞춰 조정) */}
-          <div className="flex border-y text-Body_M_Light border-gray-200 py-2 text-sm text-black">
+          {/* 스크롤해도 어느 컬럼인지 알 수 있도록 sticky. top-20은 h-20인 사이트 헤더 아래 */}
+          <div className="sticky top-20 z-10 bg-white flex border-y text-Body_M_Light border-gray-200 py-2 text-sm text-black">
             <span className="w-[87px] text-center">순위</span>
             <span className="w-[120px]">종목명</span>
             <span className="w-[62px] text-right">현재가</span>
