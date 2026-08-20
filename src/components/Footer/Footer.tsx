@@ -1,9 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import InstagramIcon from "@/assets/svgs/InstagramIcon";
-import YoutubeIcon from "@/assets/svgs/YoutubeIcon";
-import BookIcon from "@/assets/svgs/BookIcon";
 
 export interface FooterProps {
   className?: string;
@@ -11,121 +8,83 @@ export interface FooterProps {
 
 type FooterLinkItem = {
   label: string;
-  to?: string;
+  to: string;
 };
 
-type FooterCardProps = {
+type FooterColumnProps = {
   title: string;
-  items: FooterLinkItem[];
+  children: React.ReactNode;
 };
 
-const FooterCard: React.FC<FooterCardProps> = ({ title, items }) => {
+/** 푸터 컬럼. 제목/본문 들여쓰기를 컬럼 단위로 통일해 세 컬럼의 좌측선을 맞춘다. */
+const FooterColumn: React.FC<FooterColumnProps> = ({ title, children }) => {
   return (
-    <div className="rounded-[8px] px-[30px] py-[10px] w-full">
-      <div className="px-[50px] py-[10px]">
-        <p className="text-Headline_S_Bold text-main-1 whitespace-nowrap w-fit border-b border-[#717478] pb-[10px]">
-          {title}
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-[15px] pl-[50px] pr-[200px] pt-6">
-        {items.map((item) => {
-          const content = (
-            <span className="text-Subtitle_M_Medium text-black whitespace-nowrap">{item.label}</span>
-          );
-
-          return item.to ? (
-            <Link
-              key={item.label}
-              to={item.to}
-              className="py-[5px] inline-flex items-center w-fit hover:underline"
-            >
-              {content}
-            </Link>
-          ) : (
-            <div key={item.label} className="py-[5px] inline-flex items-center">
-              {content}
-            </div>
-          );
-        })}
-      </div>
+    <div className="flex flex-col gap-6">
+      <p className="text-Headline_S_Bold text-main-1 whitespace-nowrap w-fit border-b border-[#717478] pb-[10px]">
+        {title}
+      </p>
+      {children}
     </div>
   );
 };
 
+const FooterLinkList: React.FC<{ items: FooterLinkItem[] }> = ({ items }) => (
+  <div className="flex flex-col gap-[15px]">
+    {items.map((item) => (
+      <Link
+        key={item.label}
+        to={item.to}
+        className="text-Subtitle_M_Medium text-black whitespace-nowrap w-fit hover:underline"
+      >
+        {item.label}
+      </Link>
+    ))}
+  </div>
+);
+
 export const Footer: React.FC<FooterProps> = ({ className }) => {
   return (
     <footer className={cn("w-full bg-gray-100", className)}>
-      <div className="mx-auto w-full max-w-[1920px] px-6 pt-[10px] pb-[40px] md:px-12 xl:px-[300px]">
-        <div className="flex flex-col gap-[25px]">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-[60px]">
-            <FooterCard
-              title="고객 지원"
-              items={[
-                { label: "공지사항", to: "/notice" },
-                { label: "자주 묻는 질문", to: "/faq" },
-                { label: "1:1 문의", to: "/inquiry" },
-              ]}
-            />
-            <FooterCard
-              title="정책"
-              items={[
-                { label: "이용약관", to: "/mypage/terms" },
-                { label: "개인정보처리방침", to: "/mypage/privacy" },
-                { label: "운영정책" },
-              ]}
-            />
-            <div className="w-full rounded-[8px] px-[30px] py-[10px] flex flex-col gap-[25px]">
-              <p className="text-Headline_S_Bold text-main-1">FinVibe</p>
+      <div className="mx-auto w-full max-w-[1920px] px-6 pt-[40px] pb-[40px] md:px-12 xl:px-[300px]">
+        <div className="flex flex-col gap-[40px]">
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-[60px]">
+            <FooterColumn title="고객 지원">
+              <FooterLinkList
+                items={[
+                  { label: "공지사항", to: "/notice" },
+                  { label: "자주 묻는 질문", to: "/faq" },
+                  { label: "1:1 문의", to: "/inquiry" },
+                ]}
+              />
+            </FooterColumn>
 
-              <div className="flex flex-col gap-[30px]">
-                <div className="flex flex-col gap-[15px] pl-[20px]">
-                  <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">
-                    이메일: help@finvibe.com
-                  </p>
-                </div>
+            <FooterColumn title="정책">
+              <FooterLinkList
+                items={[
+                  { label: "이용약관", to: "/mypage/terms" },
+                  { label: "개인정보처리방침", to: "/mypage/privacy" },
+                ]}
+              />
+            </FooterColumn>
 
-                <div className="px-[20px]">
-                  <p className="text-Subtitle_S_Medium text-[#4C4C4C]">
-                    본 서비스는 가상 투자 시뮬레이션이며,<br />
-                    실제 금융 거래가 발생하지 않습니다.
-                  </p>
-                </div>
+            <FooterColumn title="FinVibe">
+              <div className="flex flex-col gap-5">
+                <p className="text-Subtitle_M_Medium text-black">
+                  이메일: help@finvibe.com
+                </p>
+                <p className="text-Subtitle_S_Medium text-[#4C4C4C] max-w-[320px]">
+                  본 서비스는 가상 투자 시뮬레이션이며, 실제 금융 거래가 발생하지
+                  않습니다.
+                </p>
               </div>
-            </div>
+            </FooterColumn>
           </div>
 
           <div className="w-full border-t border-gray-300" />
 
-          <div className="w-full flex items-center justify-between gap-6 flex-wrap px-[80px]">
-            <div className="flex items-center gap-[20px]">
-              <button
-                type="button"
-                aria-label="인스타그램"
-                className="inline-flex items-center justify-center size-[30px]"
-              >
-                <InstagramIcon className="size-[30px]" />
-              </button>
-              <button
-                type="button"
-                aria-label="유튜브"
-                className="inline-flex items-center justify-center size-[30px]"
-              >
-                <YoutubeIcon className="size-[30px]" />
-              </button>
-              <button
-                type="button"
-                aria-label="블로그"
-                className="inline-flex items-center justify-center size-[30px]"
-              >
-                <BookIcon className="size-[30px]" color="#1D1E20" />
-              </button>
-            </div>
-
-            <p className="text-Subtitle_S_Regular text-black">
-              © FinVibe Corp. All rights reserved.
-            </p>
-          </div>
+          <p className="text-Subtitle_S_Regular text-black">
+            © FinVibe Corp. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
@@ -133,5 +92,3 @@ export const Footer: React.FC<FooterProps> = ({ className }) => {
 };
 
 export default Footer;
-
-
