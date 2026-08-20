@@ -72,7 +72,8 @@ export const Footer: React.FC<FooterProps> = ({ className }) => {
                 <p className="text-Subtitle_M_Medium text-black">
                   이메일: help@finvibe.com
                 </p>
-                <p className="text-Subtitle_S_Medium text-[#4C4C4C] max-w-[320px]">
+                {/* 한국어는 기본 규칙에서 단어 중간에도 줄이 끊겨 break-keep이 필요하다 */}
+                <p className="text-Subtitle_S_Medium text-[#4C4C4C] max-w-[320px] break-keep">
                   본 서비스는 가상 투자 시뮬레이션이며, 실제 금융 거래가 발생하지
                   않습니다.
                 </p>
