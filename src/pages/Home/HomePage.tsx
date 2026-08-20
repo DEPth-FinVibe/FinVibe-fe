@@ -313,23 +313,29 @@ const HomePage: React.FC = () => {
     };
   }, [selectedCategoryId]);
 
-  // 카테고리 종목에서 거래대금 1위 추출
-  const topByValueStock = useMemo(() => {
-    if (!categoryStocks.data) return null;
+  // 카테고리 종목을 거래대금 내림차순으로 정렬 (거래대금 1위와 대표 종목이 같은 기준을 쓰도록 통일)
+  const stocksSortedByValue = useMemo(() => {
+    if (!categoryStocks.data) return [];
     const { stocks, prices } = categoryStocks.data;
-    if (prices.length === 0) return stocks[0] ?? null;
-    const sorted = [...prices].sort((a, b) => b.value - a.value);
-    const topPrice = sorted[0];
-    if (!topPrice) return stocks[0] ?? null;
-    const stock = stocks.find((s) => s.stockId === topPrice.stockId);
-    return stock ?? null;
+    if (prices.length === 0) return stocks;
+
+    const valueByStockId = new Map(prices.map((p) => [p.stockId, p.value]));
+    return [...stocks].sort(
+      (a, b) => (valueByStockId.get(b.stockId) ?? 0) - (valueByStockId.get(a.stockId) ?? 0),
+    );
   }, [categoryStocks.data]);
 
-  // 상위 3종목명
-  const topStockNames = useMemo(() => {
-    if (!categoryStocks.data) return [];
-    return categoryStocks.data.stocks.slice(0, 3).map((s) => s.name);
-  }, [categoryStocks.data]);
+  // 카테고리 종목에서 거래대금 1위 추출
+  const topByValueStock = useMemo(
+    () => stocksSortedByValue[0] ?? null,
+    [stocksSortedByValue],
+  );
+
+  // 상위 3종목명 (거래대금 상위 3개)
+  const topStockNames = useMemo(
+    () => stocksSortedByValue.slice(0, 3).map((s) => s.name),
+    [stocksSortedByValue],
+  );
 
   // 드롭다운용 전체 카테고리 등락률
   const categoryIds = useMemo(
