@@ -34,9 +34,9 @@ import ThemeListDropdown from "./components/ThemeListDropdown";
 const MOCK_FALLBACK = [
   { rank: 1, name: "삼성전자", ticker: "005930", price: "74,200원", change: "+0.45%", vol: "720억" },
   { rank: 2, name: "SK하이닉스", ticker: "000660", price: "186,500원", change: "+2.67%", vol: "650억" },
-  { rank: 3, name: "LG에너지솔루션", ticker: "373220", price: "412,000원", change: "-1.45%", vol: "460억" },
-  { rank: 4, name: "NAVER", ticker: "035420", price: "178,000원", change: "+1.23%", vol: "580억" },
-  { rank: 5, name: "카카오", ticker: "035720", price: "45,600원", change: "-0.34%", vol: "520억" },
+  { rank: 3, name: "NAVER", ticker: "035420", price: "178,000원", change: "+1.23%", vol: "580억" },
+  { rank: 4, name: "카카오", ticker: "035720", price: "45,600원", change: "-0.34%", vol: "520억" },
+  { rank: 5, name: "LG에너지솔루션", ticker: "373220", price: "412,000원", change: "-1.45%", vol: "460억" },
   { rank: 6, name: "현대차", ticker: "005380", price: "234,500원", change: "+0.78%", vol: "430억" },
   { rank: 7, name: "셀트리온", ticker: "068270", price: "178,900원", change: "+1.12%", vol: "410억" },
   { rank: 8, name: "KB금융", ticker: "105560", price: "82,300원", change: "+0.56%", vol: "380억" },
