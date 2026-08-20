@@ -79,16 +79,9 @@ export const Footer: React.FC<FooterProps> = ({ className }) => {
               <p className="text-Headline_S_Bold text-main-1">FinVibe</p>
 
               <div className="flex flex-col gap-[30px]">
-                <div className="flex flex-col gap-[15px] pl-[20px] pr-[200px]">
-                  <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">(주)핀바이브 ㅣ 대표: 000</p>
+                <div className="flex flex-col gap-[15px] pl-[20px]">
                   <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">
-                    사업자등록번호: 123-45-67890 ㅣ
-                  </p>
-                  <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">
-                    00시 00구 00로 000
-                  </p>
-                  <p className="text-Subtitle_M_Medium text-black whitespace-nowrap">
-                    고객센터: 1588-0000 ㅣ 이메일: help@finvibe.com
+                    이메일: help@finvibe.com
                   </p>
                 </div>
 
