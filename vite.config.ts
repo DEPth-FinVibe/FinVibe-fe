@@ -27,6 +27,11 @@ export default defineConfig({
       },
     },
   },
+  // 프로덕션 번들에서만 디버그 로그를 제거한다 (dev에서는 그대로 동작).
+  // console.error / console.warn 은 남겨 장애 추적이 가능하도록 한다.
+  esbuild: {
+    pure: ["console.log", "console.debug", "console.info"],
+  },
   build: {
     rollupOptions: {
       output: {

@@ -173,7 +173,6 @@ const SignupPage: React.FC = () => {
         delete signupData.password;
       }
 
-      console.log("Submitting signup data:", signupData);
 
       const response = isOAuth 
         ? await authApi.oauthSignup(signupData)
