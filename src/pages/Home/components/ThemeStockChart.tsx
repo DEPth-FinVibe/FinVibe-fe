@@ -43,7 +43,7 @@ const ThemeStockChart = ({ stockId, stockName }: ThemeStockChartProps) => {
     <div className="flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <h4 className="text-[14px] font-medium text-black">
-          {stockName} 1일 봉 차트
+          {stockName} 일봉 · 최근 3개월
         </h4>
         <button
           onClick={() => navigate(`/simulation/${stockId}`, {
