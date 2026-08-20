@@ -61,7 +61,10 @@ const AreaChart = ({ data, height = 250, className }: AreaChartProps) => {
     });
 
     series.setData(data as { time: Time; value: number }[]);
-    chart.timeScale().fitContent();
+
+    // fitContent()는 데이터를 컨테이너에 딱 맞춰 그려서 양 끝 날짜 레이블이 잘린다.
+    // 앞뒤로 한 칸씩 여백을 줘 첫/마지막 레이블이 온전히 보이게 한다.
+    chart.timeScale().setVisibleLogicalRange({ from: -1, to: data.length });
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
