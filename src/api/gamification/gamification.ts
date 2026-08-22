@@ -2,22 +2,6 @@ import { gamificationApiClient } from "./client";
 
 // ─── 타입 정의 ───
 
-export type SquadRankingItem = {
-  squadId: number;
-  squadName: string;
-  currentRanking: number;
-  totalXp: number;
-  weeklyXp: number;
-  weeklyXpChangeRate: number;
-  rankingChange: number;
-};
-
-export type SquadContributionItem = {
-  nickname: string;
-  ranking: number;
-  weeklyContributionXp: number;
-};
-
 export type MyXpInfo = {
   userId: string;
   nickname?: string;
@@ -86,21 +70,6 @@ export type BadgeInfo = {
   acquiredAt: string;
 };
 
-export type SquadItem = {
-  squadId: number | string;
-  squadName: string;
-  region?: string;
-  currentRanking?: number;
-  totalXp?: number;
-};
-
-export type MySquadInfo = {
-  userId: string;
-  nickname: string;
-  totalXp: number;
-  level: number;
-};
-
 // 백엔드가 배열을 래핑해서 반환할 수 있으므로 안전하게 추출
 function unwrapArray<T>(data: unknown, depth = 0): T[] {
   if (Array.isArray(data)) return data;
@@ -109,7 +78,7 @@ function unwrapArray<T>(data: unknown, depth = 0): T[] {
   if (data && typeof data === "object") {
     const obj = data as Record<string, unknown>;
 
-    for (const key of ["data", "content", "items", "result", "squads", "list"]) {
+    for (const key of ["data", "content", "items", "result", "list"]) {
       if (Array.isArray(obj[key])) return obj[key] as T[];
     }
 
@@ -125,18 +94,6 @@ function unwrapArray<T>(data: unknown, depth = 0): T[] {
 // ─── API 메서드 ───
 
 export const gamificationApi = {
-  /** 스쿼드(대학) 랭킹 조회: GET /xp/squads/ranking */
-  getSquadRanking: async (): Promise<SquadRankingItem[]> => {
-    const res = await gamificationApiClient.get("/xp/squads/ranking");
-    return unwrapArray<SquadRankingItem>(res.data);
-  },
-
-  /** 내 스쿼드 기여도 조회: GET /xp/squads/contributions/me */
-  getMySquadContributions: async (): Promise<SquadContributionItem[]> => {
-    const res = await gamificationApiClient.get("/xp/squads/contributions/me");
-    return unwrapArray<SquadContributionItem>(res.data);
-  },
-
   /** 내 XP 정보 조회: GET /xp/me */
   getMyXp: async (): Promise<MyXpInfo> => {
     const res = await gamificationApiClient.get<MyXpInfo>("/xp/me");
@@ -152,50 +109,6 @@ export const gamificationApi = {
       },
     });
     return unwrapArray<UserRankingItem>(res.data);
-  },
-
-  /** 전체 스쿼드 목록 조회: GET /squads */
-  getSquads: async (): Promise<SquadItem[]> => {
-    const res = await gamificationApiClient.get("/squads");
-
-    const rawItems = unwrapArray<Record<string, unknown>>(res.data);
-    return rawItems
-      .map((item) => ({
-        squadId: (item.squadId ?? item.id ?? item.groupId ?? item.teamId ?? "") as number | string,
-        squadName: String(
-          item.squadName ??
-          item.name ??
-          item.schoolName ??
-          item.universityName ??
-          item.title ??
-          ""
-        ),
-        region: typeof item.region === "string" ? item.region : typeof item.location === "string" ? item.location : undefined,
-        currentRanking:
-          typeof item.currentRanking === "number"
-            ? item.currentRanking
-            : typeof item.ranking === "number"
-              ? item.ranking
-              : undefined,
-        totalXp:
-          typeof item.totalXp === "number"
-            ? item.totalXp
-            : typeof item.xp === "number"
-              ? item.xp
-              : undefined,
-      }))
-      .filter((item) => item.squadName.length > 0 && String(item.squadId).length > 0);
-  },
-
-  /** 내 스쿼드 조회: GET /squads/me */
-  getMySquad: async (): Promise<MySquadInfo> => {
-    const res = await gamificationApiClient.get<MySquadInfo>("/squads/me");
-    return res.data;
-  },
-
-  /** 스쿼드 참여: POST /squads/{squadId}/join */
-  joinSquad: async (squadId: number): Promise<void> => {
-    await gamificationApiClient.post(`/squads/${squadId}/join`);
   },
 
   /** 내 챌린지 목록 조회: GET /challenges/me */
